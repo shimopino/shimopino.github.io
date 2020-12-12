@@ -1,4 +1,4 @@
-### Keisuke Shimokawa
+### I'm Keisuke Shimokawa
 
 <!-- [![Twitter Follow](https://img.shields.io/twitter/follow/codeSTACKr?color=1DA1F2&logo=twitter&style=for-the-badge)](https://twitter.com/intent/follow?original_referer=https%3A%2F%2Fgithub.com%2FcodeSTACKr&screen_name=shimopino) -->
 
@@ -11,7 +11,7 @@
     - Learn Design!
     - Write more articles!
 
-### Language
+### My Language
 
 <img align="left" alt="HTML5" width="35px" height="35px" src="https://cdn.svgporn.com/logos/html-5.svg" />
 <img align="left" alt="CSS3" width="35px" height="35px" src="https://cdn.svgporn.com/logos/css-3.svg" />
