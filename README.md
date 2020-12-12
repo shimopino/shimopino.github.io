@@ -9,6 +9,7 @@
     - Everyday Commit!
     - Contribute to OSS!
     - Learn Design!
+    - Write more articles!
 
 ### Language
 
@@ -40,3 +41,6 @@
 - [[論文読み] Bag of Tricks for Image Classification with CNNs](https://qiita.com/shimopino/items/9eb962aa09b6a3608163)
 <!-- BLOG-POST-LIST:END -->
 
+---
+
+[![Anurag's github stats](https://github-readme-stats.vercel.app/api?username=KeisukeShimokawa)](https://github.com/anuraghazra/github-readme-stats)
