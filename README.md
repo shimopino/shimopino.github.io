@@ -12,20 +12,23 @@
 
 ### Language
 
-<img align="left" alt="HTML5" width="26px" src="https://cdn.svgporn.com/logos/html-5.svg" />
-<img align="left" alt="CSS3" width="26px" src="https://cdn.svgporn.com/logos/css-3.svg" />
-<img align="left" alt="javascript" width="26px" src="https://cdn.svgporn.com/logos/javascript.svg" />
-<img align="left" alt="react" width="26px" src="https://cdn.svgporn.com/logos/react.svg" />
-<img align="left" alt="vue" width="26px" src="https://cdn.svgporn.com/logos/vue.svg" />
-<img align="left" alt="nodejs" width="26px" src="https://cdn.svgporn.com/logos/nodejs.svg" />
-<img align="left" alt="postgresql" width="26px" src="https://cdn.svgporn.com/logos/postgresql.svg" />
-<img align="left" alt="mongodb" width="26px" src="https://cdn.svgporn.com/logos/mongodb.svg" />
-<img align="left" alt="java" width="26px" src="https://cdn.svgporn.com/logos/java.svg" />
-<img align="left" alt="oracle" width="26px" src="https://cdn.svgporn.com/logos/oracle.svg" />
-<img align="left" alt="python" width="26px" src="https://cdn.svgporn.com/logos/python.svg" />
-<img align="left" alt="pytorch" width="26px" src="https://cdn.svgporn.com/logos/pytorch.svg" />
-<img align="left" alt="tensorflow" width="26px" src="https://cdn.svgporn.com/logos/tensorflow.svg" />
+<img align="left" alt="HTML5" width="35px" height="35px" src="https://cdn.svgporn.com/logos/html-5.svg" />
+<img align="left" alt="CSS3" width="35px" height="35px" src="https://cdn.svgporn.com/logos/css-3.svg" />
+<img align="left" alt="javascript" width="35px" height="35px" src="https://cdn.svgporn.com/logos/javascript.svg" />
+<img align="left" alt="react" width="35px" height="35px" src="https://cdn.svgporn.com/logos/react.svg" />
+<img align="left" alt="vue" width="35px" height="35px" src="https://cdn.svgporn.com/logos/vue.svg" />
+<img align="left" alt="nodejs" width="35px" height="35px" src="https://cdn.svgporn.com/logos/nodejs.svg" />
+<img align="left" alt="postgresql" width="35px" height="35px" src="https://cdn.svgporn.com/logos/postgresql.svg" />
+<img align="left" alt="mongodb" width="35px" height="35px" src="https://cdn.svgporn.com/logos/mongodb.svg" />
+<img align="left" alt="java" width="35px" height="35px" src="https://cdn.svgporn.com/logos/java.svg" />
+<img align="left" alt="oracle" width="35px" height="35px" src="https://cdn.svgporn.com/logos/oracle.svg" />
+<img align="left" alt="python" width="35px" height="35px" src="https://cdn.svgporn.com/logos/python.svg" />
+<img align="left" alt="pytorch" width="35px" height="35px" src="https://cdn.svgporn.com/logos/pytorch.svg" />
+<img align="left" alt="tensorflow" width="35px"height="35px"  src="https://cdn.svgporn.com/logos/tensorflow.svg" />
 
 <br />
+<br />
 
-### Tools
+---
+
+### Latest Blog Posts
