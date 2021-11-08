@@ -35,7 +35,7 @@
 ### Latest Blog Posts
 <!-- BLOG-POST-LIST:START -->
 - [実装イメージをつけながら理解するFQGAN](https://qiita.com/shimopino/items/3e4537b0f821292f8022)
-- [WindowsでSSDを増設してデュアルブートしたUbuntuでPyTorch(GPU)を使うまで](https://qiita.com/shimopino/items/464ca8d5294a3a2cb9ee)
+- [WindowsでSSDを増設してデュアルブートしたUbuntuでPyTorch&lpar;GPU&rpar;を使うまで](https://qiita.com/shimopino/items/464ca8d5294a3a2cb9ee)
 - [最速で把握するテキストからの画像生成モデルの潮流！](https://qiita.com/shimopino/items/f096cd92c5107ee02208)
 - [Sierに新卒入社して4か月の研修期間中に読んだ・読んでいる本のまとめ](https://qiita.com/shimopino/items/c81ce2f071e739117c19)
 - [[論文読み] Bag of Tricks for Image Classification with CNNs](https://qiita.com/shimopino/items/9eb962aa09b6a3608163)
