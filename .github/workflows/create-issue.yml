@@ -2,8 +2,9 @@ name: Create Release Note Issue
 
 on:
   # https://docs.github.com/ja/actions/managing-issues-and-pull-requests/scheduling-issue-creation
-  schedule:
-    - cron: "0 9 1 * *"
+  # schedule:
+  #   - cron: "0 9 1 * *"
+  workflow_dispatch:
 
 jobs:
   build:
