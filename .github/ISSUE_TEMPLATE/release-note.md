@@ -1,7 +1,7 @@
 ---
 name: リリースノート
 about: 月に1回公開するリリースノートを促すISSUE
-title: Please update your resume【{{ date | date('YYYY/MM/DD') }}】
+title: Please publish your Release Note【{{ date | date('YYYY/MM/DD') }}】
 labels: リリースノート
 assignees: shimopino
 ---
