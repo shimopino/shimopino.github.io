@@ -1,0 +1,19 @@
+name: Create Release Note Issue
+
+on:
+  # https://docs.github.com/ja/actions/managing-issues-and-pull-requests/scheduling-issue-creation
+  schedule:
+    - cron: "0 9 1 * *"
+
+jobs:
+  build:
+    name: create release note issue
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      # https://github.com/marketplace/actions/create-an-issue
+      - uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/release-note.md
