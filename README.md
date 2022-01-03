@@ -5,11 +5,10 @@
 ### I'm Software Developer!!
 
 - I'm always learning everything!
-- 2021 Goals:
-    - Everyday Commit!
-    - Contribute to OSS!
-    - Learn Design!
-    - Write more articles!
+- 2022 Goals:
+    - Contribute to OSS
+    - Learn Functional Programming
+    - Learn Domain Driven Design
 
 ### My Language
 
