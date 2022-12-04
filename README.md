@@ -33,11 +33,10 @@
 
 ### Latest Blog Posts
 <!-- BLOG-POST-LIST:START -->
+- [TypeScriptでResult型でのエラーハンドリングを通してモナドの世界を覗いてみる](https://qiita.com/shimopino/items/d194957599dd45e91a5f)
 - [Storybookで始めるVisual Regression Test](https://qiita.com/shimopino/items/e143b3d1a942e577dc31)
 - [実装イメージをつけながら理解するFQGAN](https://qiita.com/shimopino/items/3e4537b0f821292f8022)
 - [WindowsでSSDを増設してデュアルブートしたUbuntuでPyTorch&lpar;GPU&rpar;を使うまで](https://qiita.com/shimopino/items/464ca8d5294a3a2cb9ee)
-- [最速で把握するテキストからの画像生成モデルの潮流！](https://qiita.com/shimopino/items/f096cd92c5107ee02208)
-- [Sierに新卒入社して4か月の研修期間中に読んだ・読んでいる本のまとめ](https://qiita.com/shimopino/items/c81ce2f071e739117c19)
 <!-- BLOG-POST-LIST:END -->
 
 ---
