@@ -31,6 +31,18 @@
 
 ---
 
+### Certificates
+
+<img align="left" width="35px" height="35px" src="https://user-images.githubusercontent.com/33191285/220005728-d5349ef1-ff24-4741-a36f-9597e8450dfd.png">
+<img align="left" width="35px" height="35px" src="https://user-images.githubusercontent.com/33191285/220005842-63223d96-4933-4d9c-aa25-c27e233980b1.png">
+<img align="left" width="35px" height="35px" src="https://user-images.githubusercontent.com/33191285/220005852-c94e0adf-8450-438a-bb3d-efb51e5dd69b.png">
+<img align="left" width="35px" height="35px" src="https://user-images.githubusercontent.com/33191285/220008276-bab86f81-3638-4ab7-a725-03437b076e4e.png">
+
+<br />
+<br />
+
+---
+
 ### Latest Blog Posts
 <!-- BLOG-POST-LIST:START -->
 - [TypeScriptでResult型でのエラーハンドリングを通してモナドの世界を覗いてみる](https://qiita.com/shimopino/items/d194957599dd45e91a5f)
