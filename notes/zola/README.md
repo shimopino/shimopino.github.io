@@ -116,3 +116,74 @@ jobs:
 ### 疑問点
 
 サブモジュールによるスタイル適用の仕組みは何か？
+
+## Front Matter
+
+`content` 以下に配置する `_index.md` は、対象のセクションに表示するコンテンツやメタデータの設定を行うことができる。
+
+例えば以下のような `_index.md` が存在していた場合、これは `base_url/blogs` 以下のセクションでのコンテンツやメタデータの設定を行うことが可能である。
+
+```bash
+└──content
+    └── blogs
+        ├── _index.md
+        ├── entry1.md
+        └── entry2.md
+```
+
+この設定は以下のように `+++` で囲まれたファイルの冒頭で宣言することができ、宣言した内容はテンプレートから `section.content` 変数で利用できるようになる。
+
+以下に使う可能性がありそうなものだけを抽出する。
+
+```toml
++++
+# htmlの <title> と同じようにタイトルを設定可能
+title = "Blog Title"
+
+# 各種CLIで `--drafts` を付与したした時にのみ読み込むかどうか
+# 下書きなら true にしてビルドされないようにすれば良さそう
+draft = false
+
+# コンテンツをどのようにソートするのか指定できる
+# ブログOnlyならおおよそ投稿日時とかで良さそう
+sort_by = "none"
+
+# 明示的にセクションでどのテンプレートを使用するのか指定できる
+# セクションごとにテンプレートを作成しておくのが良さそう
+template = "section.html"
+
+# セクションページも検索インデックスに含めるかどうか
+in_search_index = true
+
+# セクションのURLにアクセスされた場合のリダイレクト先を決定する
+# 例えばセクションに直接アクセスされた時に 404 ページを表示したくない時などに使う
+redirect_to =
++++
+
+コンテンツを記述可能
+```
+
+記事をソートすることもでき、以下のディレクトリ構造出会った場合に、`_index.md` の設定に `sort_by = "date"` を設定し、各ページには `date = "2023-04-01"` などと設定すればその順番でソートされる。
+
+```bash
+└──content
+    └── blogs
+        ├── _index.md
+        ├── entry1.md
+        ├── entry2.md
+        └── entry3.md
+```
+
+テンプレート側には、以下のようにセクション配下のページ一覧を表示する時に、この順番で表示される。
+
+```tera
+{% for post in section.pages %}
+  <h1><a href="{{ post.permalink }}">{{ post.title }}</a></h1>
+{% endfor %}
+```
+
+- https://www.getzola.org/documentation/content/section/#front-matter
+
+### 疑問点
+
+- draft の挙動認識が合っているのか
