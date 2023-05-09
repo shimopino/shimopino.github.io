@@ -38,8 +38,74 @@
 
 ![](assets/first-site.png)
 
-https://www.getzola.org/documentation/getting-started/directory-structure/
+- https://www.getzola.org/documentation/getting-started/directory-structure/
 
 ### 疑問
 
 - CSS ファイルを配置した場合はどうなる？
+
+## Github Pages へのデプロイ
+
+ブログを始めるにあたり、最終的な成果物を完成させてからデプロイするよりも、インクリメンタルに作成していくことが個人的な好みなので、まずは Web ページとして閲覧できる状態にする。
+
+今回は Github Actions を使用して、Github Pages にデプロイすることを目指す。
+
+Github Pages では `gh-pages, main, master` というブランチルートに `index.html` を配置して生成ファイルを公開したり、リポジトリの `docs` ディレクトリから公開することも可能である。
+
+Github Pages の URL は以下のパターンで決まる。
+
+- ユーザールートのリポジトリ
+  - `<username>.github.io`
+- それ以外のリポジトリ
+  - `<username>.github.io/<repository>`
+- 特定の名前のリポジトリ
+
+  - リポジトリ名を `<username>.github.io` に設定する
+  - これは例えば以下のようなサイトが該当する
+    - https://github.com/Yelp/yelp.github.io
+
+`zola` を使用する場合は、スタイルをサブモジュールとして含めるようにすればうまく動作するらしい
+
+```bash
+git submodule add https://github.com/getzola/after-dark.git themes/after-dark
+```
+
+- https://docs.github.com/ja/pages/getting-started-with-github-pages/about-github-pages
+
+Github Actions 経由でデプロイするには以下の 3 つのステップが必要となる。
+
+1. もしも他のリポジトリから公開する場合は、そのリポジトリから自身のリポジトリにプッシュするための権限を付与するためのパーソナルアクセストークンを生成する
+2. Github Actions を用意する
+3. リポジトリ設定の「Github Pages」の項目を設定する
+
+今回はこのリポジトリからサイトを公開するため、PAT の準備はスキップする。
+
+Github Actions は [zola-deploy-action](https://github.com/shalzz/zola-deploy-action) の公式サンプルにならって構築する。
+
+```yml
+name: Zola on Github Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Publish Site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v3.0.0
+      - name: Build and Deploy
+        uses: shalzz/zola-deploy-action@v0.17.2
+        env:
+          # https://docs.github.com/ja/actions/security-guides/automatic-token-authentication
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+- https://www.getzola.org/documentation/deployment/github-pages/
+
+### 疑問点
+
+サブモジュールによるスタイル適用の仕組みは何か？
