@@ -54,15 +54,14 @@ Github Pages では `gh-pages, main, master` というブランチルートに `
 
 Github Pages の URL は以下のパターンで決まる。
 
-- ユーザールートのリポジトリ
-  - `<username>.github.io`
-- それ以外のリポジトリ
-  - `<username>.github.io/<repository>`
 - 特定の名前のリポジトリ
 
   - リポジトリ名を `<username>.github.io` に設定する
   - これは例えば以下のようなサイトが該当する
     - https://github.com/Yelp/yelp.github.io
+
+- それ以外のリポジトリ
+  - `<username>.github.io/<repository>`
 
 `zola` を使用する場合は、スタイルをサブモジュールとして含めるようにすればうまく動作するらしい
 
@@ -103,6 +102,14 @@ jobs:
           # https://docs.github.com/ja/actions/security-guides/automatic-token-authentication
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+この Github Actions が実行されると、新しく `gh-pages` ブランチが作成され、そこに `zola build` によって生成された静的ファイルが配置される。
+
+![](assets/github-pages-visit.png)
+
+これでローカルで初期化した後でビルドした時と同じサイトを構築することができる。
+
+![](assets/github-pages-first-deploy.png)
 
 - https://www.getzola.org/documentation/deployment/github-pages/
 
