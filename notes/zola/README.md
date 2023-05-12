@@ -561,7 +561,7 @@ https://www.getzola.org/documentation/getting-started/configuration/#syntax-high
 ```toml
 [markdown]
 highlight_code = true
-highlight_theme = "monokai"
+highlight_theme = "base16-ocean-dark"
 ```
 
 以下のように Markdown 形式でコードを記述する。
