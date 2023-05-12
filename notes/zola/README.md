@@ -10,6 +10,7 @@
     - [子側のテンプレートファイルで上書きする](#子側のテンプレートファイルで上書きする)
     - [ブログセクションの作成](#ブログセクションの作成)
     - [ブログコンテンツの作成](#ブログコンテンツの作成)
+    - [トップページにリンクを追加](#トップページにリンクを追加)
     - [Github Pages での対応](#github-pages-での対応)
     - [使用した各種構文](#使用した各種構文)
   - [Front Matter](#front-matter)
@@ -269,6 +270,27 @@ This is my first blog post.
 
   ![](assets/first-contents.png)
 
+### トップページにリンクを追加
+
+トップページには何もリンクがないが、 `get_url` 関数を使用すれば直接 `content` ディレクトリへの内部リンクを指定したリンクを取得することが可能である。
+
+`index.html` に以下のようにリンクを設定すればコンテンツへのリンクを設定できる。
+
+```html
+{% extends "base.html" %}
+
+<!-- 以下に上書きするブロック content を記述していく -->
+
+{% block content %}
+<h1 class="title">This is my blog made with Zola.</h1>
+<!-- contentに配置したファイル先にリンクを設定することが可能である -->
+<p>
+  Click <a href="{{ get_url(path='@/blog/_index.md') }}">here</a> to see my
+  posts.
+</p>
+{% endblock content %}
+```
+
 ### Github Pages での対応
 
 ローカル開発では記事へのリンクは、開発サーバーが `127.0.0.1/1111` で起動されている場合にはこの URL が使用されるが、Github Pages で利用するためには `config.toml` でドメインの設定が必要となる。
@@ -298,12 +320,14 @@ base_url = "https://shimopino.github.io"
 - `{%  %}`
   - `statements` であり for ループであったりブロックの設定ができる
 - `{{ page.content | safe }}`
+- `get_url`
 
   - `|` はパイプライン演算子のように、1 つ前の値を式に代入することが可能である
   - `safe` は指定された値をエスケープ処理することで安全に取り扱うことが可能である
 
 - [Tera Basic](https://tera.netlify.app/docs/#tera-basics)
 - [safe](https://tera.netlify.app/docs/#safe)
+- [get_url](https://www.getzola.org/documentation/templates/overview/#get-url)
 
 ## Front Matter
 
