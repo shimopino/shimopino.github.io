@@ -288,6 +288,8 @@ base_url = "https://example.com"
 base_url = "https://shimopino.github.io"
 ```
 
+これで Github Pages での動作するリンクを構築することができる。
+
 ## Front Matter
 
 `content` 以下に配置する `_index.md` は、対象のセクションに表示するコンテンツやメタデータの設定を行うことができる。
