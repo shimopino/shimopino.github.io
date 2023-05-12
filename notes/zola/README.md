@@ -10,6 +10,7 @@
     - [子側のテンプレートファイルで上書きする](#子側のテンプレートファイルで上書きする)
     - [ブログセクションの作成](#ブログセクションの作成)
     - [ブログコンテンツの作成](#ブログコンテンツの作成)
+    - [Github Pages での対応](#github-pages-での対応)
   - [Front Matter](#front-matter)
     - [疑問点](#疑問点-1)
 
@@ -266,6 +267,26 @@ This is my first blog post.
 - ページ: `<url>/blog/first`
 
   ![](assets/first-contents.png)
+
+### Github Pages での対応
+
+ローカル開発では記事へのリンクは、開発サーバーが `127.0.0.1/1111` で起動されている場合にはこの URL が使用されるが、Github Pages で利用するためには `config.toml` でドメインの設定が必要となる。
+
+現在は以下のように `base_url` を設定している。
+
+```tml
+base_url = "https://example.com"
+```
+
+この場合であれば各記事へのリンクは以下のようにこの URL を基準に構築される。
+
+- `https://example.com/blog/first`
+
+今回は Github Pages を利用するため以下の URL を設定する。
+
+```tml
+base_url = "https://shimopino.github.io"
+```
 
 ## Front Matter
 
