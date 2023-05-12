@@ -18,6 +18,7 @@
   - [記事へのタグ付け](#記事へのタグ付け)
     - [単純なグルーピング](#単純なグルーピング)
     - [使用した各種構文](#使用した各種構文-1)
+  - [シンタックスハイライト](#シンタックスハイライト)
 
 ## ディレクトリ構造
 
@@ -548,3 +549,29 @@ Zola では Taxonomy に対して設定した値に基づき、テンプレー�
 
 - [length](https://tera.netlify.app/docs/#length)
 - [date(format)](https://tera.netlify.app/docs/#date)
+
+## シンタックスハイライト
+
+Zola で組み込みでいくつかのシンタックスハイライトのスタイルが提供されている。
+
+https://www.getzola.org/documentation/getting-started/configuration/#syntax-highlighting
+
+上記で定義されているテーマを設定ファイルに指定すればシンタックスハイライトを有効にした状態でコードを表示することが可能となる。
+
+```toml
+[markdown]
+highlight_code = true
+highlight_theme = "monokai"
+```
+
+以下のように Markdown 形式でコードを記述する。
+
+```rs
+fn main() {
+    println!("Hello World");
+}
+```
+
+これだけで以下のようにシンタックスハイライトを有効にすることができる。
+
+![](assets/first-syntax-highlight.png)
