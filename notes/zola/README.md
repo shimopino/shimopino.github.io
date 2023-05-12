@@ -355,57 +355,14 @@ redirect_to =
 
 ```bash
 └──content
-    └── blogs
+    └── poc
         ├── _index.md
         ├── entry1.md
         ├── entry2.md
         └── entry3.md
 ```
 
-テンプレート側には、以下のようにセクション配下のページ一覧を表示する時に、この順番で表示される。
-
-```tera
-{% for post in section.pages %}
-  <h1><a href="{{ post.permalink }}">{{ post.title }}</a></h1>
-{% endfor %}
-```
-
-```md
-+++
-title = "List of blog posts"
-sort_by = "date"
-template = "blog.html"
-page_template = "blog-page.html"
-+++
-```
-
-```html
-{% extends "base.html" %} {% block content %}
-<h1 class="title">{{ section.title }}</h1>
-<ul>
-  <!-- If you are using pagination, section.pages will be empty. You need to use the paginator object -->
-  {% for page in section.pages %}
-  <li><a href="{{ page.permalink | safe }}">{{ page.title }}</a></li>
-  {% endfor %}
-</ul>
-{% endblock content %}
-```
-
-```md
-+++
-title = "My first post"
-date = 2019-11-27
-+++
-
-This is my first blog post.
-```
-
-```html
-{% extends "base.html" %} {% block content %}
-<h1 class="title">{{ page.title }}</h1>
-<p class="subtitle"><strong>{{ page.date }}</strong></p>
-{{ page.content | safe }} {% endblock content %}
-```
+今回は `content/poc` 配下のセクションに `draft = true` を設定し、本番のページに対してはビルドされないように検証用専用のページとして配置している。
 
 - https://www.getzola.org/documentation/content/section/#front-matter
 
