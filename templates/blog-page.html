@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
+<!-- 以下に個別の記事の content を定義する -->
+
 {% block content %}
-<h1 class="title">
-  {{ page.title }}
-</h1>
+<h1 class="title">{{ page.title }}</h1>
 <p class="subtitle"><strong>{{ page.date }}</strong></p>
+<!-- ここにMarkdownファイルで記述した内容が挿入される -->
 {{ page.content | safe }}
+<!--  -->
 {% endblock content %}

@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1 class="title">
-  {{ section.title }}
-</h1>
+<h1 class="title">{{ section.title }}</h1>
 <ul>
-  <!-- If you are using pagination, section.pages will be empty. You need to use the paginator object -->  
+  <!-- section （今回では blog） に配置されているコンテンツを一覧で取得する -->
   {% for page in section.pages %}
+  <!-- pageオブジェクトで個別の設定を使用する -->
   <li><a href="{{ page.permalink | safe }}">{{ page.title }}</a></li>
   {% endfor %}
 </ul>

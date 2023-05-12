@@ -6,6 +6,10 @@
   - [Github Pages へのデプロイ](#github-pages-へのデプロイ)
     - [疑問点](#疑問点)
   - [最初のページ作成](#最初のページ作成)
+    - [親のテンプレートファイルを作成](#親のテンプレートファイルを作成)
+    - [子側のテンプレートファイルで上書きする](#子側のテンプレートファイルで上書きする)
+    - [ブログセクションの作成](#ブログセクションの作成)
+    - [ブログコンテンツの作成](#ブログコンテンツの作成)
   - [Front Matter](#front-matter)
     - [疑問点](#疑問点-1)
 
@@ -128,6 +132,8 @@ jobs:
 
 ## 最初のページ作成
 
+### 親のテンプレートファイルを作成
+
 公式ページの手順に従ってサンプルページを作成していく。
 
 `template` ディレクトリでは、　`Tera` の構文に従ったテンプレートファイルを定義することができ、ここで定義した HTML ファイルを元に様々なページを作成していく。
@@ -156,9 +162,110 @@ jobs:
 {% endblock content %}
 ```
 
+- https://tera.netlify.app/docs/#base-template
+
+### 子側のテンプレートファイルで上書きする
+
+子側のテンプレートファイルでは、拡張対象のテンプレートで定義されているブロック `content` を上書きすることができる。
+
+`template/index.html` を作成し、以下のように `content` を定義すれば親側の `content` を指定した要素で上書きすることができる。
+
+```html
+{% extends "base.html" %}
+
+<!-- 以下に上書きするブロック content を記述していく -->
+
+{% block content %}
+<h1 class="title">This is my blog made with Zola.</h1>
+{% endblock content %}
+```
+
 ![](assets/first-home-page.png)
 
-- https://tera.netlify.app/docs/#base-template
+### ブログセクションの作成
+
+`content` ディレクトリに Markdown ファイルで記事の内容を記述していく。
+
+```bash
+├── content
+│   └── blog
+│       └── _index.md
+```
+
+上記の構造でファイルを定義すれば、 `<path>/blog` の URL の設定を記述することが可能となる。
+
+例えば TOML 形式で以下の設定を記述すれば、対象 URL で使用するテンプレートファイルであったり、個別の記事で使用するテンプレートやページのタイトル、記事のソート順を指定することができる。
+
+```md
++++
+title = "List of blog posts"
+sort_by = "date"
+template = "blog.html"
+page_template = "blog-page.html"
++++
+```
+
+次にブログのトップページと個別の記事で利用するテンプレートファイルを準備する。
+
+ここでは設定で記述した通りに `template/blog.html` や `template/blog-page.html` を定義していく。
+
+```html
+{% extends "base.html" %}
+
+<!-- 以下で content をどのように上書きするのか記載していく -->
+
+{% block content %}
+<h1 class="title">{{ section.title }}</h1>
+<ul>
+  <!-- section （今回では blog） に配置されているコンテンツを一覧で取得する -->
+  {% for page in section.pages %}
+  <!-- pageオブジェクトで個別の設定を使用する -->
+  <li><a href="{{ page.permalink | safe }}">{{ page.title }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock content %}
+```
+
+### ブログコンテンツの作成
+
+`content/blog` ディレクトリ以下に個別の記事の内容を作成していく。
+
+今回はブログセクションの設定で追加したように `title` と、セクションページで記事をソートするための `date` を設定する。
+
+```md
++++
+title = "My first post"
+date = 2019-11-27
++++
+
+This is my first blog post.
+```
+
+個別の記事に対して、今までと同じように `content` をどのように上書きしていくのかをテンプレートファイルで記述していく。そのときにコンテンツの内容には `page.content` でアクセすることができる。
+
+```html
+{% extends "base.html" %}
+
+<!-- 以下に個別の記事の content を定義する -->
+
+{% block content %}
+<h1 class="title">{{ page.title }}</h1>
+<p class="subtitle"><strong>{{ page.date }}</strong></p>
+<!-- ここにMarkdownファイルで記述した内容が挿入される -->
+{{ page.content | safe }}
+<!--  -->
+{% endblock content %}
+```
+
+同じようなコンテンツファイルを配置すれば、以下のようにセクションファイルと個別のページを作成することができている状態となる。
+
+- セクション: `<url>/blog`
+
+  ![](assets/first-section.png)
+
+- ページ: `<url>/blog/first`
+
+  ![](assets/first-contents.png)
 
 ## Front Matter
 
