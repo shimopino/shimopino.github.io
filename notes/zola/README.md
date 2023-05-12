@@ -11,6 +11,7 @@
     - [ブログセクションの作成](#ブログセクションの作成)
     - [ブログコンテンツの作成](#ブログコンテンツの作成)
     - [Github Pages での対応](#github-pages-での対応)
+    - [使用した各種構文](#使用した各種構文)
   - [Front Matter](#front-matter)
     - [疑問点](#疑問点-1)
 
@@ -289,6 +290,20 @@ base_url = "https://shimopino.github.io"
 ```
 
 これで Github Pages での動作するリンクを構築することができる。
+
+### 使用した各種構文
+
+- `{{  }}`
+  - `expressions` であり各種変数を指定することができる
+- `{%  %}`
+  - `statements` であり for ループであったりブロックの設定ができる
+- `{{ page.content | safe }}`
+
+  - `|` はパイプライン演算子のように、1 つ前の値を式に代入することが可能である
+  - `safe` は指定された値をエスケープ処理することで安全に取り扱うことが可能である
+
+- [Tera Basic](https://tera.netlify.app/docs/#tera-basics)
+- [safe](https://tera.netlify.app/docs/#safe)
 
 ## Front Matter
 
