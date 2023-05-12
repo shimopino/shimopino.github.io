@@ -1,5 +1,14 @@
 # Zola 事始め
 
+- [Zola 事始め](#zola-事始め)
+  - [ディレクトリ構造](#ディレクトリ構造)
+    - [疑問](#疑問)
+  - [Github Pages へのデプロイ](#github-pages-へのデプロイ)
+    - [疑問点](#疑問点)
+  - [最初のページ作成](#最初のページ作成)
+  - [Front Matter](#front-matter)
+    - [疑問点](#疑問点-1)
+
 ## ディレクトリ構造
 
 公式ドキュメントの記載されている `zola init myblog` コマンドを実行すると、以下の構造のディレクトリ・ファイルが生成される。
@@ -117,6 +126,40 @@ jobs:
 
 サブモジュールによるスタイル適用の仕組みは何か？
 
+## 最初のページ作成
+
+公式ページの手順に従ってサンプルページを作成していく。
+
+`template` ディレクトリでは、　`Tera` の構文に従ったテンプレートファイルを定義することができ、ここで定義した HTML ファイルを元に様々なページを作成していく。
+
+以下のように `template/base.html` を作成すれば、 `block` で定義した箇所を child として設定したファイルで上書きすることが可能となる。
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MyBlog</title>
+  </head>
+
+  <body>
+    <section class="section">
+      <div class="container">{% block content %} {% endblock content %}</div>
+    </section>
+  </body>
+</html>
+```
+
+```html
+{% extends "base.html" %} {% block content %}
+<h1 class="title">This is my blog made with Zola.</h1>
+{% endblock content %}
+```
+
+![](assets/first-home-page.png)
+
+- https://tera.netlify.app/docs/#base-template
+
 ## Front Matter
 
 `content` 以下に配置する `_index.md` は、対象のセクションに表示するコンテンツやメタデータの設定を行うことができる。
@@ -163,7 +206,7 @@ redirect_to =
 コンテンツを記述可能
 ```
 
-記事をソートすることもでき、以下のディレクトリ構造出会った場合に、`_index.md` の設定に `sort_by = "date"` を設定し、各ページには `date = "2023-04-01"` などと設定すればその順番でソートされる。
+記事をソートすることもでき、以下のディレクトリ構造出会った場合に、`_index.md` の設定に `sort_by = "date"` を設定し、各ページには `date = 2023-04-01` などと設定すればその順番でソートされる。
 
 ```bash
 └──content
@@ -182,8 +225,45 @@ redirect_to =
 {% endfor %}
 ```
 
+```md
++++
+title = "List of blog posts"
+sort_by = "date"
+template = "blog.html"
+page_template = "blog-page.html"
++++
+```
+
+```html
+{% extends "base.html" %} {% block content %}
+<h1 class="title">{{ section.title }}</h1>
+<ul>
+  <!-- If you are using pagination, section.pages will be empty. You need to use the paginator object -->
+  {% for page in section.pages %}
+  <li><a href="{{ page.permalink | safe }}">{{ page.title }}</a></li>
+  {% endfor %}
+</ul>
+{% endblock content %}
+```
+
+```md
++++
+title = "My first post"
+date = 2019-11-27
++++
+
+This is my first blog post.
+```
+
+```html
+{% extends "base.html" %} {% block content %}
+<h1 class="title">{{ page.title }}</h1>
+<p class="subtitle"><strong>{{ page.date }}</strong></p>
+{{ page.content | safe }} {% endblock content %}
+```
+
 - https://www.getzola.org/documentation/content/section/#front-matter
 
 ### 疑問点
 
-- draft の挙動認識が合っているのか
+- draft の挙動認識が合っているの
