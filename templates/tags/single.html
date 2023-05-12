@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div>
+  <h1>Tag: #{{ term.name }} ({{ term.pages | length }})</h1>
+
+  <a href="{{ config.base_url | safe }}/tags">
+    Show all tags
+  </a>
+
+  <ul>
+    {% for page in term.pages %}
+    <li>
+      <a href="{{ page.permalink | safe }}">
+        {{ page.title }} 投稿日: ({{ page.date | date(format="%Y-%m-%d") }})
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock content %}

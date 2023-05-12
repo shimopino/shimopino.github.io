@@ -15,6 +15,8 @@
     - [使用した各種構文](#使用した各種構文)
   - [Front Matter](#front-matter)
     - [疑問点](#疑問点-1)
+  - [記事へのタグ付け](#記事へのタグ付け)
+    - [単純なグルーピング](#単純なグルーピング)
 
 ## ディレクトリ構造
 
@@ -395,3 +397,133 @@ redirect_to =
 ### 疑問点
 
 - draft の挙動認識が合っているの
+
+## 記事へのタグ付け
+
+### 単純なグルーピング
+
+Zola ではデフォルトで `Taxonomy` というタグ管理の仕組みがサポートされており、事前に定義した Taxonomy のカテゴリに従って、コンテンツをグルーピングすることが可能である。
+
+Zola では、ビルド時に設定されたタグをもとに、全ての Taxonomy がリストアップされたページを作成し、また各 Taxonomy 名に対応するコンテンツの全てをリストアップしたページを作成できる。
+
+まずは `config.toml` に対して事前に Taxonomy を定義する。今回は各記事に対して単純に `tags` を定義し、この `tags` に対してそれぞれ `Rust` や `Terraform` などのグルーピングするための値を設定していく。
+
+```toml
+# name = URLで使用される名称。通常は複数形
+# paginate_by = ここで指定した値を基準にページネーションを行う
+# paginate_path = ページングされた時のページ番号。例えば page/1 のようなURlとなる
+# feed = 各タグに対して生成されるFeed（デフォルトでAtomフィードが生成される）
+# lang = 多言語対応させたい時に利用する
+# render = 対象のタグをレンダリングするかどうか決定する
+taxonomies = [
+    { name = "tags", feed = true},
+]
+```
+
+後は各ページにタグを設定していけば良いが、以下のようにタグ付けをしていく。
+
+```bash
+└──content
+    └── poc
+        ├── _index.md
+        ├── entry1.md # Rust
+        ├── entry2.md # Terraform
+        └── entry3.md # TypeScript
+```
+
+このためには FrontMatter に対して以下のように設定すれば良い。配列なので複数のタグを付与することも可能である。
+
+```md
++++
+title = "Entry1"
+date = 2023-01-01
+
+[taxonomies]
+tags = ["Rust"]
++++
+
+This is date = 2023-01-01
+```
+
+これでコンテンツの準備はできたが、タグの一覧やそれぞれのグループに該当するコンテンツの一覧を表示するためのテンプレートが存在していた眼、ビルドすると以下のようなエラーが発生する。
+
+```bash
+Error: Failed to build the site
+Error: Failed to render a list of tags page.
+Error: Reason: Tried to render `taxonomy_list.html` but the template wasn't found
+```
+
+- https://www.getzola.org/documentation/content/taxonomies/
+- https://www.getzola.org/documentation/templates/taxonomies/
+
+Zola では Taxonomy に対して設定した値に基づき、テンプレートディレクトリの以下のファイルをを使用して、Taxonomy の一覧やそれぞれの値に対応するページを表示できる。
+
+- `$TAXONOMY_NAME/single.html`
+- `$TAXONOMY_NAME/list.html`
+
+それぞれのページでは以下の変数を利用することが可能である（全ては載せていない）。
+
+- $TAXONOMY_NAME/single.html
+  - `config` Web サイトの設定
+  - `taxonomy` 設定した Taxonomy のデータ
+  - `terms` 設定された Taxonomy のグルーピングデータ
+- $TAXONOMY_NAME/list.html
+  - `config` Web サイトの設定
+  - `taxonomy` 設定した Taxonomy のデータ
+  - `term` 描画されている Taxonomy の値
+
+まずは一覧ページを `templates/tags/list.html` として作成する。
+
+```html
+{% extends "base.html" %}
+
+<!-- 以下に上書きするブロック content を記述していく -->
+
+{% block content %}
+<div>
+  <h1>All Tags</h1>
+  <ul>
+    {% for term in terms %}
+    <li>
+      <a href="{{ term.permalink | safe }}">
+        {{ term.name }} ({{ term.pages | length }})
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock content %}
+```
+
+次に特定のタグに該当するページを `templates/tags/single.html` に作成する。
+
+```html
+{% extends "base.html" %}
+
+<!-- 以下に上書きするブロック content を記述していく -->
+
+{% block content %}
+<div>
+  <h1>Tag: #{{ term.name }} ({{ term.pages | length }})</h1>
+
+  <a href="{{ config.base_url | safe }}/tags"> Show all tags </a>
+
+  <ul>
+    {% for page in term.pages %}
+    <li>
+      <a href="{{ page.permalink | safe }}">
+        {{ page.title }} 投稿日: ({{ page.date | date(format="%Y-%m-%d") }})
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock content %}
+```
+
+これで以下のようにタグの一覧ページと個別のページを作成することができた。
+
+- `base_url/tags`
+  ![](assets/first-tags-list.png)
+- `base_url/tags/rust`
+  ![](assets/first-tags-single.png)
