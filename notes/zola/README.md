@@ -320,10 +320,12 @@ base_url = "https://shimopino.github.io"
 - `{%  %}`
   - `statements` であり for ループであったりブロックの設定ができる
 - `{{ page.content | safe }}`
-- `get_url`
-
   - `|` はパイプライン演算子のように、1 つ前の値を式に代入することが可能である
   - `safe` は指定された値をエスケープ処理することで安全に取り扱うことが可能である
+- - `get_url`
+  - 指定されたパスの `permalink` を取得する
+  - 先頭が `@/` で始める場合は `content` ディレクトリから始める内部リンクとして処理する
+  - `static` ファイルを指定することもでき、 `static/css/app.css` を参照したい場合は `get_url("css/app.css")` と指定する
 
 - [Tera Basic](https://tera.netlify.app/docs/#tera-basics)
 - [safe](https://tera.netlify.app/docs/#safe)
