@@ -759,3 +759,31 @@ body {
 これで左右の余白調整ができた状態となったため、あとはヘッダーやフッターを設定していく。
 
 将来的にはマクロなどを活用してヘッダーなどのHTML要素のみを外だしすることも考慮するが、現時点では複雑な構造を導入せずに直接 `templates/base.html` を編集していく。
+
+可能な限りクラスを使用せずにHTMLのセマンティックに従ってスタイリングを行っていきたいので、以下のように個別にスタイル調整を行う箇所以外ではクラスの指定を省くようにする。
+
+```html
+<header>
+  <div class="logo">
+    <a href="{{ config.base_url }}">Blog</a>
+    <span class="cursor"></span>
+  </div>
+  <nav>
+    <a href="/blog" target="_blank" rel="noreferrer noopener">Posts</a>
+    <a href="/tags" target="_blank" rel="noreferrer noopener">Tags</a>
+    <a href="https://github.com/shimopino">Github</a>
+  </nav>
+</header>
+```
+
+あとはヘッダー自体のレイアウト構造に対して以下のように、ナビゲーションも含めて横並びに設定しておき、後は個別にスタイリングを行っていく。
+
+```css
+header {
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+```
