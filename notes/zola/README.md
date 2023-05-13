@@ -582,6 +582,10 @@ fn main() {
 
 ![](assets/first-syntax-highlight.png)
 
+公式サイトで提供されているスタイルを適用すれば、コードの1行が長くなってしまった場合にも、オーバーフローを適用してスクロールにより閲覧できるスタイルに修正することが可能である。
+
+- [Styling Codeblocks](https://www.getzola.org/documentation/content/syntax-highlighting/#styling-codeblocks)
+
 ## 目次
 
 ページやセクションでは `toc` という目次を表す変数を使用することができ、これは Markdown で記述した見出しを配列として抽出することのできる機能である。
