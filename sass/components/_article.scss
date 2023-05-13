@@ -2,3 +2,42 @@ main {
     padding-right: 2rem;
     padding-left: 2rem;
 }
+
+h1 {
+    border-bottom: 2px double $theme-color;
+}
+
+h2 {
+    margin-top: 2rem;
+    border-bottom: 2px double rgba($theme-color, 0.7);
+}
+
+h3 {
+    margin-top: 2rem;
+    border-bottom: 2px double rgba($theme-color, 0.5);
+}
+
+ul {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    list-style-type: none;
+
+    ul {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+}
+
+li {
+    position: relative;
+}
+
+li::before {
+    content: "- ";
+    position: absolute;
+    left: -1rem;
+}
+
+.toc {
+    font-size: 0.75rem;
+}

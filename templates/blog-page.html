@@ -3,36 +3,38 @@
 <!-- 以下に個別の記事の content を定義する -->
 
 {% block content %}
-<h1 class="title">{{ page.title }}</h1>
-<span class="subtitle"><strong>{{ page.date }}</strong></span>
+<h1>{{ page.title }}</h1>
+<span>{{ page.date }}</span>
 
 {% if page.taxonomies and page.taxonomies.tags %}
+  <span>::</span>
   {% for tag in page.taxonomies.tags %}
     {% set tag_url = get_taxonomy_url(kind="tags", name=tag) | safe %}
-    <a href="{{ tag_url }}">#{{ tag }}</a>
+    <a href="{{ tag_url }}">#{{ tag }}</a>&nbsp;
   {% endfor %}
 {% endif %}
-
-<!-- 目次の設定 -->
 
 {% if page.toc %}
-<ul>
-  {% for h1 in page.toc %}
-  <li>
-    <a href="{{ h1.permalink | safe }}">{{ h1.title }}</a>
-    {% if h1.children %}
-    <ul>
-      {% for h2 in h1.children %}
-      <li>
-        <a href="{{ h2.permalink | safe }}">{{ h2.title }}</a>
-      </li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-  </li>
-  {% endfor %}
-</ul>
+<div class="toc">
+  <ul>
+    {% for h1 in page.toc %}
+    <li>
+      <a href="{{ h1.permalink | safe }}">{{ h1.title }}</a>
+      {% if h1.children %}
+      <ul>
+        {% for h2 in h1.children %}
+        <li>
+          <a href="{{ h2.permalink | safe }}">{{ h2.title }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
 {% endif %}
+
 
 <!-- ここにMarkdownファイルで記述した内容が挿入される -->
 {{ page.content | safe }}
