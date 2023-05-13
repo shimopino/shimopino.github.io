@@ -1,0 +1,19 @@
+// dark theme base
+
+$theme-color: rgb(255, 153, 0);
+$theme-background: rgb(54, 70, 78);
+$theme-text: rgb(120, 144, 155);
+$theme-text: rgb(190, 206, 214);
+$theme-sub1: rgb(84, 109, 120);
+$theme-sub2: rgb(96, 124, 138);
+
+body {
+    background-color: $theme-background;
+    color: $theme-text;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 3px solid $theme-color;
+}
