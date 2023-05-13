@@ -25,6 +25,7 @@
     - [カスタムフォントの設定](#カスタムフォントの設定)
     - [ページ全体のテーマカラー設定](#ページ全体のテーマカラー設定)
     - [ページ全体のレイアウト設定](#ページ全体のレイアウト設定)
+  - [Feed の設定](#feed-の設定)
 
 ## ディレクトリ構造
 
@@ -582,7 +583,7 @@ fn main() {
 
 ![](assets/first-syntax-highlight.png)
 
-公式サイトで提供されているスタイルを適用すれば、コードの1行が長くなってしまった場合にも、オーバーフローを適用してスクロールにより閲覧できるスタイルに修正することが可能である。
+公式サイトで提供されているスタイルを適用すれば、コードの 1 行が長くなってしまった場合にも、オーバーフローを適用してスクロールにより閲覧できるスタイルに修正することが可能である。
 
 - [Styling Codeblocks](https://www.getzola.org/documentation/content/syntax-highlighting/#styling-codeblocks)
 
@@ -802,4 +803,30 @@ header {
   ::
   <span>Made by <a href="https://www.getzola.org/">Zola</a></span>
 </footer>
+```
+
+## Feed の設定
+
+Zola ではデフォルトで Feed の機能をサポートしており、 `config.toml` ファイルに `generate_feed = true` を設定すれば、サイトの Feed ファイルを作成することが可能である。
+
+このときに設定で `feed_filename` を設定していればその名前でファイルが生成されるが、指定されていない場合はデフォルトの `atom.xml` が生成される。
+
+ファイル名には `atom.xml` を指定すれば組み込みの Atom テンプレートで Atom 1.0 形式で生成され、 `rss.xml` を指定すれば組み込みのテンプレートを使用して RSS 2.0 形式で生成され、それ以外のファイル名では自身でテンプレートを用意する必要がある。
+
+```toml
+generate_feed = true
+feed_filename = "rss.xml"
+```
+
+`templates/base.html` ファイルに以下のコードを指定して、記事の自動検出を有効にし、フィードリーダーやブラウザが Web サイトで利用可能な RSS や Atom フィードについて通知できるようになる。
+
+```html
+{%- if config.generate_feed %} <link rel="alternate" type="application/rss+xml"
+title="RSS" href="{{ get_url(path="rss.xml") | safe }}"> {% endif -%}
+```
+
+画面でリンクを表示させたい場合には、以下のようにリンクを追加すればいい。
+
+```html
+<a href="{{ get_url(path="rss.xml") | safe }}">Feed</a>
 ```

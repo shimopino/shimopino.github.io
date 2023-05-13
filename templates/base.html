@@ -11,6 +11,12 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
       rel="stylesheet"
     />
+
+    {%- if config.generate_feed %}
+      <link rel="alternate" type="application/rss+xml"
+    title="RSS" href="{{ get_url(path="rss.xml") | safe }}">
+    {% endif -%}
+
     <title>MyBlog</title>
   </head>
 
@@ -25,6 +31,7 @@
           <a href="/blog" target="_blank" rel="noreferrer noopener">Posts</a>
           <a href="/tags" target="_blank" rel="noreferrer noopener">Tags</a>
           <a href="https://github.com/shimopino">Github</a>
+          <a href="{{ get_url(path="rss.xml") | safe }}">Feed</a>
         </nav>
       </header>
 
