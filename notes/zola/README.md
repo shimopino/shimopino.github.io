@@ -20,6 +20,9 @@
     - [使用した各種構文](#使用した各種構文-1)
   - [シンタックスハイライト](#シンタックスハイライト)
   - [目次](#目次)
+  - [スタイルの設定](#スタイルの設定)
+    - [Sass の適用](#sass-の適用)
+    - [カスタムフォントの設定](#カスタムフォントの設定)
 
 ## ディレクトリ構造
 
@@ -638,3 +641,94 @@ date = 2023-01-10
 ![](assets/first-heading-2.png)
 
 こうして設定した目次に対してスタイリングを行えば十分見やすい目次に変更することが可能である。
+
+## スタイルの設定
+
+### Sass の適用
+
+スタイルの設定は `sass` ディレクトリに Sass ファイルを配置しておけば、CSS ファイルにコンパイルされて同じディレクトリ構造で `public` ディレクトリ以下に配置される。
+
+```bash
+├── sass
+│   ├── main.scss
+│   └── layout
+│       ├── header.scss
+│       └── footer.scss
+└── public # 同じ構造で以下のようにコンパイルされる
+    ├── main.css
+    └── layout
+        ├── header.css
+        └── footer.css
+```
+
+テンプレート側から CSS ファイルを参照する場合には、以下の 2 つの方法がある。
+
+```html
+<!-- ルートディレクトリを指定するパターン -->
+<!-- これは Web サイトのルートディレクトリを指している -->
+<link rel="stylesheet" href="/main.css" />
+
+<!-- `get_url` を指定するパターン -->
+<!-- ファイルへの URL を動的に生成する -->
+<link rel="stylesheet" href="{{ get_url(path="main.css", trailing_slash=false) |
+safe }}">
+```
+
+後者の `get_url` を使用するパターンであれば、Zola の設定ファイルや生成されるファイルの位置に基づいて動作するので、今回はこちらを採用する。
+
+なお `public` ディレクトリに全ての Sass ファイルをコンパイルしたくない場合は、アンダーバーをつけて `_header.scss` のようにすれば、依存関係は解決された状態でファイル自体はコンパイルされないように設定できる。
+
+### カスタムフォントの設定
+
+カスタムフォントを設定する場合には、CDN 経由で配信されているフォントファイルをダウンロードする形式と、サーバーに保存されたフォントファイルを配信するパターンがある。
+
+CDN からフォントファイルを利用する際には、HTML へリンクを追加した後で、CSS でフォントファミリーを指定する必要がある。
+
+```html
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+</head>
+```
+
+```css
+body {
+  font-family: "Noto Sans JP", sans-serif;
+  font-weight: 400;
+}
+```
+
+サーバーにフォントファイルを配置する場合には `static` ディレクトリに配置して利用することが可能となる。
+
+```bash
+├── static
+│   └── fonts
+│       ├── HackGen-Bold.ttf
+│       └── HackGen-Regular.ttf
+└── public # 同じ構造で以下のようにコンパイルされる
+    └── fonts
+        ├── HackGen-Bold.ttf
+        └── HackGen-Regular.ttf
+```
+
+これでコンパイルされることを前提に以下のように Sass ファイルから参照すれば良い。
+
+```css
+@font-face {
+  font-family: "HackGen";
+  src: url("fonts/HackGen-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "HackGen";
+  src: url("fonts/HackGen-Bold.ttf") format("truetype");
+  font-weight: 700;
+}
+```
+
+- [yuru7/HackGen](https://github.com/yuru7/HackGen)

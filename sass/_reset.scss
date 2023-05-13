@@ -1,0 +1,22 @@
+// box-sizingモデルを適用する
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+// デフォルトの margin を削除する
+* {
+    margin: 0;
+}
+
+// 子要素で 100% を指定した時に画面比で設定できるようにする
+html,
+body {
+    height: 100%;
+}
+
+// 行ごとの高さを調整
+body {
+    line-height: 1.5;
+}
