@@ -1,11 +1,7 @@
 // dark theme base
-
 $theme-color: rgb(255, 153, 0);
-$theme-background: rgb(54, 70, 78);
-$theme-text: rgb(120, 144, 155);
-$theme-text: rgb(190, 206, 214);
-$theme-sub1: rgb(84, 109, 120);
-$theme-sub2: rgb(96, 124, 138);
+$theme-background: rgb(43, 43, 43);
+$theme-text: rgb(184, 184, 184);
 
 body {
     background-color: $theme-background;
@@ -13,6 +9,7 @@ body {
 }
 
 a {
+    cursor: pointer;
     text-decoration: none;
     color: $theme-text;
     border-bottom: 2px dotted $theme-color;

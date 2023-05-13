@@ -744,7 +744,11 @@ body {
 そのために `templates/base.html` のトップレベルのセクションの対して余白調整を行うためのスタイルを設定する。
 
 ```html
-<div class="container">{% block content %} {% endblock content %}</div>
+<div class="container">
+  <header></header>
+  <main>{% block content %} {% endblock content %}</main>
+  <footer></footer>
+</div>
 ```
 
 ```css
