@@ -2,11 +2,21 @@
 
 {% block content %}
 <h1 class="title">{{ section.title }}</h1>
-<ul>
-  <!-- section （今回では blog） に配置されているコンテンツを一覧で取得する -->
-  {% for page in section.pages %}
-  <!-- pageオブジェクトで個別の設定を使用する -->
-  <li><a href="{{ page.permalink | safe }}">{{ page.title }}</a></li>
+
+<!-- section （今回では blog） に配置されているコンテンツを一覧で取得する -->
+{% for page in section.pages %}
+<article>
+  <div><a href="{{ page.permalink | safe }}">{{ page.title }}</a></div>
+  <div>
+    <span>{{ page.date }}</span>
+    {% if page.taxonomies and page.taxonomies.tags %}
+  <span>::</span>
+  {% for tag in page.taxonomies.tags %}
+    {% set tag_url = get_taxonomy_url(kind="tags", name=tag) | safe %}
+    <a href="{{ tag_url }}">#{{ tag }}</a>&nbsp;
   {% endfor %}
-</ul>
+{% endif %}
+  </div>
+</article>
+{% endfor %}
 {% endblock content %}
