@@ -14,6 +14,11 @@ body {
 
 a {
     text-decoration: none;
-    color: inherit;
-    border-bottom: 3px solid $theme-color;
+    color: $theme-text;
+    border-bottom: 2px dotted $theme-color;
+}
+
+a:hover {
+    color: $theme-background;
+    background-color: $theme-text;
 }
