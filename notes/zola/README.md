@@ -744,23 +744,21 @@ body {
 そのために `templates/base.html` のトップレベルのセクションの対して余白調整を行うためのスタイルを設定する。
 
 ```html
-<div class="container">
-  {% block content %} {% endblock content %}
-</div>
+<div class="container">{% block content %} {% endblock content %}</div>
 ```
 
 ```css
 .container {
-    max-width: 960px;
-    margin: 0 auto;
+  max-width: 960px;
+  margin: 0 auto;
 }
 ```
 
 これで左右の余白調整ができた状態となったため、あとはヘッダーやフッターを設定していく。
 
-将来的にはマクロなどを活用してヘッダーなどのHTML要素のみを外だしすることも考慮するが、現時点では複雑な構造を導入せずに直接 `templates/base.html` を編集していく。
+将来的にはマクロなどを活用してヘッダーなどの HTML 要素のみを外だしすることも考慮するが、現時点では複雑な構造を導入せずに直接 `templates/base.html` を編集していく。
 
-可能な限りクラスを使用せずにHTMLのセマンティックに従ってスタイリングを行っていきたいので、以下のように個別にスタイル調整を行う箇所以外ではクラスの指定を省くようにする。
+可能な限りクラスを使用せずに HTML のセマンティックに従ってスタイリングを行っていきたいので、以下のように個別にスタイル調整を行う箇所以外ではクラスの指定を省くようにする。
 
 ```html
 <header>
@@ -780,10 +778,20 @@ body {
 
 ```css
 header {
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
 }
+```
+
+フッターには以下のようにシンプルにコピーライトと Zola へのリンクのみを設定する。
+
+```html
+<footer>
+  <span>© 2023 shimopino. All rights reserved.</span>
+  ::
+  <span>Made by <a href="https://www.getzola.org/">Zola</a></span>
+</footer>
 ```
