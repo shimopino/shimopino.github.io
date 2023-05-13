@@ -1,0 +1,23 @@
+@import "../theme";
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+table td,
+table tr {
+    width: 50%;
+    vertical-align: top;
+    border: 1px solid $theme-text;
+    line-height: 1.5;
+    padding: 0.5rem;
+}
+
+table thead tr th {
+    width: 50%;
+    font-weight: 700;
+    border: 1px solid $theme-text;
+    padding: 0.5rem;
+}
