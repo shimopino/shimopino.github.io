@@ -26,6 +26,8 @@
     - [ページ全体のテーマカラー設定](#ページ全体のテーマカラー設定)
     - [ページ全体のレイアウト設定](#ページ全体のレイアウト設定)
   - [Feed の設定](#feed-の設定)
+  - [Shortcodesを利用した重複の削除](#shortcodesを利用した重複の削除)
+  - [404ページ](#404ページ)
 
 ## ディレクトリ構造
 
@@ -829,4 +831,18 @@ title="RSS" href="{{ get_url(path="rss.xml") | safe }}"> {% endif -%}
 
 ```html
 <a href="{{ get_url(path="rss.xml") | safe }}">Feed</a>
+```
+
+## Shortcodesを利用した重複の削除
+
+## 404ページ
+
+どのURLにも該当しない場合に表示する 404 ページは単純に `templates/404.html` を用意すれば、このテンプレートファイルを利用して描画される。
+
+```html
+{% extends "base.html" %}
+
+{% block content %}
+<h1>404 Not Found</h1>
+{% endblock content %}
 ```
