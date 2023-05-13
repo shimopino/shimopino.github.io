@@ -26,8 +26,8 @@
     - [ページ全体のテーマカラー設定](#ページ全体のテーマカラー設定)
     - [ページ全体のレイアウト設定](#ページ全体のレイアウト設定)
   - [Feed の設定](#feed-の設定)
-  - [Shortcodesを利用した重複の削除](#shortcodesを利用した重複の削除)
-  - [404ページ](#404ページ)
+  - [404 ページ](#404-ページ)
+  - [Macros を利用した重複の削除](#macros-を利用した重複の削除)
 
 ## ディレクトリ構造
 
@@ -833,16 +833,71 @@ title="RSS" href="{{ get_url(path="rss.xml") | safe }}"> {% endif -%}
 <a href="{{ get_url(path="rss.xml") | safe }}">Feed</a>
 ```
 
-## Shortcodesを利用した重複の削除
+## 404 ページ
 
-## 404ページ
+どの URL にも該当しない場合に表示する 404 ページは単純に `templates/404.html` を用意すれば、このテンプレートファイルを利用して描画される。
 
-どのURLにも該当しない場合に表示する 404 ページは単純に `templates/404.html` を用意すれば、このテンプレートファイルを利用して描画される。
-
-```html
+```jinja2
 {% extends "base.html" %}
 
 {% block content %}
 <h1>404 Not Found</h1>
 {% endblock content %}
 ```
+
+## Macros を利用した重複の削除
+
+ZolaではTeraのマクロ機能を利用して、重複するコードを関数化させることが可能である。
+
+例えば以下のように `templates/macros/sample.html` に対して入力された値をベースに `input` 要素を作成する関数を作成する。
+
+```jinja2
+{% macro input(label, type="text") %}
+  <label>
+    {{ label }}
+    <input type="{{ type }}" />
+  </label>
+{% endmacro input %}
+```
+
+このマクロを利用するには対象のテンプレートファイルから以下のようにインポートし、別名を付与する。
+
+```html
+{% import "macros/sample.html" as sample_macro %}
+```
+
+あとは付与した別名を元に対象のマクロを呼び出せば処理が実行される。
+
+```html
+{{ sample_macros::input(label="Name", type="text") }}
+```
+
+- [Tera macros](https://tera.netlify.app/docs#macros)
+
+今回は個別のページや記事一覧ページで利用しているタグつけの部分をマクロ化させていくため、以下のように専用のマクロを用意する。
+
+```html
+{% macro tags(page) %}
+  {% if page.taxonomies and page.taxonomies.tags %}
+    <span>::</span>
+    {% for tag in page.taxonomies.tags %}
+        {% set tag_url = get_taxonomy_url(kind="tags", name=tag) | safe %}
+        <a href="{{ tag_url }}">#{{ tag }}</a>&nbsp;
+    {% endfor %}
+  {% endif %}
+{% endmacro tags %}
+```
+
+あとはこのマクロを `base.html` で読み込んでおく。
+
+```html
+{% import "macros/tags.html" as tags_macro %}
+```
+
+そして `blog.html` や `blog-page.html` でタグを定義している箇所で、このマクロを呼び出せばタグ部分のHTML箇所を1箇所に集約することができる。
+
+```html
+{{ tags_macro::tags(page=page) }}
+```
+
+他にも記事の目次などは、マクロ化させておくと記事の構造を変更する時に変更箇所がはっきりと理解できるようになる（あまりにも乱用すると処理が分散してしまっていることによる可読性の悪化がひどくなるので注意）。

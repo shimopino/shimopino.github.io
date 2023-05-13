@@ -9,13 +9,7 @@
   <div><a href="{{ page.permalink | safe }}">{{ page.title }}</a></div>
   <div>
     <span>{{ page.date }}</span>
-    {% if page.taxonomies and page.taxonomies.tags %}
-  <span>::</span>
-  {% for tag in page.taxonomies.tags %}
-    {% set tag_url = get_taxonomy_url(kind="tags", name=tag) | safe %}
-    <a href="{{ tag_url }}">#{{ tag }}</a>&nbsp;
-  {% endfor %}
-{% endif %}
+    {{ tags_macro::tags(page=page) }}
   </div>
 </article>
 {% endfor %}
