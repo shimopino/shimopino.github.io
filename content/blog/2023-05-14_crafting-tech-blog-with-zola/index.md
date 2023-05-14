@@ -248,17 +248,19 @@ This is my first blog post.
 {% endblock content %}
 ```
 
-ここまで完了すれば、以下のようにセクションページと個別のページが作成されていることが確認できます。
+ここまで完了すれば、以下のようにセクションページと個別のページが作成されていることが確認できます。なお確認のために `content/blog/second.md` という追加の記事を配置しています。
 
 - セクション: `<base_url>/blog`
 
-  - 確認のために `content/blog/second.md` という追加の記事を配置しています
-
-  ![](assets/first-section.png)
+  {{ image(src="assets/first-section.png",
+           alt="ブログ記事の一覧ページ",
+           width="300px") }}
 
 - ページ: `<base_url>/blog/first`
 
-  ![](assets/first-contents.png)
+  {{ image(src="assets/first-contents.png",
+           alt="ブログ記事のページ",
+           width="300px") }}
 
 ### トップページにリンクを追加する
 
@@ -511,11 +513,15 @@ Zola では Taxonomy に対して設定した値に基づき、テンプレー�
 
 - `<base_url>/tags`
 
-  ![](assets/first-tags-list.png)
+  {{ image(src="assets/first-tags-list.png",
+           alt="タグの一覧ページ",
+           width="300px") }}
 
 - `<base_url>/tags/rust`
 
-  ![](assets/first-tags-single.png)
+  {{ image(src="assets/first-tags-single.png",
+           alt="Rustのタグのページ",
+           width="300px") }}
 
 ### 使用した各種構文
 
@@ -871,3 +877,40 @@ Zola では Tera のマクロ機能を利用して、重複するコードを関
 ```
 
 他にも記事の目次などは、マクロ化させておくと記事の構造を変更する時に変更箇所がはっきりと理解できるようになります（あまりにも乱用すると処理が分散してしまっていることによる可読性の悪化がひどくなるので注意が必要です）。
+
+## Shortcodes を利用する
+
+Markdown で記述した記事の中に画像への参照が含まれている場合、以下のようにパスや alt テキストを指定するだけで、画像のサイズを設定することができません。
+
+```md
+![caption](./path/to/image.png)
+```
+
+こうした場合に Shortcodes の機能を利用すれば、Markdown ファイルから事前に定義された HTML 要素を呼び出すことで、追加の属性などを設定することができます。
+
+[Shortcodes | Zola](https://www.getzola.org/documentation/content/shortcodes/)
+
+まずは `templates/shortcodes/image.html` を作成し、以下のようにテンプレートを作成します。
+
+```jinja2
+{% if src %}
+  <img
+    src="{{ src | safe }}"
+    {% if alt %} alt="{{ alt }}" {% endif %}
+    {% if width %} width="{{ width }}" {% endif %}
+    {% if center %}
+      style="display: block; margin: 0 auto;"
+    {% endif %}
+  />
+{% endif %}
+```
+
+あとは Markdown 側でこのファイルを指定して、所定の引数を指定すれば簡易的にスタイルを調整した HTML 要素を記述することが可能です。
+
+```md
+{{ image(src="assets/first-section.png",
+         alt="sample",
+         width="300px") }}
+```
+
+これで Markdown 側からも柔軟に HTML 要素を指定することが可能であることがわかりました。
