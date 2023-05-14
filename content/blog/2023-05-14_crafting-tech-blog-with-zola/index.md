@@ -14,6 +14,11 @@ Zola は Jinja2 に似た Tera テンプレートエンジンを使用してお�
 
 今回は Zola を使って技術ブログを構築した手順を残していこうと思います。
 
+```bash
+$ zola --version
+zola 0.17.2
+```
+
 ## Zola のセットアップ
 
 公式ドキュメントに記載されている `zola init myblog` コマンドを実行すれば、下記の構造のディレクトリ・ファイルが生成されます。
@@ -121,3 +126,136 @@ Github Actions が実行されると、新しく `gh-pages` ブランチが作�
 ![](assets/github-pages-first-deploy.png)
 
 [Github Pages | Deployment | Zola](https://www.getzola.org/documentation/deployment/github-pages/)
+
+## 最初のブログ記事を作成する
+
+### ベースとなるテンプレートファイルを作成する
+
+公式ページの手順に従ってサンプルページを作成していけば、おおよそのテンプレートやコンテンツの挙動を理解することができます。
+
+[Overview | Zola](https://tera.netlify.app/docs/#base-template)
+
+`template` ディレクトリでは、　`Tera` の構文に従ったテンプレートファイルを定義することができ、ここで定義した HTML ファイルを元に様々なページを作成していきます。
+
+以下のように `template/base.html` を作成すれば、 `block` で定義した箇所を child として設定したテンプレートファイルで上書きすることができます。
+
+```jinja2
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MyBlog</title>
+  </head>
+
+  <body>
+    <section class="section">
+      <div class="container">
+        {% block content %}
+        (* このテンプレートを継承すれば、この部分を上書きすることができる *)
+        {% endblock content %}
+      </div>
+    </section>
+  </body>
+</html>
+```
+
+### テンプレートファイルを拡張する
+
+child のテンプレートでは親側のテンプレートファイルを拡張し、拡張対象のテンプレートで定義されているブロック `content` を上書きすることが可能です。
+
+`template/index.html` を作成し、以下のように `content` を定義すれば親側の `content` を指定した要素で上書きすることができます。
+
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">This is my blog made with Zola.</h1>
+{% endblock content %}
+```
+
+![](assets/first-home-page.png)
+
+### ブログセクションの作成
+
+`content` ディレクトリには Markdown ファイルで記述した記事の内容を配置していきます。
+
+```bash
+├── content
+│   └── blog
+│       └── _index.md
+```
+
+Zola ではファイルベースのパスを構築するため、上記の構造でファイルを定義すれば、 `<base_url>/blog` の URL の設定を記述することが可能です。
+
+例えば TOML 形式で以下の設定を記述すれば、対象 URL で使用するテンプレートファイルであったり、個別の記事で使用するテンプレートやページのタイトル、記事のソート順を指定することができます。
+
+```md
++++
+title = "List of blog posts"
+sort_by = "date"
+template = "blog.html"
+page_template = "blog-page.html"
++++
+```
+
+次にブログのトップページと個別の記事で利用するテンプレートファイルを準備します。
+
+ここでは公式ドキュメントに従い、設定で記述した通りに `template/blog.html` や `template/blog-page.html` を定義してきます。
+
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="title">{{ section.title }}</h1>
+<ul>
+  <!-- section （今回では blog） に配置されているコンテンツを一覧で取得する -->
+  {% for page in section.pages %}
+    <!-- pageオブジェクトで個別の設定を使用する -->
+    <li>
+      <a href="{{ page.permalink | safe }}">{{ page.title }}</a>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock content %}
+```
+
+### ブログコンテンツの作成
+
+`_index.md` というファイル名は対象のディレクトリに対してセクションの設定を行うことが可能ですが、 `content/blog` ディレクトリにそれ以外のファイル名で記事を作成していくことで、個別の記事のページを作成することが可能です。
+
+今回は最初の記事として `content/blog/first.md` ファイルを作成し、ブログセクションの設定で追加したように `title` と、セクションページで記事をソートするための `date` を設定します。
+
+```md
++++
+title = "My first post"
+date = 2019-11-27
++++
+
+This is my first blog post.
+```
+
+個別の記事に対して、今までと同じように `content` をどのように上書きしていくのかをテンプレートファイルで記述していきます。そのときにコンテンツの内容には `page.content` という変数でアクセスすることが可能です。
+
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+  <h1 class="title">{{ page.title }}</h1>
+  <p class="subtitle"><strong>{{ page.date }}</strong></p>
+
+  <!-- ここにMarkdownファイルで記述した内容が挿入される -->
+  {{ page.content | safe }}
+{% endblock content %}
+```
+
+ここまで完了すれば、以下のようにセクションページと個別のページが作成されていることが確認できます。
+
+- セクション: `<base_url>/blog`
+
+  - 確認のために `content/blog/second.md` という追加の記事を配置しています
+
+  ![](assets/first-section.png)
+
+- ページ: `<base_url>/blog/first`
+
+  ![](assets/first-contents.png)
