@@ -46,3 +46,10 @@ article {
     margin-top: 1rem;
     margin-bottom: 1rem;
 }
+
+// 画像の最大横幅を親要素の100%に制限することで親要素からはみ出ないように制限できる
+// height: auto を設定することで画像のアスペクト比を維持するために設定する
+img {
+    max-width: 100%;
+    height: auto;
+}
