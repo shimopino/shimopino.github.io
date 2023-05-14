@@ -530,3 +530,344 @@ Zola では Taxonomy に対して設定した値に基づき、テンプレー�
 
 - [length | Tera](https://tera.netlify.app/docs/#length)
 - [date(format) | Tera](https://tera.netlify.app/docs/#date)
+
+## 目次の作成
+
+ページやセクションでは `toc` という目次を表す変数を使用することができ、これは Markdown で記述した見出しを配列として抽出することのできる機能です。
+
+[Table of Contents | Zola](https://www.getzola.org/documentation/content/table-of-contents/)
+
+例えば記事の内容を以下のように記述します。
+
+```md
++++
+title = "Table of Contentsの検証"
+date = 2023-01-10
++++
+
+# 見出しレベル 1
+
+## 見出しレベル 2-1
+
+### 見出しレベル 2-1-1
+
+### 見出しレベル 2-1-2
+
+### 見出しレベル 2-1-3
+
+## 見出しレベル 2-2
+
+## 見出しレベル 2-3
+```
+
+次に各ページのテンプレートを記述している箇所に、以下のように `toc` の変数を通じて各種の見出しレベルを抽出します。
+
+```jinja2
+{# 目次を抽出することが可能なときのみHTMLに反映する #}
+{% if page.toc %}
+  <ul>
+    {# h1が取れているわけではなく、その記事のトップレベルの見出し要素を取得する #}
+    {% for h1 in page.toc %}
+      <li>
+        <a href="{{ h1.permalink | safe }}">{{ h1.title }}</a>
+
+        {# さらに下位の階層の見出しがあればHTMLに書き出す #}
+        {% if h1.children %}
+          <ul>
+            {% for h2 in h1.children %}
+              <li>
+                <a href="{{ h2.permalink | safe }}">{{ h2.title }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+```
+
+ここでは見出しレベル 2 までの要素で目次が構築されます。
+
+![](assets/first-heading-1.png)
+
+テンプレートで指定している `toc` は必ず見出しレベル 1 のものから抽出されるわけではなく、設定されている Markdown のコンテンツに依存します。
+
+例えば Markdown のファイルの中から見出しレベル 1 の箇所をコメントアウトすれば、以下のように目次が生成されます。
+
+![](assets/first-heading-2.png)
+
+例えばページで 1 つのみ設定する `h1` レベルの見出しに関しては、FrontMatter の `title` 要素で設定を行い、Markdown 形式の記事の中身では `h2` レベル以下の見出ししか使用しない、といったルールを設ければスタイル調整などにも一貫性を持たせることが可能かもしれない。
+
+## スタイルの設定
+
+### Sass を利用する
+
+スタイルの設定は `sass` ディレクトリに Sass ファイルを配置しておけば、CSS ファイルにコンパイルされて同じディレクトリ構造で `public` ディレクトリ以下に配置されます。
+
+```bash
+├─ sass
+│   ├─ main.scss
+│   └─ layout
+│          ├─ header.scss
+│          └─ footer.scss
+└─ public # 同じ構造で以下のようにコンパイルされる
+        ├─ main.css
+        └─ layout
+              ├─ header.css
+              └─ footer.css
+```
+
+テンプレート側から CSS ファイルを参照する場合には、以下の 2 つの方法があります。
+
+```jinja2
+{# ルートディレクトリを指定するパターン #}
+{# これは Web サイトのルートディレクトリを指している #}
+<link rel="stylesheet" href="/main.css" />
+
+{# `get_url` を指定するパターン #}
+{# ファイルへの URL を動的に生成する #}
+<link rel="stylesheet" href="{{ get_url(path="main.css", trailing_slash=false) |
+safe }}">
+```
+
+後者の `get_url` を使用するパターンであれば、Zola の設定ファイルや生成されるファイルの位置に基づいて動作するので、基本的にはこちらを採用します。
+
+なお `public` ディレクトリに全ての Sass ファイルをコンパイルしたくない場合は、アンダーバーをつけて `_header.scss` のようにすれば、依存関係は解決された状態でファイル自体はコンパイルされないように設定できます。
+
+### カスタムフォントの設定
+
+カスタムフォントを設定する場合には、CDN 経由で配信されているフォントファイルをダウンロードする形式と、サーバーに保存されたフォントファイルを配信するパターンがあります。
+
+CDN からフォントファイルを利用する際には、HTML へリンクを追加した後で、CSS でフォントファミリーを指定する必要があります。
+
+```html
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+</head>
+```
+
+CSS では以下のようにフォントを指定すれば対応完了です。
+
+```css
+body {
+  font-family: "Noto Sans JP", sans-serif;
+  font-weight: 400;
+}
+```
+
+サーバーにフォントファイルを配置する場合には `static` ディレクトリにフォントファイルを配置して利用することが可能です。
+
+```bash
+├─ static
+│   └─ fonts
+│           ├─ HackGen-Bold.ttf
+│           └─ HackGen-Regular.ttf
+└─ public # 同じ構造で以下のようにコンパイルされる
+        └─ fonts
+                ├─ HackGen-Bold.ttf
+                └─ HackGen-Regular.ttf
+```
+
+今回はプログラミングフォント 白源（はくげん / HackGen）を利用します。
+
+[HackGen](https://github.com/yuru7/HackGen)
+
+これでコンパイルされることを前提に以下のように Sass ファイルから参照することが可能です。
+
+```css
+@font-face {
+  font-family: "HackGen";
+  src: url("fonts/HackGen-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "HackGen";
+  src: url("fonts/HackGen-Bold.ttf") format("truetype");
+  font-weight: 700;
+}
+```
+
+### ページ全体のテーマカラー設定
+
+直接的には Zola とは関係ない箇所ではありますが、サイトを構築した時の手順として記録を残しておきます。
+
+ページ全体のテーマカラーや背景色、テキストカラーを設定する時には [ColorMagic](https://colormagic.app/) というサービスを利用することができ、指定したキーワードの雰囲気やイメージに合った配色を簡単に作成することができます。
+
+今回は何度か配色生成を行い、このブログサイトの各種カラーを設定しています。
+
+### ページ全体のレイアウト設定
+
+まずはヘッダーやコンテンツ、フッターを含めたページ全体のスタイル調整を行なっていきますが、可能な限りセマンティックな HTML タグを利用してクラスを利用しないスタイリングを採用します。
+
+このクラスレスなスタイリングの方法は [PicoCSS](https://picocss.com/) を参考にしています。
+
+そのために `templates/base.html` のトップレベルのセクションの対して余白調整を行うためのスタイルを設定します。
+
+```jinja2
+<div class="container">
+  <header></header>
+  <main>{% block content %} {% endblock content %}</main>
+  <footer></footer>
+</div>
+```
+
+今回はブログの横幅などの全体的なスタイルを以下のように設定します。
+
+```css
+.container {
+  height: 100%;
+  max-width: 50rem;
+  margin: 0 auto;
+}
+```
+
+これで左右の余白調整ができた状態となったため、あとはヘッダーやフッターを設定していきます。
+
+将来的にはマクロなどを活用してヘッダーなどの HTML 要素のみを外だしすることも考慮しますが、現時点では複雑な構造を導入せずに直接 `templates/base.html` を編集していきます。
+
+ヘッダーに対しては以下のようにナビゲーションなどの HTML 構造を定義します。
+
+```jinja2
+<header>
+  <div class="logo">
+    <a href="{{ config.base_url }}">Blog</a>
+    <span class="cursor"></span>
+  </div>
+  <nav>
+    <a href="/blog" target="_blank" rel="noreferrer noopener">Posts</a>
+    <a href="/tags" target="_blank" rel="noreferrer noopener">Tags</a>
+    <a href="https://github.com/shimopino" target="_blank" rel="noreferrer noopener">Github</a>
+  </nav>
+</header>
+```
+
+あとはヘッダー自体のレイアウト構造に対して以下のように、ナビゲーションも含めて横並びに設定しておき、後は個別にスタイリングをすれば完了です。
+
+```css
+header {
+  padding: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+```
+
+フッターには以下のようにシンプルにコピーライトと Zola へのリンクのみを設定します。
+
+```jinja2
+<footer>
+  <span>© 2023 shimopino. All rights reserved.</span>
+  ::
+  <span>Made by <a href="https://www.getzola.org/">Zola</a></span>
+</footer>
+```
+
+## Feed の設定
+
+Zola ではデフォルトで Feed の機能をサポートしており、 `config.toml` ファイルに `generate_feed = true` を設定すれば、サイトの Feed ファイルを作成することができます。
+
+このときに設定で `feed_filename` を設定していればその名前でファイルが生成されますが、指定されていない場合はデフォルトの `atom.xml` が生成されます。
+
+ファイル名には `atom.xml` を指定すれば組み込みの Atom テンプレートで Atom 1.0 形式で生成され、 `rss.xml` を指定すれば組み込みのテンプレートを使用して RSS 2.0 形式で生成され、それ以外のファイル名では自身でテンプレートを用意する必要があります。
+
+```toml
+generate_feed = true
+feed_filename = "rss.xml"
+```
+
+`templates/base.html` ファイルに以下のコードを指定して、記事の自動検出を有効にし、フィードリーダーやブラウザが Web サイトで利用可能な RSS や Atom フィードについて通知できるようにします。
+
+```jinja2
+{%- if config.generate_feed %}
+  <link rel="alternate" type="application/rss+xml"
+title="RSS" href="{{ get_url(path="rss.xml") | safe }}">
+{% endif -%}
+```
+
+画面でリンクを表示させたい場合には、以下のようにリンクを追加するだけで対応できます。
+
+```html
+<a href="{{ get_url(path="rss.xml") | safe }}" target="_blank" rel="noreferrer noopener">Feed</a>
+```
+
+[Feed | Zola](https://www.getzola.org/documentation/templates/feeds/)
+
+## 404 ページ
+
+どの URL にも該当しない場合に表示する 404 ページは単純に `templates/404.html` を用意すれば、このテンプレートファイルを利用して描画されます。
+
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>404 Not Found</h1>
+{% endblock content %}
+```
+
+[404 error page | Zola](https://www.getzola.org/documentation/templates/404/)
+
+## Macros を利用した重複の削除
+
+Zola では Tera のマクロ機能を利用して、重複するコードを関数化させることができます。
+
+例えば以下のように `templates/macros/sample.html` に対して入力された値をベースに `input` 要素を作成する関数を作成します。
+
+```jinja2
+{% macro input(label, type="text") %}
+  <label>
+    {{ label }}
+    <input type="{{ type }}" />
+  </label>
+{% endmacro input %}
+```
+
+このマクロを利用するには対象のテンプレートファイルから以下のようにインポートし、別名を付与します。
+
+```html
+{% import "macros/sample.html" as sample_macro %}
+```
+
+あとは付与した別名を元に対象のマクロを呼び出せば処理を実行することができます。
+
+```html
+{{ sample_macros::input(label="Name", type="text") }}
+```
+
+[macros | Tera](https://tera.netlify.app/docs#macros)
+
+今回は個別のページや記事一覧ページで利用しているタグつけの部分をマクロ化させていくため、以下のように専用のマクロを用意します。
+
+```jinja2
+{% macro tags(page) %}
+  {% if page.taxonomies and page.taxonomies.tags %}
+    <span>::</span>
+    {% for tag in page.taxonomies.tags %}
+        {% set tag_url = get_taxonomy_url(kind="tags", name=tag) | safe %}
+        <a href="{{ tag_url }}">#{{ tag }}</a>&nbsp;
+    {% endfor %}
+  {% endif %}
+{% endmacro tags %}
+```
+
+あとはこのマクロを `base.html` で読み込んでおきます。
+
+```html
+{% import "macros/tags.html" as tags_macro %}
+```
+
+そして `blog.html` や `blog-page.html` でタグを定義している箇所で、このマクロを呼び出せばタグ部分の HTML 箇所を 1 箇所に集約することができます。
+
+```html
+{{ tags_macro::tags(page=page) }}
+```
+
+他にも記事の目次などは、マクロ化させておくと記事の構造を変更する時に変更箇所がはっきりと理解できるようになります（あまりにも乱用すると処理が分散してしまっていることによる可読性の悪化がひどくなるので注意が必要です）。
