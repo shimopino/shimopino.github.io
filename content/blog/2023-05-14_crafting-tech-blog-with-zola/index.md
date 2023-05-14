@@ -1,6 +1,6 @@
 +++
 title = "Zolaで始める技術ブログ"
-draft = true
+draft = false
 
 [taxonomies]
 tags = ["Zola"]
