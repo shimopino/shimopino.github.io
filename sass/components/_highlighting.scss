@@ -32,12 +32,15 @@ pre table {
     border-collapse: collapse;
 }
 
+// 記事の文章の中で code を使用した時のスタイル
 code {
     padding: 0.15rem 0.3rem;
     border-radius: 3px;
     background-color: $theme-background-sub;
 }
 
+// コードブロックの中での code のスタイル
 pre code {
+    padding: 0;
     background-color: transparent;
 }

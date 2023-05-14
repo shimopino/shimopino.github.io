@@ -24,12 +24,12 @@ zola 0.17.2
 公式ドキュメントに記載されている `zola init myblog` コマンドを実行すれば、下記の構造のディレクトリ・ファイルが生成されます。
 
 ```bash
-├── config.toml
-├── content
-├── sass
-├── static
-├── templates
-└── themes
+├─ config.toml
+├─ content
+├─ sass
+├─ static
+├─ templates
+└─ themes
 ```
 
 `config.toml` は Zola の設定ファイルであり、こちらにブログの URL であったり各種設定を行うことが可能です。
@@ -180,9 +180,9 @@ child のテンプレートでは親側のテンプレートファイルを拡�
 `content` ディレクトリには Markdown ファイルで記述した記事の内容を配置していきます。
 
 ```bash
-├── content
-│   └── blog
-│       └── _index.md
+└─ content
+        └─ blog
+                └─ _index.md
 ```
 
 Zola ではファイルベースのパスを構築するため、上記の構造でファイルを定義すれば、 `<base_url>/blog` の URL の設定を記述することが可能です。
@@ -322,3 +322,211 @@ base_url = "https://shimopino.github.io"
 - [Basic | Tera](https://tera.netlify.app/docs/#tera-basics)
 - [safe | Tera](https://tera.netlify.app/docs/#safe)
 - [get_url | Template | Zola](https://www.getzola.org/documentation/templates/overview/#get-url)
+
+## FrontMatter
+
+`content` 以下に配置する `_index.md` は、対象のセクションに表示するコンテンツやメタデータの設定を行うことが可能です。
+
+[FrontMatter | Content | Zola](https://www.getzola.org/documentation/content/section/#front-matter)
+
+例えば以下のような `_index.md` が存在していた場合、これは `<base_url>/blog` 以下のセクションでのコンテンツやメタデータの設定を行うことが可能です。
+
+```bash
+└─ content
+        └─ blog
+                ├─ _index.md
+                ├─ entry1.md
+                └─ entry2.md
+```
+
+この設定は以下のように `+++` で囲まれたファイルの冒頭で宣言することができ、宣言した内容はテンプレートから `section.content` 変数で利用できるようになります。
+
+```toml
+# 必要になりそうな変数のみを抽出する。全部確認したいときは公式ドキュメントを参照する。
+
++++
+# htmlの <title> と同じようにタイトルを設定可能
+# ここで設定した内容を <head> 要素などに設定してメタ情報を追加できる
+title = "Blog Title"
+
+# 各種CLIで `--drafts` を付与したした時にのみ読み込むかどうか
+# 下書きなら true にしてビルドされないようにする
+draft = false
+
+# コンテンツをどのようにソートするのか指定できる
+# ブログOnlyならおおよそ投稿日時とかで良さそう
+sort_by = "none"
+
+# 明示的にセクションでどのテンプレートを使用するのか指定できる
+# セクションごとにテンプレートを作成しておくのが良さそう
+template = "section.html"
+
+# セクションページも検索インデックスに含めるかどうか
+in_search_index = true
+
+# セクションのURLにアクセスされた場合のリダイレクト先を決定する
+# 例えばセクションに直接アクセスされた時に 404 ページを表示したくない時などに使う
+redirect_to =
++++
+
+コンテンツを記述する
+```
+
+記事をソートすることもでき、以下のディレクトリ構造であった場合に、`_index.md` の設定に `sort_by = "date"` を設定し、各ページには `date = 2023-04-01` などと設定すれば、記事を日付の降順でソートした状態でテンプレートファイルから参照できます。
+
+```bash
+└─ content
+        └─ poc
+                ├─ _index.md
+                ├─ entry1.md
+                ├─ entry2.md
+                └─ entry3.md
+```
+
+今回は `content/poc` 配下のセクションに `draft = true` を設定し、本番のページに対してはビルドされないように検証用専用のページとして配置しています。
+
+## 記事へのタグ付け
+
+### 単純なグルーピング
+
+Zola ではデフォルトで `Taxonomy` というタグ管理の仕組みがサポートされており、事前に定義した Taxonomy のカテゴリに従って、コンテンツをグルーピングすることが可能です。
+
+[Taxonomy | Content | Zola](https://www.getzola.org/documentation/content/taxonomies/)
+
+ビルド時に設定されたタグをもとに、全ての Taxonomy がリストアップされたページを作成し、また各 Taxonomy 名に対応するコンテンツの全てをリストアップしたページを自動的に構築することが可能です。
+
+まずは `config.toml` に対して事前に Taxonomy を定義します。今回は各記事に対して単純に `tags` を定義し、この `tags` に対してそれぞれ `Rust` や `Terraform` などのグルーピングするための値を設定していきます。
+
+```toml
+# name = URLで使用される名称。通常は複数形
+# paginate_by = ここで指定した値を基準にページネーションを行う
+# paginate_path = ページングされた時のページ番号。例えば page/1 のようなURlとなる
+# feed = 各タグに対して生成されるFeed（デフォルトでAtomフィードが生成される）
+# lang = 多言語対応させたい時に利用する
+# render = 対象のタグをレンダリングするかどうか決定する
+taxonomies = [
+    { name = "tags", feed = true},
+]
+```
+
+次に各ページに対して、以下のようにタグを設定していきます。
+
+```bash
+└─ content
+        └─ poc
+                ├─ _index.md
+                ├─ entry1.md # Rust
+                ├─ entry2.md # Terraform
+                └─ entry3.md # TypeScript
+```
+
+このためには各記事の FrontMatter に対して以下のように設定すればよく、配列なので複数のタグを付与することも可能です。
+
+```md
++++
+title = "Entry1"
+date = 2023-01-01
+
+[taxonomies]
+tags = ["Rust"]
++++
+
+This is date = 2023-01-01
+```
+
+これでコンテンツの準備はできましたが、タグの一覧やそれぞれのグループに該当するコンテンツの一覧を表示するためのテンプレートが存在していないため、ビルドすると以下のようなエラーが発生します。
+
+```bash
+Error: Failed to build the site
+Error: Failed to render a list of tags page.
+Error: Reason: Tried to render `taxonomy_list.html` but the template wasn't found
+```
+
+Zola では Taxonomy に対して設定した値に基づき、テンプレートディレクトリの以下のファイルを使用して、Taxonomy の一覧やそれぞれの値に対応するページを表示できます。
+
+- `$TAXONOMY_NAME/single.html`
+- `$TAXONOMY_NAME/list.html`
+
+[Taxonomy | Templates | Zola](https://www.getzola.org/documentation/templates/taxonomies/)
+
+それぞれのページでは以下の変数を利用することが可能です（全ては載せていません）。
+
+- $TAXONOMY_NAME/single.html
+  - `config` Web サイトの設定
+  - `taxonomy` 設定した Taxonomy のデータ
+  - `terms` 設定された Taxonomy のグルーピングデータ
+- $TAXONOMY_NAME/list.html
+  - `config` Web サイトの設定
+  - `taxonomy` 設定した Taxonomy のデータ
+  - `term` 描画されている Taxonomy の値
+
+まずは一覧ページを `templates/tags/list.html` として作成します。
+
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+  <div>
+    <h1>All Tags</h1>
+    <ul>
+      {# tags配下に作成しているため、tagsのそれぞれに設定した値を取得できる #}
+      {% for term in terms %}
+        <li>
+          {# それぞれのタグに対応するページへのリンクを設定できる #}
+          <a href="{{ term.permalink | safe }}">
+            {{ term.name }} ({{ term.pages | length }})
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock content %}
+```
+
+次に特定のタグに該当するページを `templates/tags/single.html` に作します。
+
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+  <div>
+    <h1>Tag: #{{ term.name }} ({{ term.pages | length }})</h1>
+
+    <a href="{{ config.base_url | safe }}/tags">Show all tags</a>
+
+    <ul>
+      {% for page in term.pages %}
+        <li>
+          <a href="{{ page.permalink | safe }}">
+            {{ page.title }} 投稿日: ({{ page.date | date(format="%Y-%m-%d") }})
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock content %}
+```
+
+これで以下のようにタグの一覧ページと個別のページを作成することができました。
+
+- `<base_url>/tags`
+
+  ![](assets/first-tags-list.png)
+
+- `<base_url>/tags/rust`
+
+  ![](assets/first-tags-single.png)
+
+### 使用した各種構文
+
+- `{{ term.pages | length }}`
+  - 配列、オブジェクト、文字列の要素数を返す
+- `{{ page.date | date(format="%Y-%m-%d") }}`
+  - タイムスタンプを指定したフォーマットに変換する
+  - デフォルトでは `YYYY-MM-DD`
+  - タイムゾーンも設定できるが、ブログだと基本的に日付しか使わなそう
+
+参考資料
+
+- [length | Tera](https://tera.netlify.app/docs/#length)
+- [date(format) | Tera](https://tera.netlify.app/docs/#date)
