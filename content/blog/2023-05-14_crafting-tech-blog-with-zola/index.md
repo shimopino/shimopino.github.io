@@ -175,7 +175,7 @@ child のテンプレートでは親側のテンプレートファイルを拡�
 
 ![](assets/first-home-page.png)
 
-### ブログセクションの作成
+### ブログセクションの作成する
 
 `content` ディレクトリには Markdown ファイルで記述した記事の内容を配置していきます。
 
@@ -219,7 +219,7 @@ page_template = "blog-page.html"
 {% endblock content %}
 ```
 
-### ブログコンテンツの作成
+### ブログコンテンツの作成する
 
 `_index.md` というファイル名は対象のディレクトリに対してセクションの設定を行うことが可能ですが、 `content/blog` ディレクトリにそれ以外のファイル名で記事を作成していくことで、個別の記事のページを作成することが可能です。
 
@@ -259,3 +259,66 @@ This is my first blog post.
 - ページ: `<base_url>/blog/first`
 
   ![](assets/first-contents.png)
+
+### トップページにリンクを追加する
+
+現在のトップページにはテキストが配置されているだけですが、 `get_url` 関数を使用すれば直接 `content` ディレクトリへの内部リンクを反映したリンクを取得することが可能です。
+
+`index.html` に以下のようにリンクを設定すればコンテンツへのリンクを設定できます。
+
+```jinja2
+{% extends "base.html" %}
+
+{% block content %}
+  <h1 class="title">This is my blog made with Zola.</h1>
+
+  {# contentに配置したファイル先にリンクを設定することが可能である #}
+  <p>
+    {# `@` はじまりで他のディレクトリのファイルを指定できる #}
+    Click <a href="{{/* get_url(path='@/blog/_index.md') */}}">here</a> to see my
+  posts.
+  </p>
+{% endblock content %}
+```
+
+### Github Pages での対応
+
+ローカル開発では記事へのリンクは、開発サーバーが `127.0.0.1/1111` で起動されている場合にはこの URL が使用されますが、Github Pages で利用するためには `config.toml` でドメインの設定が必要になります。
+
+現在は初期化された状態のままであり、以下のように `base_url` が設定されています。
+
+```toml
+base_url = "https://example.com"
+```
+
+この場合であれば各記事へのリンクは以下のようにこの URL を基準に構築されます。
+
+- `https://example.com/blog/first`
+
+今回は Github Pages を利用するため公開先の URL を設定する必要があります。
+
+```tml
+base_url = "https://shimopino.github.io"
+```
+
+これで Github Pages で動作するリンクを構築することができ、実際に Web 上で動作するブログを作成することができました。
+
+### 使用した各種構文
+
+- `{{  }}`
+  - `expressions` であり各種変数を指定することができる
+- `{%  %}`
+  - `statements` であり for ループであったりブロックの設定ができる
+- `{{ page.content | safe }}`
+  - `|` はパイプライン演算子のように、1 つ前の値を式に代入することが可能である
+  - `safe` は指定された値をエスケープ処理することで安全に取り扱うことが可能である
+- `get_url`
+  - 指定されたパスの `permalink` を取得する
+  - 先頭が `@/` で始まる場合は `content` ディレクトリから始める内部リンクとして処理する
+  - `static` ファイルを指定することもでき、 `static/css/app.css` を参照したい場合は `get_url("css/app.css")` と指定する
+
+参考資料
+
+- [Basic | Tera](https://tera.netlify.app/docs/#tera-basics)
+- [safe | Tera](https://tera.netlify.app/docs/#safe)
+- [get_url | Template | Zola](https://www.getzola.org/documentation/templates/overview/#get-url)
