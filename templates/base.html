@@ -20,6 +20,11 @@
     title="RSS" href="{{ get_url(path="rss.xml") | safe }}">
     {% endif -%}
 
+    <link rel="icon" href="{{ get_url(path="/favicon.ico") | safe }}" sizes="any">
+    <link rel="icon" href="{{ get_url(path="/icon.svg") | safe }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ get_url(path="/apple-touch-icon.png") |safe }}">
+    <link rel="manifest" href={{ get_url(path="/manifest.webmanifest") | safe }}>
+
     <title>MyBlog</title>
 
     <!-- Google tag (gtag.js) -->
