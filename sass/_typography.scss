@@ -3,16 +3,18 @@
     src: url("fonts/HackGen-Regular-minified.woff") format("woff"),
         url("fonts/HackGen-Regular-minified.eot") format("eot");
     font-weight: 400;
+    font-display: swap;
 }
 
 @font-face {
     font-family: "HackGen";
     src: url("fonts/HackGen-Bold-minified.woff") format("woff"), url("fonts/HackGen-Bold-minified.eot") format("eot");
     font-weight: 700;
+    font-display: swap;
 }
 
 body {
-    font-family: "HackGen", "Noto Sans JP", sans-serif;
+    font-family: "HackGen", sans-serif;
     font-weight: 400;
     font-size: 1rem;
     word-wrap: break-word;
@@ -23,7 +25,7 @@ h2,
 h3,
 h4 {
     margin: 1rem 0;
-    font-family: "HackGen", "Noto Sans JP", sans-serif;
+    font-family: "HackGen", sans-serif;
     font-weight: 700;
 }
 
