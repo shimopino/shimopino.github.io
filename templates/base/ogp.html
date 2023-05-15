@@ -1,0 +1,66 @@
+{% if page.title %}
+{% set title = page.title %}
+{% elif section.title %}
+{% set title = section.title %}
+{% elif config.title %}
+{% set title = config.title %}
+{% endif %}
+
+{% if page.extra.author %}
+{% set author = page.extra.author %}
+{% elif section.extra.author %}
+{% set author = section.extra.author %}
+{% elif config.extra.author %}
+{% set author = config.extra.author %}
+{% endif %}
+
+{% if page.description %}
+{% set description = page.description | truncate(length=150) %}
+{% elif section.description %}
+{% set description = section.description | truncate(length=150) %}
+{% elif config.description %}
+{% set description = config.description | truncate(length=150) %}
+{% endif %}
+
+{% if page.extra.image %}
+{% set image = get_url(path=page.extra.image, trailing_slash=false) %}
+{% elif section.extra.image %}
+{% set image = get_url(path=section.extra.image, trailing_slash=false) %}
+{% elif config.extra.logo %}
+{% set image = get_url(path=config.extra.logo, trailing_slash=false) %}
+{% endif %}
+
+{% if page.permalink %}
+{% set url = page.permalink %}
+{% elif section.permalink %}
+{% set url = section.permalink %}
+{% elif config.base_url %}
+{% set url = config.base_url %}
+{% endif %}
+
+{# ページのメタ情報を追加する #}
+{% if title %}<title>{{ title }}</title>{% endif %}
+{% if author %}<meta name="author" content="{{ author }}">{% endif %}
+{% if description %}<meta name="description" content="{{ description }}">{% endif %}
+
+{# OGP画像の設定 #}
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url | safe }}">
+<meta property="og:site_name" content="{{ config.title }}">
+{% if title %}<meta property="og:title" content="{{ title }}">{% endif %}
+{% if description %}<meta property="og:description" content="{{ description }}">{% endif %}
+{% if image %}<meta property="og:image" content="{{ image }}">{% endif %}
+
+{# Twitter用のOGP画像の設定 #}
+{% set twitter_card = config.extra.twitter_card | default(value=true) %}
+{% if twitter_card != false %}
+<meta property="twitter:card" content="summary">
+<meta property="twitter:url" content="{{ url | safe }}">
+{% if title %}<meta property="twitter:title" content="{{ title }}">{% endif %}
+{% if description %}<meta property="twitter:description" content="{{ description }}">{% endif %}
+{% if image %}<meta property="twitter:image" content="{{ image }}">{% endif %}
+{% endif %}
+
+{# ページが他のどのURLとも重複していないことを検索エンジンに伝える #}
+{# 同じコンテンツが複数のURLでアクセスできる場合に有効 #}
+<link rel="canonical" href="{{ url | safe }}">

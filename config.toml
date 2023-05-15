@@ -1,10 +1,8 @@
-# The URL the site will be built for
 base_url = "https://shimopino.github.io"
+title = "shimopino's blog"
+description = "興味の赴くままに実験していく"
 
-# Whether to automatically compile all Sass files in the sass directory
 compile_sass = true
-
-# Whether to build a search index to be used later on by a JavaScript library
 build_search_index = true
 
 taxonomies = [
@@ -24,4 +22,6 @@ highlight_code = true
 highlight_theme = "boron"
 
 [extra]
-# Put all your custom variables here
+author = "shimopino"
+logo = "images/logo.png"
+twitter_card = true
