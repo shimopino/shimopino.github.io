@@ -1,9 +1,13 @@
 +++
 title = "Zolaで始める技術ブログ"
+description = "Zolaを使ってGithub Pagesにブログを構築したのでその手順を残す"
 draft = false
 
 [taxonomies]
 tags = ["Zola"]
+
+[extra]
+image = "images/ogp/first-site.png"
 +++
 
 最近 Rust で遊んでいますが、その過程で得た知識を記録していくためにブログを作成することにしました。せっかくなので、ブログには Rust 製の静的サイトジェネレーターである [Zola](https://www.getzola.org/documentation/getting-started/overview/) を使います。
