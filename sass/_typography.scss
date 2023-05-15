@@ -1,12 +1,13 @@
 @font-face {
     font-family: "HackGen";
-    src: url("fonts/HackGen-Regular.ttf") format("truetype");
+    src: url("fonts/HackGen-Regular-minified.woff") format("woff"),
+        url("fonts/HackGen-Regular-minified.eot") format("eot");
     font-weight: 400;
 }
 
 @font-face {
     font-family: "HackGen";
-    src: url("fonts/HackGen-Bold.ttf") format("truetype");
+    src: url("fonts/HackGen-Bold-minified.woff") format("woff"), url("fonts/HackGen-Bold-minified.eot") format("eot");
     font-weight: 700;
 }
 
