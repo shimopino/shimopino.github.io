@@ -1,6 +1,7 @@
 {% macro toc(page) %}
   {% if page.toc %}
-    <div class="toc">
+    <details class="toc" open>
+      <summary>> 目次</summary>
       <ul>
         {% for h1 in page.toc %}
           <li>
@@ -17,6 +18,6 @@
           </li>
         {% endfor %}
       </ul>
-    </div>
+    </details>
   {% endif %}
 {% endmacro toc %}
