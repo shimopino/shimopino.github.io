@@ -18,8 +18,8 @@ h3 {
 }
 
 ul {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
     list-style-type: none;
 
     ul {
@@ -29,6 +29,8 @@ ul {
 
     li {
         position: relative;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
     }
 
     li::before {
@@ -39,7 +41,41 @@ ul {
 }
 
 .toc {
-    font-size: 0.75rem;
+    font-size: 1rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+
+    summary {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    ul {
+        margin-top: 0;
+    }
+}
+
+/* モバイルの場合 */
+@media (max-width: 768px) {
+    .toc summary {
+        display: block;
+    }
+    .toc ul {
+        display: none;
+    }
+    .toc[open] ul {
+        display: block;
+    }
+}
+
+/* デスクトップの場合 */
+@media (min-width: 769px) {
+    .toc summary {
+        display: none;
+    }
+    .toc ul {
+        display: block;
+    }
 }
 
 article {
