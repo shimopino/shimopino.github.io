@@ -1,0 +1,26 @@
+[tasks.docker-build]
+script = '''
+docker image build --tag mysql8-sakila .
+'''
+
+[tasks.docker-run]
+script = '''
+docker container run \
+  --platform linux/amd64 \
+  --rm \
+  --name mysql8-sakila \
+  -e MYSQL_ROOT_PASSWORD=rootpass \
+  -d \
+  -p 3306:3306 \
+  mysql8-sakila
+'''
+
+[tasks.docker-stop]
+script = '''
+docker container stop mysql8-sakila
+'''
+
+[tasks.docker-exec]
+script = '''
+docker container exec -it mysql8-sakila bash
+'''
