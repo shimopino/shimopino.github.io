@@ -31,7 +31,44 @@ ChatGPTを駆使して、データベースに関する知見をより深める�
   - データ整合性の保証（主キー、外部キー、チェック制約）。
 - データベースのテストとデバッグ: データベースの問題を解決するためのツールとテクニックについて説明すると良いでしょう。
 
+## 準備
+
 ## 複雑なデータ分析のためのクエリ
+
+### 演習　映画のレンタル回数をカテゴリ別に集計し、レンタル回数が1000回を超えているカテゴリ名とレンタル回数を表示する
+
+<details>
+<summary>回答</summary>
+
+```sql
+SELECT c.name AS category_name, COUNT(r.rental_id) AS rental_count
+FROM category c
+JOIN film_category fc ON c.category_id = fc.category_id
+JOIN inventory i ON fc.film_id = i.film_id
+JOIN rental r ON i.inventory_id = r.inventory_id
+GROUP BY c.name
+HAVING COUNT(r.rental_id) >= 5000;
+```
+ 
+</details>
+
+### 演習　各顧客が支払った料金の合計を計算し、合計が200ドル以上の顧客の名前と支払った料金の合計を表示する
+
+<details>
+<summary>回答</summary>
+
+```sql
+SELECT c.first_name, c.last_name, SUM(p.amount) AS total_payment
+FROM customer c
+JOIN payment p ON c.customer_id = p.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+HAVING SUM(p.amount) >= 200;
+```
+ 
+</details>
+
+
+### 演習1
 
 サブクエリ、結合、ウィンドウ関数、CTE (Common Table Expressions) 、グループ化クエリ
   - ビュー
