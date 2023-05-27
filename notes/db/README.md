@@ -67,6 +67,66 @@ HAVING SUM(p.amount) >= 200;
  
 </details>
 
+## 演習　各カテゴリの映画の平均レンタル料金が、全体の平均レンタル料金より高いカテゴリを探す
+
+<details>
+<summary>回答</summary>
+
+```sql
+SELECT c.name AS category_name, AVG(f.rental_rate) AS average_rental_rate
+FROM category c
+JOIN film_category fc ON c.category_id = fc.category_id
+JOIN film f ON fc.film_id = f.film_id
+GROUP BY c.name
+HAVING AVG(f.rental_rate) > (
+  SELECT AVG(rental_rate) 
+  FROM film
+);
+```
+ 
+</details>
+
+## 演習　レンタル回数が最も多い顧客を探す
+
+<details>
+<summary>回答</summary>
+
+サブクエリを利用したやり方
+
+```sql
+SELECT c.first_name, c.last_name, COUNT(r.rental_id) AS rental_count
+FROM customer c
+JOIN rental r ON c.customer_id = r.customer_id
+GROUP BY c.customer_id, c.first_name, c.last_name
+HAVING COUNT(r.rental_id) = (
+  SELECT MAX(rental_count) 
+  FROM (
+    SELECT COUNT(rental_id) AS rental_count
+    FROM rental
+    GROUP BY customer_id
+  ) AS subquery
+);
+```
+ 
+共通テーブル式（CTE）を利用したやり方
+
+```sql
+WITH customer_rentals AS (
+  SELECT c.customer_id, c.first_name, c.last_name, COUNT(r.rental_id) AS rental_count
+  FROM customer c
+  JOIN rental r ON c.customer_id = r.customer_id
+  GROUP BY c.customer_id, c.first_name, c.last_name
+),
+max_rentals AS (
+  SELECT MAX(rental_count) AS max_rental_count
+  FROM customer_rentals
+)
+SELECT cr.first_name, cr.last_name, cr.rental_count
+FROM customer_rentals cr, max_rentals mr
+WHERE cr.rental_count = mr.max_rental_count;
+```
+
+</details>
 
 ### 演習1
 
