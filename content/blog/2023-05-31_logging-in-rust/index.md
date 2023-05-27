@@ -30,6 +30,22 @@ log クレートは、それ自体はロギングの実装を提供しておら�
 
 ## Log トレイト
 
+`Log` トレイトは以下のように定義されているが、この定義の1つ1つをみていく。
+
+```rs
+pub trait Log: Sync + Send {
+    fn enabled(&self, metadata: &Metadata<'_>) -> bool;
+    fn log(&self, record: &Record<'_>);
+    fn flush(&self);
+}
+```
+
+[Log trait | log crate](https://github.com/rust-lang/log/blob/502bdb7c63ffcbad4fe6921b46d582074e49fd0a/src/lib.rs#L1124C1-L1150)
+
+### `pub trait Log: Sync + Send`
+
+
+
 ## Facade パターン
 
 ### トレイトのスコープ
