@@ -14,16 +14,9 @@ Rust でアプリケーションを作成する際に [`tracing`](https://docs.r
 ```toml
 [dependencies]
 log = "0.4.17"
+env_logger = "0.10.0"
+simple_logger = "4.1.0"
 ```
-
-> 後で消す
-> 記事の流れ
-> 一般的な log クレートの使い方をまず提示して、最終結果がどうなるのかを抑える
-> 簡単な log クレートの仕組みを図解を用いて提示する
-> より詳細な実装に入る（各構造体、マクロ内部）
-> Facade パターンとのつながり
-> 自身でカスタムロガーを作成する
-> 他の log トレイト実装のサンプル
 
 ## log クレートを利用した Rust での logging
 
@@ -244,7 +237,7 @@ fn main() -> std::io::Result<()> {
 
 [https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407](https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407)
 
-### `set_logger(logger: &'static dyn Log) -> Result<(), SetLoggerError>`
+### `fn set_logger(logger: &'static dyn Log) -> Result<(), SetLoggerError>`
 
 このメソッドを利用することで、アプリケーション内でグローバルに宣言されているロガーを設定することが可能であり、このメソッドを呼び出して初めてログの出力が可能となる。
 
@@ -374,6 +367,38 @@ where
 
 このような初期化処理を実現することで、グローバルにロガー設定が1度のみしか呼出されないことを保証している。
 
+### `fn set_max_level(level: LevelFilter)`
+
+`info!` マクロを呼び出せば、自動的にログレベル `Info` が設定された `Metadata` がログレコードに付与された状態となるが、これだけだと全てのログメッセージが表示されてしまうことになる。
+
+そこで `log` クレートは `set_max_level` というログの出力を調整するための関数を用意している。
+
+```rs
+// ログレベルに関してもグローバルなアトミックの設定を有している
+static MAX_LOG_LEVEL_FILTER: AtomicUsize = AtomicUsize::new(0);
+
+// ...
+
+pub fn set_max_level(level: LevelFilter) {
+    MAX_LOG_LEVEL_FILTER.store(level as usize, Ordering::Relaxed);
+}
+```
+
+[https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2)
+
+ここで `Ordering::Relaxed` を設定して制約を緩めている背景は以下のISSUEで言及されている通り、現在設定されている最大のログレベルを取得する箇所が `Ordering::Relaxed` を設定しているためである。
+
+[Confusing memory orderings for MAX_LOG_LEVEL_FILTER](https://github.com/rust-lang/log/issues/453)
+
+他のライブラリでは、このメソッドは `Log` トレイトの実装を行なったロガーの初期化を行うメソッドの内部で利用されていることが多い。
+
+例えば `simple_logger` の場合であれば、以下のようなロガーを生成する処理の中でログレベルを設定し、そのメソッド内部で `set_max_level` を呼び出している。
+
+```rs
+simple_logger::init_with_level(log::Level::Warn).unwrap();
+```
+
+ここで設定したログレベルを、どのように管理して、ログの出力判断を行う `enabled` でどのように使用しているのかは、それぞれライブラリの実装によって異なっている。
 
 ## 適用されている実装パターン
 
