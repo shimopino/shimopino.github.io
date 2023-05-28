@@ -53,7 +53,54 @@ $ RUST_LOG=info cargo run
 [2023-05-27T09:50:55Z INFO  log] hello
 ```
 
-まずはこの実装を見ていきながら、log クレートではどのような処理や抽象化を行うことで、ログの実装を切り替えるようにしているのかを見ていく。
+これだけだと内部でどのような処理を実現しているのかを推察することが難しいため、公式ドキュメントに記載されている自作ロガーのコードも確認する。
+
+## 自作ロガーの実装を確認する
+
+公式ドキュメントのサンプルでは `Log` トレイトの実装として以下がが提供されている。
+
+```rs
+struct SimpleLogger;
+
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        println!("{:?}", metadata);
+        metadata.level() <= Level::Info
+    }
+
+    fn log(&self, record: &log::Record) {
+        println!("{:?}", record);
+        if self.enabled(record.metadata()) {
+            println!("{} - {}", record.level(), record.args());
+        }
+    }
+
+    fn flush(&self) {}
+}
+```
+
+そしてこの実装を呼び出す時には以下のように `set_logger` 関数を呼び出してグローバルに適用するロガーを登録し、ログレベルを設定して出力されるログを制御するようにしている。
+
+```rs
+static LOGGER: SimpleLogger = SimpleLogger;
+
+fn main() {
+    // env_logger::init();
+    log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::Warn));
+
+    log::trace!("trace");
+    log::debug!("debug");
+    log::info!("info");
+    log::warn!("warn");
+    log::error!("error");
+}
+```
+
+これからは `log` クレートが提供している下記の機能の詳細を見ていく。
+
+- `Log` トレイト
+- `set_logger`
+- `set_max_level`
 
 ## Log トレイト
 
@@ -85,6 +132,18 @@ pub trait Log: Sync + Send {
 `Log` トレイトを実装する全ての型は、スレッド間で安全に転送でき、スレッド間で安全に参照を共有することを保証する必要がある。
 
 例えばマルチスレッドでリクエストを処理するようなWebサーバーの利用を考えると、各スレッドからは `Log` トレイトを実装したオブジェクトにアクセスできる必要がある。 `Sync` トレイトが実装されていれば、複数のスレッドから同時に安全にアクセスできることが保証される。
+
+### `fn enabled(&self, metadata: &Metadata<'_>) -> bool;`
+
+このメソッドを実行することで、メタデータを含むログメッセージを記録するかどうかを判定する。
+
+```rs
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct Metadata<'a> {
+    level: Level,
+    target: &'a str,
+}
+```
 
 ## Facade パターン
 
