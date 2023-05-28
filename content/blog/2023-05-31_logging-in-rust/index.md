@@ -222,6 +222,28 @@ Record {
 
 [macros | log crate](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/macros.rs#L245-L267)
 
+### `fn flush(&self);`
+
+標準出力にメッセージを出すだけの場合にはあまり使うことはないかもしれないが、ログメッセージをファイルに出力したりする場合に利用する。
+
+例えば `std::io::Write` トレイトでも `flush` メソッドは提供されており、以下のようにファイルを生成して書き込む内容を指定した後で、 `flush` を呼び出すことでバッファに書き込まれた内容をファイルに反映する。
+
+```ts
+fn main() -> std::io::Result<()> {
+    let mut buffer = BufWriter::new(File::create("foo.txt")?);
+
+    buffer.write_all(b"some bytes")?;
+    buffer.flush()?;
+    Ok(())
+}
+```
+
+`Log` トレイトに限らず、 `flush` メソッドは上記のように、パフォーマンス向上のためにデータをメモリ上に保存して、一定の条件や任意のタイミングで永続的なストレージに書き出す時に利用される。
+
+例えば `fern` クレートでは、出力先に応じてそれぞれ対応する `flush` メソッドを呼び出すことで、ファイルやチャンネルに対してメッセージを書き出す挙動を制御している。
+
+[https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407](https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407)
+
 ## 適用されている実装パターン
 
 ### Facade パターン
