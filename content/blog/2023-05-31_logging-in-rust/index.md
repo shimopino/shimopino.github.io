@@ -21,11 +21,11 @@ log = "0.4.17"
 > 一般的な log クレートの使い方をまず提示して、最終結果がどうなるのかを抑える
 > 簡単な log クレートの仕組みを図解を用いて提示する
 > より詳細な実装に入る（各構造体、マクロ内部）
-> Facadeパターンとのつながり
+> Facade パターンとのつながり
 > 自身でカスタムロガーを作成する
 > 他の log トレイト実装のサンプル
 
-## logクレートを利用したRustでのlogging
+## log クレートを利用した Rust での logging
 
 log クレートは、それ自体はロギングの実装を提供しておらず、Rust で標準的なロギングを行うための API となるトレイトを提供している。そのため log クレートを利用してロギングを行う際には、実際の実装を提供するクレートと組み合わせる必要がある。
 
@@ -120,7 +120,7 @@ pub trait Log: Sync + Send {
 
 [Log trait | log crate](https://github.com/rust-lang/log/blob/502bdb7c63ffcbad4fe6921b46d582074e49fd0a/src/lib.rs#L1124C1-L1150)
 
-この定義を1つ1つ見ていく。
+この定義を 1 つ 1 つ見ていく。
 
 ### `pub trait Log: Sync + Send`
 
@@ -133,7 +133,7 @@ pub trait Log: Sync + Send {
 
 `Log` トレイトを実装する全ての型は、スレッド間で安全に転送でき、スレッド間で安全に参照を共有することを保証する必要がある。
 
-例えばマルチスレッドでリクエストを処理するようなWebサーバーの利用を考えると、各スレッドからは `Log` トレイトを実装したオブジェクトにアクセスできる必要がある。 `Sync` トレイトが実装されていれば、複数のスレッドから同時に安全にアクセスできることが保証される。
+例えばマルチスレッドでリクエストを処理するような Web サーバーの利用を考えると、各スレッドからは `Log` トレイトを実装したオブジェクトにアクセスできる必要がある。 `Sync` トレイトが実装されていれば、複数のスレッドから同時に安全にアクセスできることが保証される。
 
 ### `fn enabled(&self, metadata: &Metadata<'_>) -> bool;`
 
@@ -173,11 +173,60 @@ Metadata { level: Error, target: "Global" }
 
 まとめるとこのメソッドは、ログ出力時に呼び出したマクロのログレベルをキャプチャして、条件に基づいてログを出力するかどうかを決めることが可能なメソッドである。
 
+### `fn log(&self, record: &log::Record)`
+
+このメソッドを実行することで、ログをそもそも出力するかどうかの制御であったり、ログメッセージのフォーマットなどを制御することが可能である。
+
+```rs
+fn log(&self, record: &log::Record) {
+    if self.enabled(record.metadata()) {
+        println!("{} - {}", record.level(), record.args());
+    }
+}
+```
+
+このメソッドは、各マクロを呼び出した時に以下で定義されている `Record` を受け取り、ログマクロが実行されたときの情報を抽出することが可能となる。
+
+```rs
+#[derive(Clone, Debug)]
+pub struct Record<'a> {
+    metadata: Metadata<'a>,
+    args: fmt::Arguments<'a>,
+    module_path: Option<MaybeStaticStr<'a>>,
+    file: Option<MaybeStaticStr<'a>>,
+    line: Option<u32>,
+    #[cfg(feature = "kv_unstable")]
+    key_values: KeyValues<'a>,
+}
+```
+
+ログマクロを実行したときに内部でこのレコードが生成され、指定したメッセージやマクロを呼び出した行数、実行したときのファイル名などが格納されている。
+
+例えば以下のようにエラーメッセージを出力する。
+
+```ts
+log::error!(target: "Global", "error");
+```
+
+このときメタデータが格納されたレコードが生成され、Rustの標準ライブラリから提供されている `line!` マクロや `file!` マクロを呼び出した値で初期化を行っている。
+
+```rs
+Record { 
+  metadata: Metadata { level: Error, target: "Global" },
+  args: "error", 
+  module_path: Some(Static("log")), 
+  file: Some(Static("examples/log/main.rs")), 
+  line: Some(31)
+}
+```
+
+[macros | log crate](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/macros.rs#L245-L267)
+
 ## 適用されている実装パターン
 
-### Facadeパターン
+### Facade パターン
 
-### Builderパターン
+### Builder パターン
 
 ## simple_logger
 
