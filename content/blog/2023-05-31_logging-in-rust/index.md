@@ -538,6 +538,18 @@ pub fn set_max_level(level: LevelFilter) {
 
 `match` 式などを利用してより安全に型変換を行う方法もあるが、どの値にも該当しない `exhaustive patterns` をどのように取り扱うのか、であったり単純なビット移動である `transmute` の方がパフォーマンスが良い、という理由で現状のコードになっている可能性はある。
 
+[トランスミュート transmute](https://doc.rust-jp.rs/rust-nomicon-ja/transmutes.html)
+
+## log トレイトの実装を提供しているクレート
+
+## simple_logger
+
+## env_logger
+
+## fern
+
+## tracing-log
+
 ## 適用されている実装パターン
 
 ### Facade パターン
@@ -547,11 +559,3 @@ pub fn set_max_level(level: LevelFilter) {
 ### Box::leak による static 参照パターン
 
 ### once_cell
-
-## simple_logger
-
-## env_logger
-
-## fern
-
-## tracing-log
