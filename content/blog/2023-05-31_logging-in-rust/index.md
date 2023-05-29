@@ -75,11 +75,15 @@ impl log::Log for SimpleLogger {
 そしてこの実装を呼び出す時には以下のように `set_logger` 関数を呼び出してグローバルに適用するロガーを登録し、ログレベルを設定して出力されるログを制御するようにしている。
 
 ```rs
+// SimpleLoggerはフィールドを持たないユニット構造体である
+// 型の名前自体が唯一の値となるため、単に SimpleLogger と記述すればインスタンスを作成できる
+// フィールドを有する場合には、そのフィールドを初期化する必要がある
 static LOGGER: SimpleLogger = SimpleLogger;
 
 fn main() {
     // env_logger::init();
-    log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::Warn));
+    log::set_logger(&LOGGER).unwrap();
+    log::set_max_level(LevelFilter::Info);
 
     log::trace!("trace");
     log::debug!("debug");
@@ -400,6 +404,63 @@ simple_logger::init_with_level(log::Level::Warn).unwrap();
 
 ここで設定したログレベルを、どのように管理して、ログの出力判断を行う `enabled` でどのように使用しているのかは、それぞれライブラリの実装によって異なっている。
 
+### `fn set_boxed_logger(logger: Box<dyn Log>) -> Result<(), SetLoggerError>`
+
+`set_logger` 関数では `&'static dyn Log` 型を引数に取る都合上、 `Log` トレイトを実装したロガーは、プログラムの実行全体にわたって有効なものでないといけない。
+
+そのため公式ドキュメントのサンプルでは、初期化を行う際に `static` でロガーを宣言するようにしていた。
+
+```rs
+struct SimpleLogger;
+impl log::Log for SimpleLogger {
+    // ...
+}
+
+static LOGGER: SimpleLogger = SimpleLogger;
+
+fn main() {
+    log::set_logger(&LOGGER).unwrap();
+}
+```
+
+このように記述できるのは `SimpleLogger` がフィールドを持たないユニット構造体であり、その型の名前自体が唯一の値となるため `SimpleLogger` とだけ定義すればインスタンスを作成できるからである。
+
+しかし、他のライブラリのようにロガーに対して各種設定を制御するためにフィールドを追加すると、他の方法でロガーを初期化して `static` な参照を取得する必要がある。
+
+そのような場合に利用できるのは `set_boxed_logger` 関数である。
+
+[set_boxed_logger | log crate](https://docs.rs/log/latest/log/fn.set_boxed_logger.html)
+
+これは内部的には `set_logger_inner` 関数を呼び出しているだけではあるが、関数の引数が明確に異なっている。
+
+```rs
+pub fn set_boxed_logger(logger: Box<dyn Log>) -> Result<(), SetLoggerError> {
+    set_logger_inner(|| Box::leak(logger))
+}
+```
+
+ここで使用している `Box::leak` メソッドは、`Box` を使用してヒープ上に確保されたメモリを明示的にリークさせることで、そのメモリをプログラム終了時まで保持させることのできるメソッドである。
+
+[Box::leak](https://doc.rust-lang.org/std/boxed/struct.Box.html#method.leak)
+
+このメソッドを実行することで `logger` をプログラム終了までヒープ上に保持させるようにし、その結果このメソッドから返却されるものは `&'static mut Log` の参照となり、エラーが発生することなくコンパイルすることが可能となる。
+
+この `set_boxed_logger` を利用することで、 `static` な値で初期化することなく、以下のようにスコープ内で生成されたロガーをグローバルな変数として登録することが可能となる。
+
+```rs
+// simple_loggerの例
+fn main() {
+    // Box::leakを活用することで関数内で生成したロガーを static に登録できる
+    SimpleLogger::new().init().unwrap();
+
+    log::warn!("This is an example message.");
+}
+```
+
+### `fn set_max_level(level: LevelFilter)`
+
+[set_max_logger | log crate](https://docs.rs/log/latest/log/fn.set_max_level.html)
+
 ## 適用されている実装パターン
 
 ### Facade パターン
@@ -407,6 +468,8 @@ simple_logger::init_with_level(log::Level::Warn).unwrap();
 ### Builder パターン
 
 ### Box::leakによるstatic参照パターン
+
+### once_cell
 
 ## simple_logger
 
