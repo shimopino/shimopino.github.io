@@ -205,14 +205,14 @@ pub struct Record<'a> {
 log::error!(target: "Global", "error");
 ```
 
-このときメタデータが格納されたレコードが生成され、Rustの標準ライブラリから提供されている `line!` マクロや `file!` マクロを呼び出した値で初期化を行っている。
+このときメタデータが格納されたレコードが生成され、Rust の標準ライブラリから提供されている `line!` マクロや `file!` マクロを呼び出した値で初期化を行っている。
 
 ```rs
-Record { 
+Record {
   metadata: Metadata { level: Error, target: "Global" },
-  args: "error", 
-  module_path: Some(Static("log")), 
-  file: Some(Static("examples/log/main.rs")), 
+  args: "error",
+  module_path: Some(Static("log")),
+  file: Some(Static("examples/log/main.rs")),
   line: Some(31)
 }
 ```
@@ -363,13 +363,13 @@ where
 
 [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1352-L1382](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1352-L1382)
 
-`AtomicUsize` が提供する `compare_exchange` は、現在の値と第1引数で指定された値と比較して、同じ値の場合には第2引数で指定した値に置き換える。そして、関数の返り値に置き換え前の現在の値を返却する。
+`AtomicUsize` が提供する `compare_exchange` は、現在の値と第 1 引数で指定された値と比較して、同じ値の場合には第 2 引数で指定した値に置き換える。そして、関数の返り値に置き換え前の現在の値を返却する。
 
-この状態の変更に関しては `Ordering::SeqCst` が指定されているため、必ず1度に1つのスレッドのみがアトミックに状態を `INITIALIZING` という初期化中であることを示す状態に変更することが可能となる。
+この状態の変更に関しては `Ordering::SeqCst` が指定されているため、必ず 1 度に 1 つのスレッドのみがアトミックに状態を `INITIALIZING` という初期化中であることを示す状態に変更することが可能となる。
 
 もしもあるスレッドがログ設定を行なっている間に、他のスレッドがログ設定の関数を呼び出した場合には `old_state` に `INITIALIZING` が返却され、後続の処理でスピンループを行うことでそのスレッドでの初期化設定が完了するまで待機し、そのあとでエラーを返却している。
 
-このような初期化処理を実現することで、グローバルにロガー設定が1度のみしか呼出されないことを保証している。
+このような初期化処理を実現することで、グローバルにロガー設定が 1 度のみしか呼出されないことを保証している。
 
 ### `fn set_max_level(level: LevelFilter)`
 
@@ -390,7 +390,7 @@ pub fn set_max_level(level: LevelFilter) {
 
 [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2)
 
-ここで `Ordering::Relaxed` を設定して制約を緩めている背景は以下のISSUEで言及されている通り、現在設定されている最大のログレベルを取得する箇所が `Ordering::Relaxed` を設定しているためである。
+ここで `Ordering::Relaxed` を設定して制約を緩めている背景は以下の ISSUE で言及されている通り、現在設定されている最大のログレベルを取得する箇所が `Ordering::Relaxed` を設定しているためである。
 
 [Confusing memory orderings for MAX_LOG_LEVEL_FILTER](https://github.com/rust-lang/log/issues/453)
 
@@ -459,7 +459,84 @@ fn main() {
 
 ### `fn set_max_level(level: LevelFilter)`
 
+`log` クレートではグローバルに最大のログレベルを設定することのできる関数 `set_max_logger` も提供している。
+
 [set_max_logger | log crate](https://docs.rs/log/latest/log/fn.set_max_level.html)
+
+このメソッドの役割は重要であり、この関数を通して設定されたログレベルを `info!` などの各種マクロで参照し、実際にログ出力を行うかどうかを判断している。
+
+```rs
+// log!(target: "my_target", Level::Info, "a {} event", "log");
+(target: $target:expr, $lvl:expr, $($arg:tt)+) => ({
+    let lvl = $lvl;
+    if lvl <= $crate::STATIC_MAX_LEVEL && lvl <= $crate::max_level() {
+        $crate::__private_api_log(
+            __log_format_args!($($arg)+),
+            lvl,
+            &($target, __log_module_path!(), __log_file!(), __log_line!()),
+            $crate::__private_api::Option::None,
+        );
+    }
+});
+```
+
+[https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/macros.rs#L45-L56](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/macros.rs#L45-L56)
+
+この処理の中では以下の 2 つのログレベルを参照している。
+
+- `STATIC_MAX_LEVEL`
+  - フィーチャーフラグレベルで制御された最大のログレベル
+  - リリースビルド時に出力したいログを制御するときに利用する
+  - デフォルトでは `LevelFilter::Trace` が設定されている
+  - [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1586](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1586)
+- `max_level()`
+  - プログラム側で設定する最大のログレベル
+  - `set_max_level` 関数を通して制御する
+  - デフォルトでは `LevelFilter::Off` が設定されている（つまり、何もログ出力しない）
+  - [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L408](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L408)
+
+`log` クレートでは、ログレベルとして以下の `Enum` を定義しており、各マクロに対応するログレベルと、全てのログを出力しないレベルに設定された `Off` のログレベルが定義されており、このログレベルが初期値として設定されている。
+
+```rs
+static MAX_LOG_LEVEL_FILTER: AtomicUsize = AtomicUsize::new(0);
+
+pub enum LevelFilter {
+    /// A level lower than all log levels.
+    Off,
+    /// Corresponds to the `Error` log level.
+    Error,
+    /// Corresponds to the `Warn` log level.
+    Warn,
+    /// Corresponds to the `Info` log level.
+    Info,
+    /// Corresponds to the `Debug` log level.
+    Debug,
+    /// Corresponds to the `Trace` log level.
+    Trace,
+}
+```
+
+[LevelFilter | log crate](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL552C1-L567C2)
+
+つまり明示的にこのログレベルを変更しなければ、デフォルトでは全てのログ出力は抑制されるようになっている。
+
+```rs
+// https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1265C1-L1273C2
+pub fn max_level() -> LevelFilter {
+    unsafe { mem::transmute(MAX_LOG_LEVEL_FILTER.load(Ordering::Relaxed)) }
+}
+
+// https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2
+pub fn set_max_level(level: LevelFilter) {
+    MAX_LOG_LEVEL_FILTER.store(level as usize, Ordering::Relaxed);
+}
+```
+
+`std::mem::transmute` は非常に危険な関数ではあるが、ある型から別の型へのビット単位の移動を意味しており、引数で指定した値から返り値で指定した型に対してビットをコピーする。
+
+`log` クレートの場合ではマルチスレッドでログレベルの変更を管理するために `AtomicUsize` を利用しているため、ログレベルを定義している `LevelFilter` と `usize` で型が異なっている。関数のインターフェースレベルでは `LevelFilter` のみを表に出しているため、 `LevelFilter` をアトミックに更新するための裏技的なやり方である。
+
+`match` 式などを利用してより安全に型変換を行う方法もあるが、どの値にも該当しない `exhaustive patterns` をどのように取り扱うのか、であったり単純なビット移動である `transmute` の方がパフォーマンスが良い、という理由で現状のコードになっている可能性はある。
 
 ## 適用されている実装パターン
 
@@ -467,7 +544,7 @@ fn main() {
 
 ### Builder パターン
 
-### Box::leakによるstatic参照パターン
+### Box::leak による static 参照パターン
 
 ### once_cell
 
