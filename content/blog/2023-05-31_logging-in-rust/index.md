@@ -4,7 +4,7 @@ description = "普段tracingクレートを使っているので、あたらめ�
 draft = false
 
 [taxonomies]
-tags = ["Rust", "Monitoring"]
+tags = ["Rust", "Observability"]
 +++
 
 Rust でアプリケーションを作成する際に [`tracing`](https://docs.rs/tracing/latest/tracing/) クレートを利用する場合も多くありますが、プロジェクトの初期段階や簡単な POC であればよりシンプルな [`log`](https://docs.rs/log/latest/log/) クレートを利用する選択肢もあるかと思います。
@@ -541,6 +541,15 @@ pub fn set_max_level(level: LevelFilter) {
 [トランスミュート transmute](https://doc.rust-jp.rs/rust-nomicon-ja/transmutes.html)
 
 ## log トレイトの実装を提供しているクレート
+
+ここからは各種クレートがどのように `Log` トレイを実装しているのかを見ていく。
+
+- [simple_logger](https://docs.rs/simple_logger)
+- [env_logger](https://docs.rs/env_logger/)
+- [fern](https://docs.rs/fern)
+- [tracing_log](https://docs.rs/tracing-log/latest/tracing_log/)
+
+よく利用されているであろうこれらのクレートを対象にする。
 
 ## simple_logger
 
