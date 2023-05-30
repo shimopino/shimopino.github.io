@@ -4,7 +4,7 @@ description = "普段tracingクレートを使っているので、あたらめ�
 draft = false
 
 [taxonomies]
-tags = ["Rust", "Observability"]
+tags = ["Rust", "Logging"]
 +++
 
 Rust でアプリケーションを作成する際に [`tracing`](https://docs.rs/tracing/latest/tracing/) クレートを利用する場合も多くありますが、プロジェクトの初期段階や簡単な POC であればよりシンプルな [`log`](https://docs.rs/log/latest/log/) クレートを利用する選択肢もあるかと思います。
@@ -559,8 +559,6 @@ pub fn set_max_level(level: LevelFilter) {
 
 ## simple_logger
 
-### ロガーの初期化
-
 [`simple_logger`](https://docs.rs/simple_logger) はロガーの設定や出力メッセージがとてもシンプルで使いやすいクレートであり、本体のコードも `lib.rs` のみで構成されているため `Log` トレイトの実装例確認の最初の一歩に適しています。
 
 公式から提供されている Getting Started なコードを確認すると、今まで説明してきた `set_boxed_logger` によるグローバルなロガーの宣言や `set_max_level` での最大ログレベルの設定を行なっていると予想できる。
@@ -669,13 +667,15 @@ impl FromStr for LevelFilter {
 
 [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2)
 
-### Log クレートの実装
+これらの設定を簡易的に行うための専用の関数も用意されている。
 
-## env_logger
+```rs
+pub fn init_with_env() -> Result<(), SetLoggerError> {
+    SimpleLogger::new().env().init()
+}
+```
 
-## fern
-
-## tracing-log
+[https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL542C1-L544C2](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL542C1-L544C2)
 
 ## 適用されている実装パターン
 
