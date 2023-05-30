@@ -241,6 +241,8 @@ fn main() -> std::io::Result<()> {
 
 [https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407](https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407)
 
+## 各種関数
+
 ### `fn set_logger(logger: &'static dyn Log) -> Result<(), SetLoggerError>`
 
 このメソッドを利用することで、アプリケーション内でグローバルに宣言されているロガーを設定することが可能であり、このメソッドを呼び出して初めてログの出力が可能となる。
@@ -540,6 +542,10 @@ pub fn set_max_level(level: LevelFilter) {
 
 [トランスミュート transmute](https://doc.rust-jp.rs/rust-nomicon-ja/transmutes.html)
 
+## 全体像
+
+![](./assets/log-overview.drawio.svg)
+
 ## log トレイトの実装を提供しているクレート
 
 ここからは各種クレートがどのように `Log` トレイを実装しているのかを見ていく。
@@ -552,6 +558,118 @@ pub fn set_max_level(level: LevelFilter) {
 よく利用されているであろうこれらのクレートを対象にする。
 
 ## simple_logger
+
+### ロガーの初期化
+
+[`simple_logger`](https://docs.rs/simple_logger) はロガーの設定や出力メッセージがとてもシンプルで使いやすいクレートであり、本体のコードも `lib.rs` のみで構成されているため `Log` トレイトの実装例確認の最初の一歩に適しています。
+
+公式から提供されている Getting Started なコードを確認すると、今まで説明してきた `set_boxed_logger` によるグローバルなロガーの宣言や `set_max_level` での最大ログレベルの設定を行なっていると予想できる。
+
+```rs
+use simple_logger::SimpleLogger;
+
+fn main() {
+    SimpleLogger::new().init().unwrap();
+
+    log::warn!("This is an example message.");
+}
+```
+
+これで以下のようにログメッセージが表示される。
+
+```bash
+2023-05-30T11:49:38.789Z WARN  [simple] This is an example message.
+```
+
+このクレートでは関連関数を使用していることからわかるように `SimpleLogger` のインスタンス生成と設定適用の関数をそれぞれ役割に分けて分離させている。
+
+```rs
+impl SimpleLogger {
+    #[must_use = "You must call init() to begin logging"]
+    pub fn new() -> SimpleLogger {
+        SimpleLogger {
+            default_level: LevelFilter::Trace,
+            module_levels: Vec::new(),
+
+            // 各フィーチャーフラグで有効化させるプロパティ
+        }
+    }
+}
+```
+
+[https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL105C1-L123C6](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL105C1-L123C6)
+
+ここでは `#[must_use]` 属性を利用することで以下のようにロガー設定を行うための `init` 関数を呼び出していない場合には警告を発するようになっている。
+
+```rs
+fn main() {
+    // warningが発生する
+    SimpleLogger::new();
+}
+```
+
+```rs
+pub fn init(mut self) -> Result<(), SetLoggerError> {
+    // ...
+
+    self.module_levels
+        .sort_by_key(|(name, _level)| name.len().wrapping_neg());
+    let max_level = self.module_levels.iter().map(|(_name, level)| level).copied().max();
+    let max_level = max_level
+        .map(|lvl| lvl.max(self.default_level))
+        .unwrap_or(self.default_level);
+    log::set_max_level(max_level);
+    log::set_boxed_logger(Box::new(self))?;
+    Ok(())
+}
+```
+
+[https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL347C1-L363C6](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL347C1-L363C6)
+
+この `init` 関数で最大のログレベルの設定やロガーのグローバルな値として登録を行なっている。また最大のログレベルは `module_levels` を調整するか `default_level` を調整する 2 つの方法があることがわかり、それぞれ `SimpleLogger` が提供している `with_module_level` 関数や `with_level` 関数を通して制御することが可能である。
+
+`SimpleLogger` では `env_logger` の挙動を模倣させ環境変数からも最大のログレベルを設定することが可能である。
+
+```rs
+#[must_use = "You must call init() to begin logging"]
+pub fn env(mut self) -> SimpleLogger {
+    self.default_level = std::env::var("RUST_LOG")
+        .ok()
+        .as_deref()
+        .map(log::LevelFilter::from_str)
+        .and_then(Result::ok)
+        .unwrap_or(self.default_level);
+
+    self
+}
+```
+
+[https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL157C1-L167C6](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL157C1-L167C6)
+
+こうした環境変数からの読み取りを行うメソッドが提供されているため、このメソッドを初期化の際に利用すれば、 `RUST_LOG=info cargo run` という形式で最大のログレベルを設定することも可能である。 `dotenvy` などと組み合わせれば、アプリケーションを動作させる環境ごとに異なるログレベルを設定することも容易である。
+
+`log` クレートが提供している `LevelFilter` は `FromStr` トレイトを実装しているため、環境変数から取得した文字列と事前に定義されたログレベルの文字列との比較を行うことで、対象の型への変換を行なっている。
+
+```rs
+static LOG_LEVEL_NAMES: [&str; 6] = ["OFF", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"];
+
+impl FromStr for LevelFilter {
+    type Err = ParseLevelError;
+    fn from_str(level: &str) -> Result<LevelFilter, Self::Err> {
+        ok_or(
+            LOG_LEVEL_NAMES
+                .iter()
+                .position(|&name| name.eq_ignore_ascii_case(level))
+                .map(|p| LevelFilter::from_usize(p).unwrap()),
+            ParseLevelError(()),
+        )
+    }
+}
+```
+
+[https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2)
+
+### Log クレートの実装
 
 ## env_logger
 
@@ -568,3 +686,10 @@ pub fn set_max_level(level: LevelFilter) {
 ### Box::leak による static 参照パターン
 
 ### once_cell
+
+### #[must_use]
+
+- https://doc.rust-lang.org/std/hint/fn.must_use.html
+- https://tech-blog.optim.co.jp/entry/2021/12/03/080000
+
+### FromStr
