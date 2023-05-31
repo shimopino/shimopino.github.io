@@ -424,9 +424,9 @@ simple_logger::init_with_level(log::Level::Warn).unwrap();
 
 ### `fn set_boxed_logger(logger: Box<dyn Log>) -> Result<(), SetLoggerError>`
 
-`set_logger` 関数では `&'static dyn Log` 型を引数に取る都合上、 `Log` トレイトを実装したロガーは、プログラムの実行全体にわたって有効なものでないといけない。
+`set_logger` 関数では `&'static dyn Log` 型を引数に取る都合上、 `Log` トレイトを実装したロガーは、プログラムの実行全体にわたって有効なものでないといけません。
 
-そのため公式ドキュメントのサンプルでは、初期化を行う際に `static` でロガーを宣言するようにしていた。
+そのため公式ドキュメントのサンプルでは、初期化を行う際に `static` でロガーを宣言するようにしていました。
 
 ```rs
 struct SimpleLogger;
@@ -441,15 +441,15 @@ fn main() {
 }
 ```
 
-このように記述できるのは `SimpleLogger` がフィールドを持たないユニット構造体であり、その型の名前自体が唯一の値となるため `SimpleLogger` とだけ定義すればインスタンスを作成できるからである。
+このように記述できるのは `SimpleLogger` がフィールドを持たないユニット構造体であり、その型の名前自体が唯一の値となるため `SimpleLogger` とだけ定義すればインスタンスを作成できるからです。
 
-しかし、他のライブラリのようにロガーに対して各種設定を制御するためにフィールドを追加すると、他の方法でロガーを初期化して `static` な参照を取得する必要がある。
+しかし、他のライブラリのようにロガーに対して各種設定を制御するためにフィールドを追加すると、他の方法でロガーを初期化して `static` な参照を取得する必要があります。
 
-そのような場合に利用できるのは `set_boxed_logger` 関数である。
+そのような場合に利用できるのは `set_boxed_logger` 関数です。
 
 [set_boxed_logger | log crate](https://docs.rs/log/latest/log/fn.set_boxed_logger.html)
 
-これは内部的には `set_logger_inner` 関数を呼び出しているだけではあるが、関数の引数が明確に異なっている。
+これは内部的には `set_logger` 関数と同様に  `set_logger_inner` 関数を呼び出しているだけですが、関数の引数と指定しているクロージャーの処理が異なっています。
 
 ```rs
 pub fn set_boxed_logger(logger: Box<dyn Log>) -> Result<(), SetLoggerError> {
@@ -457,13 +457,13 @@ pub fn set_boxed_logger(logger: Box<dyn Log>) -> Result<(), SetLoggerError> {
 }
 ```
 
-ここで使用している `Box::leak` メソッドは、`Box` を使用してヒープ上に確保されたメモリを明示的にリークさせることで、そのメモリをプログラム終了時まで保持させることのできるメソッドである。
+ここで使用している `Box::leak` メソッドは、`Box` を使用してヒープ上に確保されたメモリを、明示的にリークさせることでそのメモリをプログラム終了時まで保持させることのできるメソッドです。
 
 [Box::leak](https://doc.rust-lang.org/std/boxed/struct.Box.html#method.leak)
 
-このメソッドを実行することで `logger` をプログラム終了までヒープ上に保持させるようにし、その結果このメソッドから返却されるものは `&'static mut Log` の参照となり、エラーが発生することなくコンパイルすることが可能となる。
+このメソッドを実行することで `logger` をプログラム終了までヒープ上に保持させるようにし、その結果このメソッドから返却されるものは `&'static mut Log` の参照となり、エラーが発生することなくコンパイルすることが可能です。
 
-この `set_boxed_logger` を利用することで、 `static` な値で初期化することなく、以下のようにスコープ内で生成されたロガーをグローバルな変数として登録することが可能となる。
+この `set_boxed_logger` を利用することで、 `static` な値で初期化することなく、以下のように特定のスコープ内で生成されたロガーをグローバルな変数として登録することができます。
 
 ```rs
 // simple_loggerの例
