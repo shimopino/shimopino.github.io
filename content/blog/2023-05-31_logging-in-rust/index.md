@@ -391,9 +391,9 @@ where
 
 ### `fn set_max_level(level: LevelFilter)`
 
-`info!` マクロを呼び出せば、自動的にログレベル `Info` が設定された `Metadata` がログレコードに付与された状態となるが、これだけだと全てのログメッセージが表示されてしまうことになる。
+`info!` マクロを呼び出せば、自動的にログレベル `Info` が設定された `Metadata` がログレコードに付与された状態になりますが、これだけだと全てのログメッセージが表示されてしまいます。
 
-そこで `log` クレートは `set_max_level` というログの出力を調整するための関数を用意している。
+そこで `log` クレートは `set_max_level` というログの出力を調整するための関数を用意しています。
 
 ```rs
 // ログレベルに関してもグローバルなアトミックの設定を有している
@@ -408,19 +408,19 @@ pub fn set_max_level(level: LevelFilter) {
 
 [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2)
 
-ここで `Ordering::Relaxed` を設定して制約を緩めている背景は以下の ISSUE で言及されている通り、現在設定されている最大のログレベルを取得する箇所が `Ordering::Relaxed` を設定しているためである。
+ここで `Ordering::Relaxed` を設定して制約を緩めている背景は以下の ISSUE で言及されている通り、現在設定されている最大のログレベルを取得する箇所が `Ordering::Relaxed` を設定しているためです。
 
 [Confusing memory orderings for MAX_LOG_LEVEL_FILTER](https://github.com/rust-lang/log/issues/453)
 
-他のライブラリでは、このメソッドは `Log` トレイトの実装を行なったロガーの初期化を行うメソッドの内部で利用されていることが多い。
+他のライブラリでは、このメソッドは `Log` トレイトの実装を行なったロガーの初期化を行うメソッドの内部で利用されていることが多い印象です。
 
-例えば `simple_logger` の場合であれば、以下のようなロガーを生成する処理の中でログレベルを設定し、そのメソッド内部で `set_max_level` を呼び出している。
+例えば `simple_logger` の場合であれば、以下のようなロガーを生成する処理の中でログレベルを設定し、そのメソッド内部で `set_max_level` を呼び出すようにしており、 `log` クレートが提供するAPIの抽象化を行なっています。
 
 ```rs
 simple_logger::init_with_level(log::Level::Warn).unwrap();
 ```
 
-ここで設定したログレベルを、どのように管理して、ログの出力判断を行う `enabled` でどのように使用しているのかは、それぞれライブラリの実装によって異なっている。
+ここで設定したログレベルを、どのように管理して、ログの出力判断を行う `enabled` でどのように使用しているのかは、それぞれライブラリの実装によって異なっています。
 
 ### `fn set_boxed_logger(logger: Box<dyn Log>) -> Result<(), SetLoggerError>`
 
