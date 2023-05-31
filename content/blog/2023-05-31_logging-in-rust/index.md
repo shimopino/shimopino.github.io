@@ -257,15 +257,16 @@ fn main() -> std::io::Result<()> {
 
 ### `fn set_logger(logger: &'static dyn Log) -> Result<(), SetLoggerError>`
 
-このメソッドを利用することで、アプリケーション内でグローバルに宣言されているロガーを設定することが可能であり、このメソッドを呼び出して初めてログの出力が可能となる。
+このメソッドを利用することで、アプリケーション内でグローバルに宣言されているロガーを設定することができ、このメソッドを呼び出して初めてログの出力が可能となります。
 
 [set_logger | log crate](https://docs.rs/log/latest/log/fn.set_logger.html)
 
-このメソッドを呼び出さない場合には、マクロを実行した時には `NopLogger` という空の実装が用意されているオブジェクトのメソッドが実行される。
+このメソッドを呼び出さない場合には、マクロを実行した時には `NopLogger` という空の実装が用意されているメソッドが実行されます。
 
-`info!` マクロを呼び出した時に、内部では `__private_api_log` 関数を呼び出しており、この中の `logger` 関数内部でロガーの初期化が実行されたかどうかを判定している。
+処理の流れとしてはまず `info!` マクロを呼び出した時に、内部では `__private_api_log` 関数を呼び出しており、この中の `logger` 関数内部でロガーの初期化が実行されたかどうかを判定しています。
 
 ```rs
+// 各種ログマクロを実行した時に呼び出されている関数
 pub fn __private_api_log(
     args: fmt::Arguments,
     level: Level,
@@ -280,6 +281,7 @@ pub fn __private_api_log(
 
     // この logger 関数内部でどのログ実装を使用するのかを判断する
     logger().log(
+        // Record に関しては Builder パターンを使用してオブジェクトの生成を行っている
         &Record::builder()
             .args(args)
             .level(level)
@@ -294,22 +296,24 @@ pub fn __private_api_log(
 
 [https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#L1468-L1490](https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#L1468-L1490)
 
-実際に `logger` 関数の内容を確認すると以下のように `AtomicUsize` で管理している状態を取得し、初期化されたかどうかを判定させた後に実際に利用するロガーの判断を行なっている。
+実際に `logger` 関数の内容を確認すると以下のように `AtomicUsize` で管理している状態を取得し、初期化されたかどうかを判定させた後に実際に利用するロガーの判断を行なっています。
 
 ```rs
 // ロガーの設定状態を管理する変数
-static STATE: AtomicUsize = AtomicUsize::new(0);
+static STATE: AtomicUsize = AtomicUsize::new(0); // 初期値は UNINITIALIZED
 const UNINITIALIZED: usize = 0;
 const INITIALIZING: usize = 1;
 const INITIALIZED: usize = 2;
 
 // グローバルに宣言されたロガーへのポイントを保持する
 // AtomicUsizeで宣言された STATE により初期化されたかどうかを判定している
+// NopLoggerは何もプロパティが設定されていないため、そのまま型を指定してグローバルに宣言することが可能である
 static mut LOGGER: &dyn Log = &NopLogger;
 
 // ...
 
 pub fn logger() -> &'static dyn Log {
+    // ロガーを初期化していない場合はデフォルトの実装として NopLogger が採用される
     if STATE.load(Ordering::SeqCst) != INITIALIZED {
         static NOP: NopLogger = NopLogger;
         &NOP
@@ -321,19 +325,19 @@ pub fn logger() -> &'static dyn Log {
 
 [https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#LL1348C1-L1350C2](https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#LL1348C1-L1350C2)
 
-`AtomicUsize` はマルチスレッド環境でのデータ一貫性を担保するために設計された型であり、複数のスレッドからでも値を安全に操作することが可能である。
+`AtomicUsize` はマルチスレッド環境でのデータ一貫性を担保するために設計された型であり、複数のスレッドからでも値を安全に操作することが可能です。
 
 [AtomicUsize | std crate](https://doc.rust-lang.org/std/sync/atomic/struct.AtomicUsize.html)
 
-ログ出力を行う際はマルチスレッド環境からでもロガーを呼び出す可能性はあるため、アトミックな操作でロガーが初期化されたかどうかを判定することで、安全にどのログを利用するかの判断を行なっている。
+ログ出力を行う際はマルチスレッド環境からでもロガーを呼び出す可能性はあるため、アトミックな操作でロガーが初期化されたかどうかを判定することで、どのログを利用するかの判断を安全に行っています。
 
 （ただ、正直なところアトミック操作やメモリ順序への理解度は怪しいので「Rust Atomics and Locks」を読みたい。）
 
-ここで `AtomicUsize` を初期化状態の管理で使用しているのは、ロガーの定義が static なライフタイムを有している可変参照として定義されているからである。
+ここで `AtomicUsize` を初期化状態の管理で使用しているのは、ロガーの定義が `static` なライフタイムを有している可変参照として定義されているからです。
 
-可変参照であるためそのまま利用してしまうと、複数のスレッドからロガーの初期化が呼び出されてしまった場合、 `LOGGER` に対して同時アクセスを行いデータ競合が発生してしまう可能性がある。そのため `AtomicUsize` を利用して初期化が一度だけ安全に行われることを保証するためにこのような設計になっているのだと推察できる。
+可変参照であるためそのまま利用してしまうと、複数のスレッドからロガーの初期化が呼び出されてしまった場合、 `LOGGER` に対して同時アクセスを行いデータ競合が発生してしまう可能性があります。そのため `AtomicUsize` を利用して初期化が一度だけ安全に行われることを保証するためにこのような設計になっているのだと推察しています。
 
-次に `set_logger` メソッドが内部でどのように初期化を行っているのかを確認する。
+次に `set_logger` メソッドが内部でどのように初期化を行っているのかを確認します。
 
 ```rs
 // この関数でグローバルに宣言されたロガーを受け取って、static mutな変数を変更する
@@ -377,13 +381,13 @@ where
 
 [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1352-L1382](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1352-L1382)
 
-`AtomicUsize` が提供する `compare_exchange` は、現在の値と第 1 引数で指定された値と比較して、同じ値の場合には第 2 引数で指定した値に置き換える。そして、関数の返り値に置き換え前の現在の値を返却する。
+`AtomicUsize` が提供する `compare_exchange` は、現在の値と第 1 引数で指定された値と比較して、同じ値の場合には第 2 引数で指定した値に置き換えます。そして、関数の返り値に置き換え前の現在の値を返却します。
 
-この状態の変更に関しては `Ordering::SeqCst` が指定されているため、必ず 1 度に 1 つのスレッドのみがアトミックに状態を `INITIALIZING` という初期化中であることを示す状態に変更することが可能となる。
+この状態の変更に関しては `Ordering::SeqCst` が指定されているため、必ず 1 度に 1 つのスレッドのみがアトミックに状態を `INITIALIZING` という初期化中であることを示す状態に変更することになります。
 
-もしもあるスレッドがログ設定を行なっている間に、他のスレッドがログ設定の関数を呼び出した場合には `old_state` に `INITIALIZING` が返却され、後続の処理でスピンループを行うことでそのスレッドでの初期化設定が完了するまで待機し、そのあとでエラーを返却している。
+もしもあるスレッドがログ設定を行なっている間に、他のスレッドがログ設定の関数を呼び出した場合には `old_state` に `INITIALIZING` が返却され、後続の処理でスピンループを行うことでそのスレッドでの初期化設定が完了するまで待機し、そのあとでエラーを返却しています。
 
-このような初期化処理を実現することで、グローバルにロガー設定が 1 度のみしか呼出されないことを保証している。
+このような初期化処理を実現することで、グローバルにロガー設定が 1 度のみしか呼出されないことを保証しています。
 
 ### `fn set_max_level(level: LevelFilter)`
 
