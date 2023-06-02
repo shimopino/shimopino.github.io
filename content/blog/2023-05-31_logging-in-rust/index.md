@@ -477,16 +477,18 @@ fn main() {
 
 ### `fn set_max_level(level: LevelFilter)`
 
-`log` クレートではグローバルに最大のログレベルを設定することのできる関数 `set_max_logger` も提供している。
+`log` クレートではグローバルに最大のログレベルを設定することのできる関数 `set_max_logger` が提供されている。
 
 [set_max_logger | log crate](https://docs.rs/log/latest/log/fn.set_max_level.html)
 
-このメソッドの役割は重要であり、この関数を通して設定されたログレベルを `info!` などの各種マクロで参照し、実際にログ出力を行うかどうかを判断している。
+この関数を通して設定されたログレベルを `info!` などの各種マクロを実行した際に参照し、ログ出力を行うかどうかを判断しています。
 
 ```rs
 // log!(target: "my_target", Level::Info, "a {} event", "log");
 (target: $target:expr, $lvl:expr, $($arg:tt)+) => ({
     let lvl = $lvl;
+    // ここでコンパイル時に設定したログレベルと、関数を通して設定したログレベルを参照し
+    // 対象するログメッセージのログレベルとの比較を行い出力判断を行なっている
     if lvl <= $crate::STATIC_MAX_LEVEL && lvl <= $crate::max_level() {
         $crate::__private_api_log(
             __log_format_args!($($arg)+),
@@ -503,7 +505,7 @@ fn main() {
 この処理の中では以下の 2 つのログレベルを参照している。
 
 - `STATIC_MAX_LEVEL`
-  - フィーチャーフラグレベルで制御された最大のログレベル
+  - コンパイル時に指定したフラグで制御された最大のログレベル
   - リリースビルド時に出力したいログを制御するときに利用する
   - デフォルトでは `LevelFilter::Trace` が設定されている
   - [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1586](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1586)
@@ -513,7 +515,7 @@ fn main() {
   - デフォルトでは `LevelFilter::Off` が設定されている（つまり、何もログ出力しない）
   - [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L408](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L408)
 
-`log` クレートでは、ログレベルとして以下の `Enum` を定義しており、各マクロに対応するログレベルと、全てのログを出力しないレベルに設定された `Off` のログレベルが定義されており、このログレベルが初期値として設定されている。
+`log` クレートでは、ログレベルとして以下の `Enum` を定義しており、各マクロに対応するログレベルと、全てのログを出力しないレベルに設定された `Off` のログレベルが定義されており、この `Off` ログレベルが初期値として設定されています。
 
 ```rs
 static MAX_LOG_LEVEL_FILTER: AtomicUsize = AtomicUsize::new(0);
@@ -536,7 +538,9 @@ pub enum LevelFilter {
 
 [LevelFilter | log crate](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL552C1-L567C2)
 
-つまり明示的にこのログレベルを変更しなければ、デフォルトでは全てのログ出力は抑制されるようになっている。
+つまり関数を使用してこのログレベルを変更しなければ、デフォルトでは全てのログ出力は抑制されてしまいます。
+
+最大のログレベルを調整するための関数は以下のように定義されています。
 
 ```rs
 // https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1265C1-L1273C2
@@ -550,34 +554,31 @@ pub fn set_max_level(level: LevelFilter) {
 }
 ```
 
-`std::mem::transmute` は非常に危険な関数ではあるが、ある型から別の型へのビット単位の移動を意味しており、引数で指定した値から返り値で指定した型に対してビットをコピーする。
+`std::mem::transmute` は非常に危険な関数ではあるが、ある型から別の型へのビット単位の移動行うため、引数で指定した値から返り値で指定した型に対してビットをコピーします。
 
-`log` クレートの場合ではマルチスレッドでログレベルの変更を管理するために `AtomicUsize` を利用しているため、ログレベルを定義している `LevelFilter` と `usize` で型が異なっている。関数のインターフェースレベルでは `LevelFilter` のみを表に出しているため、 `LevelFilter` をアトミックに更新するための裏技的なやり方である。
+`log` クレートの場合ではマルチスレッドでログレベルの変更を管理するために `AtomicUsize` を利用しているため、ログレベルを定義している `LevelFilter` と `usize` で型が異なっています。関数のインターフェースレベルでは `LevelFilter` を表に出しているため、 `LevelFilter` をアトミックに更新するための裏技的なやり方です。
 
-`match` 式などを利用してより安全に型変換を行う方法もあるが、どの値にも該当しない `exhaustive patterns` をどのように取り扱うのか、であったり単純なビット移動である `transmute` の方がパフォーマンスが良い、という理由で現状のコードになっている可能性はある。
+`match` 式などを利用してより安全に型変換を行う方法もありますが、どの値にも該当しない `exhaustive patterns` をどのように取り扱うのか、であったり単純なビット移動である `transmute` の方がパフォーマンスが良い、という理由で現状のコードになっている可能性はあります。
 
 [トランスミュート transmute](https://doc.rust-jp.rs/rust-nomicon-ja/transmutes.html)
 
-## 全体像
-
-![](./assets/log-overview.drawio.svg)
-
 ## log トレイトの実装を提供しているクレート
 
-ここからは各種クレートがどのように `Log` トレイを実装しているのかを見ていく。
+ここからはクレートがどのように `Log` トレイを実装しているのかを見ていきます。
+
+よく利用されているであろうクレートは、例えば以下のようなものだと思いますが、今回は `simple_logger` を対象にします。
 
 - [simple_logger](https://docs.rs/simple_logger)
 - [env_logger](https://docs.rs/env_logger/)
 - [fern](https://docs.rs/fern)
-- [tracing_log](https://docs.rs/tracing-log/latest/tracing_log/)
-
-よく利用されているであろうこれらのクレートを対象にする。
 
 ## simple_logger
 
+### 初期化用の関数
+
 [`simple_logger`](https://docs.rs/simple_logger) はロガーの設定や出力メッセージがとてもシンプルで使いやすいクレートであり、本体のコードも `lib.rs` のみで構成されているため `Log` トレイトの実装例確認の最初の一歩に適しています。
 
-公式から提供されている Getting Started なコードを確認すると、今まで説明してきた `set_boxed_logger` によるグローバルなロガーの宣言や `set_max_level` での最大ログレベルの設定を行なっていると予想できる。
+公式から提供されている Getting Started なコードを確認すると、提供されているメソッドの中で、今まで説明してきた `set_boxed_logger` によるグローバルなロガーの宣言や `set_max_level` での最大ログレベルの設定を行なっていることが想像できます。
 
 ```rs
 use simple_logger::SimpleLogger;
@@ -589,13 +590,13 @@ fn main() {
 }
 ```
 
-これで以下のようにログメッセージが表示される。
+これで以下のようにログメッセージが表示されます。
 
 ```bash
 2023-05-30T11:49:38.789Z WARN  [simple] This is an example message.
 ```
 
-このクレートでは関連関数を使用していることからわかるように `SimpleLogger` のインスタンス生成と設定適用の関数をそれぞれ役割に分けて分離させている。
+このクレートでは関連関数を使用していることからわかるように `SimpleLogger` のインスタンス生成と設定適用の関数をそれぞれ役割に分けて分離させています。
 
 ```rs
 impl SimpleLogger {
@@ -613,7 +614,7 @@ impl SimpleLogger {
 
 [https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL105C1-L123C6](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL105C1-L123C6)
 
-ここでは `#[must_use]` 属性を利用することで以下のようにロガー設定を行うための `init` 関数を呼び出していない場合には警告を発するようになっている。
+ここでは `#[must_use]` 属性を利用することで以下のようにロガー設定を行うための `init` 関数を呼び出していない場合には警告を発するようになっています。
 
 ```rs
 fn main() {
@@ -640,9 +641,9 @@ pub fn init(mut self) -> Result<(), SetLoggerError> {
 
 [https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL347C1-L363C6](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL347C1-L363C6)
 
-この `init` 関数で最大のログレベルの設定やロガーのグローバルな値として登録を行なっている。また最大のログレベルは `module_levels` を調整するか `default_level` を調整する 2 つの方法があることがわかり、それぞれ `SimpleLogger` が提供している `with_module_level` 関数や `with_level` 関数を通して制御することが可能である。
+この `init` 関数で最大のログレベルの設定やロガーのグローバルな値として登録を行なっていマス。また最大のログレベルは `module_levels` を調整するか `default_level` を調整する 2 つの方法があることがわかり、それぞれ `SimpleLogger` が提供している `with_module_level` 関数や `with_level` 関数を通して制御することが可能です。
 
-`SimpleLogger` では `env_logger` の挙動を模倣させ環境変数からも最大のログレベルを設定することが可能である。
+`SimpleLogger` では `env_logger` の挙動を模倣させ環境変数からも最大のログレベルを設定することが可能です。
 
 ```rs
 #[must_use = "You must call init() to begin logging"]
@@ -660,7 +661,7 @@ pub fn env(mut self) -> SimpleLogger {
 
 [https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL157C1-L167C6](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL157C1-L167C6)
 
-こうした環境変数からの読み取りを行うメソッドが提供されているため、このメソッドを初期化の際に利用すれば、 `RUST_LOG=info cargo run` という形式で最大のログレベルを設定することも可能である。 `dotenvy` などと組み合わせれば、アプリケーションを動作させる環境ごとに異なるログレベルを設定することも容易である。
+こうした環境変数からの読み取りを行うメソッドが提供されているため、このメソッドを初期化の際に利用すれば、 `RUST_LOG=info cargo run` という形式で最大のログレベルを設定することができます。 `dotenvy` などと組み合わせれば、アプリケーションを動作させる環境ごとに異なるログレベルを設定することも容易です。
 
 `log` クレートが提供している `LevelFilter` は `FromStr` トレイトを実装しているため、環境変数から取得した文字列と事前に定義されたログレベルの文字列との比較を行うことで、対象の型への変換を行なっている。
 
@@ -683,7 +684,7 @@ impl FromStr for LevelFilter {
 
 [https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2](https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2)
 
-これらの設定を簡易的に行うための専用の関数も用意されている。
+なお、これらの設定を簡易的に行うための専用の関数も用意されています。
 
 ```rs
 pub fn init_with_env() -> Result<(), SetLoggerError> {
@@ -693,19 +694,18 @@ pub fn init_with_env() -> Result<(), SetLoggerError> {
 
 [https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL542C1-L544C2](https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL542C1-L544C2)
 
-## 適用されている実装パターン
+## まとめ
 
-### Facade パターン
+`log` クレートの調査をしていく中で `Box::leak` を利用した `static` なライフタイムを有する参照の作成方法であったり、 `AtomicUsize` を利用したマルチスレッド環境を考慮した状態遷移がどのように実装されているのかを把握することができました。
 
-### Builder パターン
+今までは以下のコードを見ても、マクロを実行したときにどのようにロガーを参照しているのか理解できていませんでしたが、コードリーディングを通してどのような機能を利用しているのか想像できるようになりました。
 
-### Box::leak による static 参照パターン
+```rs
+fn main() {
+    SimpleLogger::new().init().unwrap();
 
-### once_cell
+    log::warn!("This is an example message.");
+}
+```
 
-### #[must_use]
-
-- https://doc.rust-lang.org/std/hint/fn.must_use.html
-- https://tech-blog.optim.co.jp/entry/2021/12/03/080000
-
-### FromStr
+`Log` トレイトの実装を提供している他のクレートも同じことを行なっているはずなので、 `env_logger` や `fern` などのコードリーディングを行うときも、 `log` クレートが裏側でどのような処理を行なっているのか想像できる状態になっているため、そこまで苦労しなさそうです、
