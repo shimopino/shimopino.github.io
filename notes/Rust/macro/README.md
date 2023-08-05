@@ -13,10 +13,13 @@
   - https://github.com/rust-lang/rust-analyzer/issues/10894
 - [ ] quoteの役割は何か
 - [ ] syn::Identの役割は何か
+- [ ] format_ident!() マクロは何か？
 - [ ] cargo expandするとどのような内容が出力されるのか？
 - [ ] spanの出力は何か？
 - [ ] spanのcall_siteやdef_siteは何か？
+- [ ] 
 
+## 
 
 ## サンプル
 
