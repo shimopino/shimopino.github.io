@@ -6,17 +6,44 @@ Rust でプログラミングをしていると、 `vec!` や `println!` のよ�
 
 マクロは、簡単に言うと「コードを生成するコード」のようなものです。これにより、繰り返しや特定のパターンのコードを簡単に、効率的に書くことができます。この記事では、手続きマクロを中心に、 [`proc-macro-workshop`](https://github.com/dtolnay/proc-macro-workshop) という資料を元に学び進めていきます。
 
-## proc-macro-workshop とは何か？
+## Rust のマクロについて
 
-Rustのマクロには、宣言的マクロと手続き的マクロの2つの種類が存在します。
+Rust のマクロには、宣言的マクロと手続き的マクロの 2 つの種類が存在します。
 
 - 宣言的マクロ: これは `macro_rules!` 構文で定義され、 `vec!` や `println!` のようなものがこれに該当します。
-- 手続き的マクロ: このマクロの種類には以下の3つが含まれます。
+- 手続き的マクロ: このマクロの種類には以下の 3 つが含まれます。
   - derive マクロ: `#[derive]` 属性を使ってコードの追加を指定するもの。
   - attribute マクロ: さまざまな要素に適用できるカスタム属性を定義するためのもの。
   - function マクロ: 関数のように、与えられた引数に基づいて動作するマクロ。
 
 本記事では `proc-macro-workshop` を通じて、手続き的マクロの各種類とその記述方法について理解度を深めていきます。
+
+まずは本記事では `#[derive]` マクロを使ってBuilderパターンの実装を進めていき、最終的には以下のような処理を実現できるようにしていきます。
+
+```rust
+use derive_builder::Builder;
+
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    #[builder(each = "arg")]
+    args: Vec<String>,
+    current_dir: Option<String>,
+}
+
+fn main() {
+    let command = Command::builder()
+        .executable("cargo".to_owned())
+        .arg("build".to_owned())
+        .arg("--release".to_owned())
+        .build()
+        .unwrap();
+
+    assert_eq!(command.executable, "cargo");
+}
+```
+
+- [Derive macro: derive(Builder)](https://github.com/dtolnay/proc-macro-workshop/tree/master#derive-macro-derivebuilder)
 
 ## 疑問点
 
