@@ -18,7 +18,9 @@ Rust のマクロには、宣言的マクロと手続き的マクロの 2 つの
 
 本記事では `proc-macro-workshop` を通じて、手続き的マクロの各種類とその記述方法について理解度を深めていきます。
 
-まずは本記事では `#[derive]` マクロを使ってBuilderパターンの実装を進めていき、最終的には以下のような処理を実現できるようにしていきます。
+## 進め方
+
+まずは本記事では `#[derive]` マクロを使って Builder パターンの実装を進めていき、最終的には以下のような処理を実現できるようにしていきます。
 
 ```rust
 use derive_builder::Builder;
@@ -44,6 +46,52 @@ fn main() {
 ```
 
 - [Derive macro: derive(Builder)](https://github.com/dtolnay/proc-macro-workshop/tree/master#derive-macro-derivebuilder)
+
+## 01-parse
+
+まずは一番最初の課題である `01-parse` のテストコードでは、以下の `derive` マクロを利用したときにコンパイルエラーが発生しないようにしていきます。
+
+```rust
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    args: Vec<String>,
+    env: Vec<String>,
+    current_dir: String,
+}
+
+fn main() {}
+```
+
+具体的には実装は以下のように `unimplemented!()` が利用されているため、関数の型シグネチャに合うように、空の実装を追加していきます。
+
+```rust
+use proc_macro::TokenStream;
+
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+    let _ = input;
+
+    unimplemented!()
+}
+```
+
+コンパイルを通すだけであれば空の `TokenStream` を返すために、以下のように空のトークンツリーを生成して返却すれば OK です。
+
+```rust
+use proc_macro::TokenStream;
+
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+    let _ = input;
+
+    TokenStream::new()
+}
+```
+
+- [proc_macro::TokenStream](https://doc.rust-lang.org/beta/proc_macro/struct.TokenStream.html)
+
+## 02-create-builder
 
 ## 疑問点
 
