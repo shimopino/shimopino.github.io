@@ -63,7 +63,7 @@ pub struct Command {
 fn main() {}
 ```
 
-具体的には実装は以下のように `unimplemented!()` が利用されているため、関数の型シグネチャに合うように、空の実装を追加していきます。
+具体的には初期実装は以下のように `unimplemented!()` が利用されているため、関数の型シグネチャに合うように、空の実装を追加していきます。
 
 ```rust
 use proc_macro::TokenStream;
@@ -91,6 +91,119 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
 - [proc_macro::TokenStream](https://doc.rust-lang.org/beta/proc_macro/struct.TokenStream.html)
 
+`TokenStream` は Rust コードのトークンのストリームが含まれており、 `Command` 構造体の場合には以下のような内容が入力に含まれている。
+
+```bash
+TokenStream [
+    Ident {
+        ident: "struct",
+        span: #0 bytes(39..45),
+    },
+    Ident {
+        ident: "Command",
+        span: #0 bytes(46..53),
+    },
+    Group {
+        delimiter: Brace,
+        stream: TokenStream [
+            Ident {
+                ident: "executable",
+                span: #0 bytes(60..70),
+            },
+            Punct {
+                ch: ':',
+                spacing: Alone,
+                span: #0 bytes(70..71),
+            },
+            Ident {
+                ident: "String",
+                span: #0 bytes(72..78),
+            },
+            # ... 残りの定義が続いていく
+        ],
+        span: #0 bytes(54..151),
+    },
+]
+```
+
+ただ、これはただのトークンのストリームでしかないため、Rust のソースコードの構文木にパースするための `syn` クレートも用意されている。
+
+今回作成しているものは `derive` マクロであるため、 `syn::DeriveInput` という構造として解析することが可能である。
+
+```rust
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+    let parsed = parse_macro_input!(input as DeriveInput);
+
+    TokenStream::new()
+}
+```
+
+実際に構文木にパースした結果は以下のようになっており、Rust コードのトークンがツリー構造として変換されており、 `TokenStream` よりも取り扱いしやすい形式になっていることがわかります。
+
+```bash
+DeriveInput {
+    attrs: [],
+    vis: Visibility::Inherited,
+    ident: Ident {
+        ident: "Command",
+        span: #0 bytes(46..53),
+    },
+    generics: Generics {
+        lt_token: None,
+        params: [],
+        gt_token: None,
+        where_clause: None,
+    },
+    data: Data::Struct {
+        struct_token: Struct,
+        fields: Fields::Named {
+            brace_token: Brace,
+            named: [
+                Field {
+                    attrs: [],
+                    vis: Visibility::Inherited,
+                    mutability: FieldMutability::None,
+                    ident: Some(
+                        Ident {
+                            ident: "executable",
+                            span: #0 bytes(60..70),
+                        },
+                    ),
+                    colon_token: Some(
+                        Colon,
+                    ),
+                    ty: Type::Path {
+                        qself: None,
+                        path: Path {
+                            leading_colon: None,
+                            segments: [
+                                PathSegment {
+                                    ident: Ident {
+                                        ident: "String",
+                                        span: #0 bytes(72..78),
+                                    },
+                                    arguments: PathArguments::None,
+                                },
+                            ],
+                        },
+                    },
+                },
+                # ...
+            ],
+        },
+        semi_token: None,
+    },
+}
+```
+
+これでパターンマッチなどと合わせて細かい制御を行うことが可能となりました。
+
+- [syn::DeriveInput](https://docs.rs/syn/latest/syn/struct.DeriveInput.html)
+- [Command 構造体の DeriveInput](https://gist.github.com/shimopino/a5cf6c3810b3131b31ba99cc55074d5d)
+
+他にもどのように構文木に解析されるのかが気になる場合は [AST Explorer](https://astexplorer.net/) を実際に触って様々なパターンを見てみるとよいと思います。
+
 ## 02-create-builder
 
 ## 疑問点
@@ -114,70 +227,3 @@ pub fn derive(input: TokenStream) -> TokenStream {
 - [ ] #fields を quote!内で利用した時にどのように展開されるのか？
 - [ ] syn の parse_macro_input を使わなかった場合の出力は何か？
 - [ ] Option の clone と take の違いは何か？
-
-##
-
-## サンプル
-
-```rust
-#[derive(Builder)]
-struct Command {
-  executable:String,
-}
-```
-
-```bash
-DeriveInput {
-    attrs: [],
-    vis: Visibility::Inherited,
-    ident: Ident {
-        ident: "Command",
-        span: #0 bytes(56..63),
-    },
-    generics: Generics {
-        lt_token: None,
-        params: [],
-        gt_token: None,
-        where_clause: None,
-    },
-    data: Data::Struct {
-        struct_token: Struct,
-        fields: Fields::Named {
-            brace_token: Brace,
-            named: [
-                Field {
-                    attrs: [],
-                    vis: Visibility::Inherited,
-                    mutability: FieldMutability::None,
-                    ident: Some(
-                        Ident {
-                            ident: "executable",
-                            span: #0 bytes(70..80),
-                        },
-                    ),
-                    colon_token: Some(
-                        Colon,
-                    ),
-                    ty: Type::Path {
-                        qself: None,
-                        path: Path {
-                            leading_colon: None,
-                            segments: [
-                                PathSegment {
-                                    ident: Ident {
-                                        ident: "String",
-                                        span: #0 bytes(82..88),
-                                    },
-                                    arguments: PathArguments::None,
-                                },
-                            ],
-                        },
-                    },
-                },
-                Comma,
-            ],
-        },
-        semi_token: None,
-    },
-}
-```
