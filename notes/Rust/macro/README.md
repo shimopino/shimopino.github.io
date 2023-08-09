@@ -126,6 +126,8 @@ TokenStream [
 ]
 ```
 
+- [TokenStream の全文](https://gist.github.com/shimopino/e896b706c71949203d253ca7edd95b6e)
+
 ただ、これはただのトークンのストリームでしかないため、Rust のソースコードの構文木にパースするための `syn` クレートも用意されている。
 
 今回作成しているものは `derive` マクロであるため、 `syn::DeriveInput` という構造として解析することが可能である。
@@ -205,6 +207,236 @@ DeriveInput {
 他にもどのように構文木に解析されるのかが気になる場合は [AST Explorer](https://astexplorer.net/) を実際に触って様々なパターンを見てみるとよいと思います。
 
 ## 02-create-builder
+
+次の課題は Builder の derive マクロを適用した構造体に対して、 `builder` メソッドを実装し、Builder パターンを実装するための準備を行います。
+
+```rust
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    args: Vec<String>,
+    env: Vec<String>,
+    current_dir: String,
+}
+
+fn main() {
+    let builder = Command::builder();
+
+    let _ = builder;
+}
+```
+
+ここでは手続きマクロの内部で以下のような構造体と、その構造体を生成するためのメソッドを作成します。
+
+```rust
+pub struct CommandBuilder {
+    executable: Option<String>,
+    args: Option<Vec<String>>,
+    env: Option<Vec<String>>,
+    current_dir: Option<String>,
+}
+
+impl Command {
+    pub fn builder() -> CommandBuilder {
+        CommandBuilder {
+            executable: None,
+            args: None,
+            env: None,
+            current_dir: None,
+        }
+    }
+}
+```
+
+まずは汎用性などは無視してコンパイルエラーが発生しないようにするために、いくつかのプロパティはハードコードでそのまま生成する形式で進める。
+
+手続きマクロの内部で Rust のコードを生成するときには `quote` クレートを利用すると簡単に生成することができる。
+
+```rust
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+    let parsed = parse_macro_input!(input as DeriveInput);
+
+    let expanded = quote! {
+        pub struct CommandBuilder {
+            executable: Option<String>,
+            args: Option<Vec<String>>,
+            env: Option<Vec<String>>,
+            current_dir: Option<String>,
+        }
+
+        impl Command {
+            pub fn builder() -> CommandBuilder {
+                CommandBuilder {
+                    executable: None,
+                    args: None,
+                    env: None,
+                    current_dir: None,
+                }
+            }
+        }
+    };
+
+    // ここで TokenStream に型変換している
+    expanded.into()
+}
+```
+
+動作確認のために `cargo expand` を利用すれば、以下のように実際にマクロがどのように展開されているのかがわかり、今回ハードコードで設定した通りにソースコードが生成されていることがわかる。
+
+```rust
+#![feature(prelude_import)]
+#[prelude_import]
+use std::prelude::rust_2021::*;
+#[macro_use]
+extern crate std;
+use demo::Builder;
+struct Command {
+    executable: String,
+    args: Vec<String>,
+    env: Vec<String>,
+    current_dir: String,
+}
+pub struct CommandBuilder {
+    executable: Option<String>,
+    args: Option<Vec<String>>,
+    env: Option<Vec<String>>,
+    current_dir: Option<String>,
+}
+impl Command {
+    pub fn builder() -> CommandBuilder {
+        CommandBuilder {
+            executable: None,
+            args: None,
+            env: None,
+            current_dir: None,
+        }
+    }
+}
+fn main() {
+    let builder = Command::builder();
+    let _ = builder;
+}
+```
+
+これでコンパイルエラーは発生せず、テストも PASS することができたが、ここで急に出てきた `quote` クレートの役割や、他の構造体でも適用できるようにするための汎用化の処理が不足している。
+
+### `quote` クレート
+
+最初の例で見たように、 入力となる `TokenStream` を実際に [ログに出力してみた結果](https://gist.github.com/shimopino/e896b706c71949203d253ca7edd95b6e) を確認すると、Rust のコードを表す値の配列となっていたことがわかる。
+
+```bash
+TokenStream [
+    Ident {
+        ident: "pub",
+        span: #5 bytes(29..36),
+    },
+    Ident {
+        ident: "struct",
+        span: #5 bytes(29..36),
+    },
+    # ...
+]
+```
+
+これは構文木を構成するトークンである `proc_macro::TokenTree` から構成されていることがわかる。
+
+```rust
+pub enum TokenTree {
+    Group(Group),
+    Ident(Ident),
+    Punct(Punct),
+    Literal(Literal),
+}
+```
+
+- [proc_macro::TokenTree](https://doc.rust-lang.org/beta/proc_macro/enum.TokenTree.html)
+
+例えば単純に以下のような構造体を追加で定義したいとする。
+
+```rust
+struct CommandBuilder {
+    executable: String,
+}
+```
+
+この構造体は `TokenTree` に分解するなら以下のように構成されることとなる。
+
+![](assets/TokenTree.drawio.png)
+
+この場合は `proc_macro::TokenTree` を利用すると以下のように定義することができる
+
+```rust
+use proc_macro::{Group, Ident, Punct, Spacing, Span, TokenStream, TokenTree};
+
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+
+    // IteratorTokenStream に変換するために
+    [
+        TokenTree::Ident(Ident::new("struct", Span::call_site())),
+        TokenTree::Ident(Ident::new("CommandBuilder", Span::call_site())),
+        TokenTree::Group(Group::new(
+            proc_macro::Delimiter::Brace,
+            [
+                TokenTree::Ident(Ident::new("executable", Span::call_site())),
+                TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+                TokenTree::Ident(Ident::new("String", Span::call_site())),
+                TokenTree::Punct(Punct::new(',', Spacing::Alone)),
+            ]
+            .into_iter()
+            .collect::<TokenStream>(),
+        )),
+    ]
+    .into_iter()
+    .collect()
+}
+```
+
+これで `cargo expand` を実行すれば、実際に以下のように設定したトークンに従って、Rust コードが生成されていることがわかる
+
+```rust
+struct CommandBuilder {
+    executable: String,
+}
+fn main() {}
+```
+
+実は `quote!` はこれと似たようなことをより簡単に実行できるように用意されているクレートであり、実際に Rust のコードを記述すれば、それを `TokenStream` の形式に変換してくれる。
+
+先ほどと同じことを `quote!` で実現したい場合には、以下のように単純に記述すれば、先ほど `TokenTree` を直接利用して記述していた内容と同じことを実現することができる。
+
+```rust
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+    // TokenTree を直接利用するよりも、はるかに簡易的に記述することができる
+    let expanded = quote! {
+        struct CommandBuilder {
+            executable: String,
+        }
+    }
+
+    // quote! が生成するのはライブラリ用に用意された proc_macto2::TokenStream なのでここで変換する
+    expanded.into()
+}
+```
+
+### 汎用化
+
+今回の実装は `Command` 構造体に特化した実装になっていたが、他の構造体やプロパティ定義でも利用できるように汎用化させる必要がある。
+
+具体的には Builder パターンの実装に関しては、以下のような構造体名とプロパティ定義のパターンが存在していることがわかる。
+
+```rust
+// 生成する構造体の名前のパターン [元の構造体の名前]Builder
+pub struct CommandBuilder {
+    // プロパティの型の定義のパターン [プロパティ名]: Option<元の型>,
+    executable: Option<String>,
+    args: Option<Vec<String>>,
+    env: Option<Vec<String>>,
+    current_dir: Option<String>,
+}
+```
 
 ## 疑問点
 
