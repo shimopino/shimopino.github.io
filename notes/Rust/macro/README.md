@@ -712,23 +712,20 @@ impl CommandBuilder {
 
 ただしこれはあくまで一例であり、以下のような実装パターンがあります。
 
-1. `self` で値として受け取り移動させる
-   - 一度 `build` を実行した後はビルダーが再利用できないことが明確になる
-   - 再利用したい場合は `clone` するか、 再度 `builder()` メソッドを呼び出す
-2. `&mut self` で参照として受け取り、データを `take` する
+1. `&mut self` で参照として受け取り、データを `take` する
    - データを `Command` に移動させながら、ビルダー自体は再利用することができる
    - ビルダー側の値は `None` にリセットされるため、注意して利用する必要がある
-3. `&self` で参照として受け取り、データを `clone` する
+2. `&self` で参照として受け取り、データを `clone` する
    - ビルダーには変更されないのでそのまま再利用できる
    - データのコピーが必要であり、パフォーマンスに影響を与える可能性がある
 
-今回はビルダーを再利用しないことを前提としてパターン 1 で実装します。
+今回は値を移動させるためにするのでパターン 1 で実装します。
 
 ```rust
 let build_fields = named.iter().map(|f| {
     let ident = &f.ident;
     quote! {
-        #ident: self.#ident.ok_or(format!("{} is not set", stringify!(#ident)))?
+        #ident: self.#ident.take().ok_or(format!("{} is not set", stringify!(#ident)))?
     }
 });
 
@@ -739,7 +736,7 @@ let expanded = quote! {
 
     impl #builder_ident {
         // ...
-        fn build(self) -> Result<#ident, Box<dyn std::error::Error>> {
+        fn build(&mut self) -> Result<#ident, Box<dyn std::error::Error>> {
             Ok(#ident {
                 #(#build_fields,)*
             })
@@ -749,6 +746,24 @@ let expanded = quote! {
 ```
 
 これでコンパイルエラーが発生することなくメソッドを追加できました。
+
+## 05-method-chaining
+
+次の課題はメソッドチェーン形式での Builder の利用ではあるが、すでにこれまでの課題が完了していれば問題なくコンパイルできる。
+
+```rust
+fn main() {
+    let command = Command::builder()
+        .executable("cargo".to_owned())
+        .args(vec!["build".to_owned(), "--release".to_owned()])
+        .env(vec![])
+        .current_dir("..".to_owned())
+        .build()
+        .unwrap();
+
+    assert_eq!(command.executable, "cargo");
+}
+```
 
 ## 疑問点
 
