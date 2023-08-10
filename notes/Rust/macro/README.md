@@ -421,7 +421,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 }
 ```
 
-### Builder構造体の名前の取得
+### Builder 構造体の名前の取得
 
 今回の実装は `Command` 構造体に特化した実装になっていたが、他の構造体やプロパティ定義でも利用できるように汎用化させる必要がある。
 
@@ -478,7 +478,7 @@ quote! {
 
 - [constructing identifiers](https://docs.rs/quote/latest/quote/macro.quote.html#constructing-identifiers)
 
-### Builder構造体のプロパティの取得
+### Builder 構造体のプロパティの取得
 
 これまで `quote!` を使って `TokenStream` を定義する際には個別に変数を指定したり、プロパティを指定したりしていたが、このマクロは内部で利用されたイテレータを展開してトークンツリーを組み立てることができる。
 
@@ -534,7 +534,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let builder_ident = format_ident!("{}Builder", name);
 
     // 元が構造体であることと、タプルやUnit型を想定していないため、let else で対象データを抽出する
-    let syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { named, .. }), .. }) = parsed.data else {
+    let syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { ref named, .. }), .. }) = parsed.data else {
         panic!("This macro can only be applied to struct using named field only, not tuple or unit.");
     };
 
@@ -596,6 +596,159 @@ impl Command {
 
 これで他の構造体に対しても適用することが可能な汎用的なマクロにすることができました。
 
+## 03-call-setters
+
+次の課題では以下のように `Command` で定義されている各プロパティに対して値を設定するための `setter` を準備します
+
+```rust
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    args: Vec<String>,
+    env: Vec<String>,
+    current_dir: String,
+}
+
+fn main() {
+    let mut builder = Command::builder();
+    // プロパティと同じ名称で同じ型を引数に受け取るメソッドを用意する
+    builder.executable("cargo".to_owned());
+    builder.args(vec!["build".to_owned(), "--release".to_owned()]);
+    builder.env(vec![]);
+    builder.current_dir("..".to_owned());
+}
+```
+
+これは構造としては以下のパターンに従うメソッドを作成することと同義です。
+
+```rust
+fn [プロパティ名](&mut self, [プロパティ名]: [プロパティの型]) -> &mut Self {
+    self.[プロパティ名] = Some([プロパティ名])
+    self
+}
+```
+
+前回の課題のときの汎用化の際に適用した実装の大部分を流用するだけで実装することができます。
+
+```rust
+let builder_setters = named.iter().map(|f| {
+    let ident = &f.ident;
+    let ty = &f.ty;
+    quote! {
+        fn #ident(&mut self, #ident: #ty) -> &mut Self {
+            self.#ident = Some(#ident);
+            self
+        }
+    }
+});
+
+let expanded = quote! {
+    pub struct #builder_ident {
+        #(#builder_fields,)*
+    }
+
+    impl #builder_ident {
+        #(#builder_setters)*
+    }
+
+    // ...
+};
+```
+
+これで以下のように展開すれば指定した通りのメソッドが作成されていることがわかる。
+
+```rust
+impl CommandBuilder {
+    fn executable(&mut self, executable: String) -> &mut Self {
+        self.executable = Some(executable);
+        self
+    }
+    fn args(&mut self, args: Vec<String>) -> &mut Self {
+        self.args = Some(args);
+        self
+    }
+    fn env(&mut self, env: Vec<String>) -> &mut Self {
+        self.env = Some(env);
+        self
+    }
+    fn current_dir(&mut self, current_dir: String) -> &mut Self {
+        self.current_dir = Some(current_dir);
+        self
+    }
+}
+```
+
+## 04-call-build
+
+次の課題では以下のように `build` メソッドを作成し、全てのプロパティに値が設定されている場合には `Ok(Command)` を返却し、設定されていないものがあれば `Err` を返却するようにします。
+
+```rust
+fn main() {
+    let mut builder = Command::builder();
+    builder.executable("cargo".to_owned());
+    builder.args(vec!["build".to_owned(), "--release".to_owned()]);
+    builder.env(vec![]);
+    builder.current_dir("..".to_owned());
+
+    // build() メソッドから Result を返却する
+    // 設定されていないプロパティがある場合には Err を返却する
+    let command = builder.build().unwrap();
+    assert_eq!(command.executable, "cargo");
+}
+```
+
+`Command` のプロパティの場合には、以下のように実装すれば良さそうです。
+
+```rust
+impl CommandBuilder {
+    fn build(&mut self) -> Result<Command, Box<dyn std::error::Error>> {
+        Ok(Command {
+            executable: self.executable.take().ok_or("executable is not set")?,
+            // ...
+        })
+    }
+}
+```
+
+ただしこれはあくまで一例であり、以下のような実装パターンがあります。
+
+1. `self` で値として受け取り移動させる
+   - 一度 `build` を実行した後はビルダーが再利用できないことが明確になる
+   - 再利用したい場合は `clone` するか、 再度 `builder()` メソッドを呼び出す
+2. `&mut self` で参照として受け取り、データを `take` する
+   - データを `Command` に移動させながら、ビルダー自体は再利用することができる
+   - ビルダー側の値は `None` にリセットされるため、注意して利用する必要がある
+3. `&self` で参照として受け取り、データを `clone` する
+   - ビルダーには変更されないのでそのまま再利用できる
+   - データのコピーが必要であり、パフォーマンスに影響を与える可能性がある
+
+今回はビルダーを再利用しないことを前提としてパターン 1 で実装します。
+
+```rust
+let build_fields = named.iter().map(|f| {
+    let ident = &f.ident;
+    quote! {
+        #ident: self.#ident.ok_or(format!("{} is not set", stringify!(#ident)))?
+    }
+});
+
+let expanded = quote! {
+    pub struct #builder_ident {
+        // ...
+    }
+
+    impl #builder_ident {
+        // ...
+        fn build(self) -> Result<#ident, Box<dyn std::error::Error>> {
+            Ok(#ident {
+                #(#build_fields,)*
+            })
+        }
+    }
+};
+```
+
+これでコンパイルエラーが発生することなくメソッドを追加できました。
 
 ## 疑問点
 
@@ -607,5 +760,4 @@ impl Command {
   - https://github.com/rust-lang/rust-analyzer/issues/10894
 - [ ] span の出力は何か？
 - [ ] span の call_site や def_site は何か？
-- [ ] #fields を quote!内で利用した時にどのように展開されるのか？
 - [ ] Option の clone と take の違いは何か？
