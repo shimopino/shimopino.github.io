@@ -421,7 +421,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 }
 ```
 
-### 汎用化
+### Builder構造体の名前の取得
 
 今回の実装は `Command` 構造体に特化した実装になっていたが、他の構造体やプロパティ定義でも利用できるように汎用化させる必要がある。
 
@@ -463,12 +463,139 @@ quote! {
     struct #builder_ident {
         // ...
     }
+
+    impl #ident {
+        pub fn builder() -> #builder_ident {
+            #builder_ident {
+                // ...
+            }
+        }
+    }
 }
 ```
 
 これでどのような構造体に対して適用しても、対応する Builder 構造体を定義することができます。
 
 - [constructing identifiers](https://docs.rs/quote/latest/quote/macro.quote.html#constructing-identifiers)
+
+### Builder構造体のプロパティの取得
+
+これまで `quote!` を使って `TokenStream` を定義する際には個別に変数を指定したり、プロパティを指定したりしていたが、このマクロは内部で利用されたイテレータを展開してトークンツリーを組み立てることができる。
+
+```rust
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+    // Iterator の検証のために動的にプロパティを作成するための元データを用意する
+    let vars = vec!["a", "b", "c"];
+
+    // 内部で quote! を使用して TokenStream の Iterator を用意する
+    let delarations: Vec<proc_macro2::TokenStream> = vars
+        .into_iter()
+        .map(|var_name| {
+            let ident = format_ident!("{}", var_name);
+            // TokenStream を生成
+            quote! {
+                #ident: String,
+            }
+        })
+        .collect();
+
+    let expanded = quote! {
+        pub struct Sample {
+            // 以下のようにマクロ内で変数を展開するように指定することが可能である
+            #(#delarations)*
+        }
+    };
+
+    expanded.into()
+}
+```
+
+ここで作成した内容を `cargo expand` で確認すれば、イテレータとして用意した変数を展開して全てのプロパティの定義を動的に作成できていることがわかる。
+
+```rust
+pub struct Sample {
+    a: String,
+    b: String,
+    c: String,
+}
+```
+
+- [quote! での Iterator 展開のテスト](https://github.com/dtolnay/quote/blob/d8cb63f7d7f45c503ac580bd8f3cb2d8bb28b160/tests/test.rs#L79-L87)
+
+`CommandBuilder` の定義と `builder` メソッドの実装を作成する上では、同じように各プロパティや初期値を作成するためのイテレータを用意することを目指す。
+
+```rust
+#[proc_macro_derive(Builder)]
+pub fn derive(input: TokenStream) -> TokenStream {
+    let parsed: DeriveInput = parse_macro_input!(input as DeriveInput);
+
+    let name = parsed.ident;
+    let builder_ident = format_ident!("{}Builder", name);
+
+    // 元が構造体であることと、タプルやUnit型を想定していないため、let else で対象データを抽出する
+    let syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { named, .. }), .. }) = parsed.data else {
+        panic!("This macro can only be applied to struct using named field only, not tuple or unit.");
+    };
+
+    // 構造体を構成する各プロパティの定義には Field からアクセスすることが可能
+    // Builder の定義と builder メソッドのそれぞれで必要なトークンの形に抽出する
+    let builder_fields = named.iter().map(|f| {
+        let ident = &f.ident;
+        let ty = &f.ty;
+        quote! {
+            #ident: Option<#ty>
+        }
+    });
+
+    let builder_init = named.iter().map(|f| {
+        let ident = &f.ident;
+        quote! {
+            #ident: None
+        }
+    });
+
+    let expanded = quote! {
+        pub struct #builder_ident {
+            #(#builder_fields,)*
+        }
+
+        impl #name {
+            pub fn builder() -> #builder_ident {
+                #builder_ident {
+                    #(#builder_init,)*
+                }
+            }
+        }
+    };
+
+    expanded.into()
+}
+```
+
+これを展開すれば、以下のようにイテレーターが展開されてそれぞれの定義が作成されていることがわかる。
+
+```rust
+pub struct CommandBuilder {
+    executable: Option<String>,
+    args: Option<Vec<String>>,
+    env: Option<Vec<String>>,
+    current_dir: Option<String>,
+}
+impl Command {
+    pub fn builder() -> CommandBuilder {
+        CommandBuilder {
+            executable: None,
+            args: None,
+            env: None,
+            current_dir: None,
+        }
+    }
+}
+```
+
+これで他の構造体に対しても適用することが可能な汎用的なマクロにすることができました。
+
 
 ## 疑問点
 
@@ -478,11 +605,7 @@ quote! {
 - [ ] proc_macro を開発するときの Debugging の設定例
 - [ ] rust-analyzer が Bug った時の挙動
   - https://github.com/rust-lang/rust-analyzer/issues/10894
-- [ ] syn::Ident の役割は何か
-- [ ] format_ident!() マクロは何か？
-- [ ] cargo expand するとどのような内容が出力されるのか？
 - [ ] span の出力は何か？
 - [ ] span の call_site や def_site は何か？
 - [ ] #fields を quote!内で利用した時にどのように展開されるのか？
-- [ ] syn の parse_macro_input を使わなかった場合の出力は何か？
 - [ ] Option の clone と take の違いは何か？
