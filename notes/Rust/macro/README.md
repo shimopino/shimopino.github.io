@@ -438,19 +438,18 @@ pub struct CommandBuilder {
 }
 ```
 
+つまり `syn` クレートを使用した `DeriveInput` にパースした後で、元の構造体の名前・構造体で定義されている各プロパティの名前と型さえ取得することができれば、汎用的な実装するにすることができる。
+
+![](assets/DeriveInput.drawio.png)
+
 ## 疑問点
 
 - [ ] trybuild とは何か？
 - [ ] Cargo.toml における test とは何か？
 - [ ] 外部クレートを利用せずに実装するには？
-- [ ] parse_macro_input
-- [ ] DeriveInput
-- [ ] proc_macro_derive とその他のマクロとの違いは何か？
-- [ ] 単純な `Command` を Builder マクロを適用した時の `DeriveInput` の具体的な Debug 内容（ `{:#?}` ）
 - [ ] proc_macro を開発するときの Debugging の設定例
 - [ ] rust-analyzer が Bug った時の挙動
   - https://github.com/rust-lang/rust-analyzer/issues/10894
-- [ ] quote の役割は何か
 - [ ] syn::Ident の役割は何か
 - [ ] format_ident!() マクロは何か？
 - [ ] cargo expand するとどのような内容が出力されるのか？
