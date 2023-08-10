@@ -442,6 +442,34 @@ pub struct CommandBuilder {
 
 ![](assets/DeriveInput.drawio.png)
 
+- [全体像](https://gist.github.com/shimopino/a5cf6c3810b3131b31ba99cc55074d5d)
+
+まずは構造体の名前を抽出し `[構造体の名前]Builder` という名前の Builder 用の構造体を作成する。
+
+`quote!` 内部では識別子を単純に結合することはできないので、新しく `Ident` を作成して変数として利用する必要があり、以下のように 2 つのやり方が存在しています。
+
+```rust
+// quote::format_ident! を利用する方法
+let ident = parsed.ident;
+let builder_ident = format_ident!("{}Builder", ident);
+
+// syn::Ident::new で直接生成する方法
+let ident = parsed.ident;
+let builder_name = format!("{}Builder", ident);
+let builder_ident = syn::Ident::new(&builder_name, ident.span());
+
+// どちらの場合でも quote! 内で利用できる
+quote! {
+    struct #builder_ident {
+        // ...
+    }
+}
+```
+
+これでどのような構造体に対して適用しても、対応する Builder 構造体を定義することができます。
+
+- [constructing identifiers](https://docs.rs/quote/latest/quote/macro.quote.html#constructing-identifiers)
+
 ## 疑問点
 
 - [ ] trybuild とは何か？
