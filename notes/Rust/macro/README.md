@@ -765,6 +765,196 @@ fn main() {
 }
 ```
 
+## 06-optional-field
+
+この課題では、構造体に `Option` なプロパティが含まれる場合を想定しており、対象のプロパティに対しては `setter` の呼び出しは必須ではなく、呼び出されていない場合には初期値として `None` がそのまま代入される。
+
+これはプロパティの型を検証して `Option` であることを確認する必要があるため、これまでよりも複雑な処理が必要になります。
+
+```rust
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    args: Vec<String>,
+    env: Vec<String>,
+    current_dir: Option<String>, // Optionを含むプロパティ定義
+}
+
+fn main() {
+    let command = Command::builder()
+        .executable("cargo".to_owned())
+        .args(vec!["build".to_owned(), "--release".to_owned()])
+        .env(vec![])
+        // current_dir は設定しない場合には None が設定される
+        .build()
+        .unwrap();
+    assert!(command.current_dir.is_none());
+
+    let command = Command::builder()
+        .executable("cargo".to_owned())
+        .args(vec!["build".to_owned(), "--release".to_owned()])
+        .env(vec![])
+        // 呼び出した場合には Some(..) が設定される
+        // current_dir() は引数として String の値を受け取る
+        .current_dir("..".to_owned())
+        .build()
+        .unwrap();
+    assert!(command.current_dir.is_some());
+}
+```
+
+今の実装では、以下のように `Option` が二重に付与されてしまったり `setter` の引数にも `Option` が付与されてしまいます。
+
+```rust
+pub struct CommandBuilder {
+    executable: Option<String>,
+    args: Option<Vec<String>>,
+    env: Option<Vec<String>>,
+    current_dir: Option<Option<String>>, // Option<Option<_>> と二重に適用されてしまう
+}
+
+impl CommandBuilder {
+    // 引数が String ではなく Option<String> になってしまう
+    fn current_dir(&mut self, current_dir: Option<String>) -> &mut Self {
+        self.current_dir = Some(current_dir);
+        self
+    }
+    // ...
+}
+```
+
+そこでこの課題では `derive` マクロが適用された構造体に対して、 `Option` が定義されているプロパティの特定と、ラップされている中身の型を抽出して条件分岐的に `TokenStream` を構築していくことを目指します。
+
+方針としては `Field` 内の `syn::Type::Path` からトップレベルの型を抽出し、その型が `Option` であった場合にはさらにラップされている型も同じく `syn::Type::Path` として抽出していきます。
+
+![](assets/DeriveInputOptional.drawio.png)
+
+今回は対象が `Option` であった場合には内部の型を取り出して `Some` として返却する関数を用意して、この関数を対象のプロパティが `Option` であるかどうかの判定でも利用します。
+
+```rust
+/// Returns unwrapped Type in Option as Option<&Type>
+fn unwrap_option(ty: &Type) -> Option<&Type> {
+    if let syn::Type::Path(syn::TypePath {
+        path: syn::Path { segments, .. },
+        ..
+    }) = ty
+    {
+        if segments.len() == 1 {
+            if let Some(syn::PathSegment {
+                ident,
+                arguments:
+                    syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
+                        args, ..
+                    }),
+            }) = segments.first()
+            {
+                if ident == "Option" && args.len() == 1 {
+                    if let Some(syn::GenericArgument::Type(inner_ty)) = args.first() {
+                        return Some(inner_ty);
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+```
+
+複雑な型構造を順番にアンラップしているので複雑そうに見えますが、やっていることは `Option` の場合には中身の型を `Option<&Type>` で返却しているだけなので割とシンプルです。
+
+後はこの関数を利用して各種 Builder の型定義やメソッドのシグネチャを変更していきます。
+
+まずは Builder の型定義を変更し、対象のプロパティが `Option` の場合は追加の `Option` でラップすることなく、元々の型をそのまま利用します。
+
+```rust
+let builder_fields = named.iter().map(|f| {
+    let ident = &f.ident;
+    let ty = &f.ty;
+
+    if unwrap_option(ty).is_some() {
+        quote! {
+            #ident: #ty
+        }
+    } else {
+        quote! {
+            #ident: Option<#ty>
+        }
+    }
+});
+```
+
+これで以下のように元々の構造体のプロパティが `Option` の場合にはそのまま型を利用するようになったことがわかる。
+
+```rust
+struct Command {
+    executable: String,
+    args: Vec<String>,
+    env: Vec<String>,
+    current_dir: Option<String>,
+}
+
+pub struct CommandBuilder {
+    executable: Option<String>,
+    args: Option<Vec<String>>,
+    env: Option<Vec<String>>,
+    current_dir: Option<String>, // 二重に Option でラップすることは亡くなった
+}
+```
+
+同じように各メソッドや、Commandの生成部分も条件分岐をさせていきます。
+
+以下は Command を生成する時に代入先のプロパティが `Option` かどうかによって内部の値をアンラップするかどうかを分岐させています。
+
+```rust
+let build_fields = named.iter().map(|f| {
+    let ident = &f.ident;
+    let ty = &f.ty;
+
+    if unwrap_option(ty).is_some() {
+        quote! {
+            #ident: self.#ident.take()
+        }
+    } else {
+        quote! {
+            #ident: self.#ident.take().ok_or(format!("{} is not set", stringify!(#ident)))?
+        }
+    }
+});
+```
+
+各 `setter` メソッドの型シグネチャでは、対象のプロパティが `Option` である場合には内部の型を取り出して、その型をメソッドの引数に指定するだけでOKです。
+
+```rust
+let builder_setters = named.iter().map(|f| {
+    let ident = &f.ident;
+    let ty = &f.ty;
+
+    // Option である場合には内部の型を取り出してその型を引数に利用する
+    if let Some(inner_ty) = unwrap_option(ty) {
+        quote! {
+            fn #ident(&mut self, #ident: #inner_ty) -> &mut Self {
+                self.#ident = Some(#ident);
+                self
+            }
+        }
+    } else {
+        quote! {
+            fn #ident(&mut self, #ident: #ty) -> &mut Self {
+                self.#ident = Some(#ident);
+                self
+            }
+        }
+    }
+});
+```
+
+ここまでできればコンパイルエラーなくテストを実行することが可能になります。
+
+## 感想
+
+- `if-let` を使った値取りだしと条件分岐があまりにも使いやすい
+
 ## 疑問点
 
 - [ ] trybuild とは何か？
@@ -775,4 +965,3 @@ fn main() {
   - https://github.com/rust-lang/rust-analyzer/issues/10894
 - [ ] span の出力は何か？
 - [ ] span の call_site や def_site は何か？
-- [ ] Option の clone と take の違いは何か？
