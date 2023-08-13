@@ -902,7 +902,7 @@ pub struct CommandBuilder {
 }
 ```
 
-同じように各メソッドや、Commandの生成部分も条件分岐をさせていきます。
+同じように各メソッドや、Command の生成部分も条件分岐をさせていきます。
 
 以下は Command を生成する時に代入先のプロパティが `Option` かどうかによって内部の値をアンラップするかどうかを分岐させています。
 
@@ -923,7 +923,7 @@ let build_fields = named.iter().map(|f| {
 });
 ```
 
-各 `setter` メソッドの型シグネチャでは、対象のプロパティが `Option` である場合には内部の型を取り出して、その型をメソッドの引数に指定するだけでOKです。
+各 `setter` メソッドの型シグネチャでは、対象のプロパティが `Option` である場合には内部の型を取り出して、その型をメソッドの引数に指定するだけで OK です。
 
 ```rust
 let builder_setters = named.iter().map(|f| {
@@ -987,7 +987,7 @@ fn main() {
 
 - [Derive macro helper attributes](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes)
 
-実際にこの属性を付与した状態でマクロを実行すると、1つ1つの属性を構成する `syn::Field` の `attrs` プロパティに以下のような情報が格納されていることがわかる。
+実際にこの属性を付与した状態でマクロを実行すると、1 つ 1 つの属性を構成する `syn::Field` の `attrs` プロパティに以下のような情報が格納されていることがわかる。
 
 ![](assets/DeriveInputAttributes.drawio.png)
 
@@ -1058,6 +1058,151 @@ fn unwrap_ty(ty: &Type) -> InnerType {
 ただし、マクロ内で指定した属性は `TokenStream` として得られるため、まずは `TokenStream` をどのように解析すればいいのかを把握します。
 
 ![](assets/AttributeTokenStream.png)
+
+まずは `syn` クレートにおける `TokenStream` の解析の仕組みを理解していきます。
+
+- [syn::parse](https://docs.rs/syn/2.0.28/syn/parse/index.html)
+
+`syn` クレートでは解析済みの `proc_macro2::TokenStream` を解析するための様々な parser 関数を提供しており、 `fn(input: ParseStream) -> syn::Result<Self>` というシグネチャに従って実装することで、トークンを様々な形状として解析することが可能です。
+
+コードで理解するために、まずは以下のように今回解析する対象と同じような `TokenStream` を生成します。
+
+```rust
+fn main() {
+    let tokens = quote! { each = "arg" };
+    println!("{:#?}", tokens);
+}
+```
+
+このコードを実行すれば、画像で示したものと同じ構造の `TokenStream` が生成されていることがわかります。
+
+後はこの構造に従って解析できるように、それぞれのトークンに合致する型を有した構造体を定義し、 `Parse` トレイを実装していきます。
+
+```rust
+struct IdentEqualExpr {
+    ident: syn::Ident,
+    eq_token: syn::Token![=],
+    expr: syn::Expr,
+}
+
+impl syn::parse::Parse for IdentEqualExpr {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        // 解析する順番に parse を呼び出す
+        // 内部でカーソル位置が移動するため、正しい順番で呼び出す必要がある
+        let ident = input.parse()?;
+        let eq_token = input.parse()?;
+        let expr = input.parse()?;
+        Ok(Self {
+            ident,
+            eq_token,
+            expr,
+        })
+    }
+}
+```
+
+動作確認のために `proc_macro2::TokenStream` を解析するための `syn::parse2` を実行して結果を確認すると、ストリームから指定した型に正しく解析できていることがわかる。
+
+```rust
+fn main() {
+    let tokens = quote! { each = "arg" };
+
+    let name_equal_expr = syn::parse2::<IdentEqualExpr>(tokens);
+
+    match name_equal_expr {
+        // 出力結果は以下のようになり、指定した通りに解析できていることがわかる
+        // 後は Literal を表している syn::LitStr から値を取り出せばよい
+        /**
+         * IdentEqualExpr {
+         *     ident: Ident(
+         *         each,
+         *     ),
+         *     eq_token: Eq,
+         *     expr: Expr::Lit {
+         *         attrs: [],
+         *         lit: Lit::Str {
+         *             token: "arg",
+         *         },
+         *     },
+         * }
+         */
+        Ok(value) => println!("{:#?}", value),
+        Err(_) => panic!("unexpected token"),
+    }
+}
+```
+
+`syn` クレートは似たような構造を解析するための型として `syn::MetaNameValue` を用意している。
+
+```rust
+pub struct MetaNameValue {
+    pub path: Path,
+    pub eq_token: Eq,
+    pub value: Expr,
+}
+```
+
+- [syn::MetaNameValue](https://docs.rs/syn/2.0.28/syn/struct.MetaNameValue.html)
+
+最初の解析結果に関しては `syn::Ident` ではなく `syn::Path` として定義されているため利用することができないように思えるが、実は `From` トレイトを以下のように実装しているため、入力が `Ident` であってもこの型を利用して変換することが可能です。
+
+```rust
+// https://docs.rs/syn/2.0.28/src/syn/path.rs.html#13-25
+impl<T> From<T> for Path
+where
+    T: Into<PathSegment>,
+{
+    fn from(segment: T) -> Self {
+        let mut path = Path {
+            leading_colon: None,
+            segments: Punctuated::new(),
+        };
+        path.segments.push_value(segment.into());
+        path
+    }
+}
+
+// https://docs.rs/syn/latest/src/syn/path.rs.html#96-106
+impl<T> From<T> for PathSegment
+where
+    T: Into<Ident>,
+{
+    fn from(ident: T) -> Self {
+        PathSegment {
+            ident: ident.into(),
+            arguments: PathArguments::None,
+        }
+    }
+}
+```
+
+そのため今回のように `each = "arg"` の構造を解析して、中身の値を取り出す場合には、以下のような実装にしていけばよい。
+
+```rust
+fn unwrap_builder_attr_value(attr: &syn::Attribute) -> Option<String> {
+    if attr.path().is_ident("builder") {
+        if let Ok(syn::MetaNameValue {
+            value:
+                syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(ref liststr),
+                    ..
+                }),
+            ..
+        }) = attr.parse_args::<syn::MetaNameValue>()
+        {
+            return Some(liststr.value());
+        } else {
+            return None;
+        }
+    }
+
+    None
+}
+```
+
+### 生成する実装コードの変更
+
+ここまでで Builder を適用した構造体に対して、各プロパティの型を `Vec` や `Option` として解析する方法や、 `builder(each = "arg")` のように付与された属性から `"arg"` という値を取り出すことができるようになった。
 
 ## 感想
 
