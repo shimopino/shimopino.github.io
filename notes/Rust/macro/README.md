@@ -951,6 +951,114 @@ let builder_setters = named.iter().map(|f| {
 
 ここまでできればコンパイルエラーなくテストを実行することが可能になります。
 
+## 07-repeated-field
+
+次の課題ではさらにマクロの機能を深掘りしていき、以下のように特定のプロパティに対して属性を付与すると、付与した値を基準に生成されるコードを動的に変更していきます。
+
+```rust
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    // プロパティに対して追加の属性を割り当てる
+    #[builder(each = "arg")]
+    args: Vec<String>,
+    // プロパティに対して追加の属性を割り当てる
+    #[builder(each = "env")]
+    env: Vec<String>,
+    current_dir: Option<String>,
+}
+
+fn main() {
+    let command = Command::builder()
+        .executable("cargo".to_owned())
+        // 追加した属性に基づいて、Vecを構成する1つ1つの要素を追加していく
+        // また、生成されるメソッドも属性で指定した名前で生成される
+        .arg("build".to_owned())
+        .arg("--release".to_owned())
+        .build()
+        .unwrap();
+
+    assert_eq!(command.executable, "cargo");
+    assert_eq!(command.args, vec!["build", "--release"]);
+}
+```
+
+このような属性は、公式ドキュメント上では `derive macro helper attributes` と呼ばれており、それ自体はなんらかの処理を行うようなものではなく、マクロに対して追加の情報を送ることでより複雑な処理ができるようにするものです。
+
+- [Derive macro helper attributes](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes)
+
+実際にこの属性を付与した状態でマクロを実行すると、1つ1つの属性を構成する `syn::Field` の `attrs` プロパティに以下のような情報が格納されていることがわかる。
+
+![](assets/DeriveInputAttributes.drawio.png)
+
+実装方針としては以下のように進めます
+
+- 対象のプロパティが `Vec` であるかどうかを検証する
+  - `Vec` の場合には `builder` 属性が付与されているかどうかを検証する
+  - 属性が付与されている場合には `each` トークンが含まれている中から、適用するメソッド名を抽出する
+
+### プロパティ検証を行う関数を拡張する
+
+Command 構造体の各プロパティの型を検証して `Option` の場合には内部の型を `Option<&Type>` として返却する `unwrap_option` 関数を用意していた。
+
+この関数を拡張して、プロパティの型が `Option` である場合には内部の型を返却し、また `Vec` である場合にも内部の型を返却します。また返却する型が `Option` のままの場合には分岐する回数が増えてしまうため、 `Option` や `Vec` 出ない場合も `enum` で表現するようにします。
+
+```rust
+enum InnerType {
+    OptionType(Type),
+    VecType(Type),
+    PrimitiveType,
+}
+
+fn unwrap_ty(ty: &Type) -> InnerType {
+    // ...
+}
+```
+
+後はこの型に合うように条件分岐させていきます。
+
+```rust
+/// Returns InnerType enum with unwrapped Type
+fn unwrap_ty(ty: &Type) -> InnerType {
+    if let syn::Type::Path(syn::TypePath {
+        path: syn::Path { segments, .. },
+        ..
+    }) = ty
+    {
+        if segments.len() == 1 {
+            if let Some(syn::PathSegment {
+                ident,
+                arguments:
+                    syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
+                        args, ..
+                    }),
+            }) = segments.first()
+            {
+                if args.len() == 1 {
+                    if let Some(syn::GenericArgument::Type(inner_ty)) = args.first() {
+                        if ident == "Option" {
+                            return InnerType::OptionType(inner_ty.clone());
+                        } else if ident == "Vec" {
+                            return InnerType::VecType(inner_ty.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    InnerType::PrimitiveType
+}
+```
+
+### TokenStream の解析
+
+`Option` や `Vec` のプロパティであるかどうかの検証はできるようになったため、次は `Vec` であった場合には `derive マクロの属性から使用するメソッドの名称を抽出する関数を作成します。
+
+ただし、マクロ内で指定した属性は `TokenStream` として得られるため、まずは `TokenStream` をどのように解析すればいいのかを把握します。
+
+![](assets/AttributeTokenStream.png)
+
 ## 感想
 
 - `if-let` を使った値取りだしと条件分岐があまりにも使いやすい
