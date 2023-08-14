@@ -248,7 +248,7 @@ impl Command {
 }
 ```
 
-まずは汎用性などは無視してコンパイルエラーが発生しないようにするために、いくつかのプロパティはハードコードでそのまま生成する形式で進める。
+まずは汎用性などは無視してコンパイルエラーが発生しないようにするために、いくつかのフィールドはハードコードでそのまま生成する形式で進める。
 
 手続きマクロの内部で Rust のコードを生成するときには `quote` クレートを利用すると簡単に生成することができる。
 
@@ -362,7 +362,7 @@ struct CommandBuilder {
 
 この構造体は `TokenTree` に分解するなら以下のように構成されることとなる。
 
-![](assets/TokenTree.drawio.png)
+![](assets/token-tree.drawio.png)
 
 この場合は `proc_macro::TokenTree` を利用すると以下のように定義することができる
 
@@ -423,14 +423,14 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
 ### Builder 構造体の名前の取得
 
-今回の実装は `Command` 構造体に特化した実装になっていたが、他の構造体やプロパティ定義でも利用できるように汎用化させる必要がある。
+今回の実装は `Command` 構造体に特化した実装になっていたが、他の構造体やフィールド定義でも利用できるように汎用化させる必要がある。
 
-具体的には Builder パターンの実装に関しては、以下のような構造体名とプロパティ定義のパターンが存在していることがわかる。
+具体的には Builder パターンの実装に関しては、以下のような構造体名とフィールド定義のパターンが存在していることがわかる。
 
 ```rust
 // 生成する構造体の名前のパターン [元の構造体の名前]Builder
 pub struct CommandBuilder {
-    // プロパティの型の定義のパターン [プロパティ名]: Option<元の型>,
+    // フィールドの型の定義のパターン [フィールド名]: Option<元の型>,
     executable: Option<String>,
     args: Option<Vec<String>>,
     env: Option<Vec<String>>,
@@ -438,9 +438,9 @@ pub struct CommandBuilder {
 }
 ```
 
-つまり `syn` クレートを使用した `DeriveInput` にパースした後で、元の構造体の名前・構造体で定義されている各プロパティの名前と型さえ取得することができれば、汎用的な実装するにすることができる。
+つまり `syn` クレートを使用した `DeriveInput` にパースした後で、元の構造体の名前・構造体で定義されている各フィールドの名前と型さえ取得することができれば、汎用的な実装するにすることができる。
 
-![](assets/DeriveInput.drawio.png)
+![](assets/derive-input.drawio.png)
 
 - [全体像](https://gist.github.com/shimopino/a5cf6c3810b3131b31ba99cc55074d5d)
 
@@ -478,14 +478,14 @@ quote! {
 
 - [constructing identifiers](https://docs.rs/quote/latest/quote/macro.quote.html#constructing-identifiers)
 
-### Builder 構造体のプロパティの取得
+### Builder 構造体のフィールドの取得
 
-これまで `quote!` を使って `TokenStream` を定義する際には個別に変数を指定したり、プロパティを指定したりしていたが、このマクロは内部で利用されたイテレータを展開してトークンツリーを組み立てることができる。
+これまで `quote!` を使って `TokenStream` を定義する際には個別に変数を指定したり、フィールドを指定したりしていたが、このマクロは内部で利用されたイテレータを展開してトークンツリーを組み立てることができる。
 
 ```rust
 #[proc_macro_derive(Builder)]
 pub fn derive(input: TokenStream) -> TokenStream {
-    // Iterator の検証のために動的にプロパティを作成するための元データを用意する
+    // Iterator の検証のために動的にフィールドを作成するための元データを用意する
     let vars = vec!["a", "b", "c"];
 
     // 内部で quote! を使用して TokenStream の Iterator を用意する
@@ -511,7 +511,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 }
 ```
 
-ここで作成した内容を `cargo expand` で確認すれば、イテレータとして用意した変数を展開して全てのプロパティの定義を動的に作成できていることがわかる。
+ここで作成した内容を `cargo expand` で確認すれば、イテレータとして用意した変数を展開して全てのフィールドの定義を動的に作成できていることがわかる。
 
 ```rust
 pub struct Sample {
@@ -523,7 +523,7 @@ pub struct Sample {
 
 - [quote! での Iterator 展開のテスト](https://github.com/dtolnay/quote/blob/d8cb63f7d7f45c503ac580bd8f3cb2d8bb28b160/tests/test.rs#L79-L87)
 
-`CommandBuilder` の定義と `builder` メソッドの実装を作成する上では、同じように各プロパティや初期値を作成するためのイテレータを用意することを目指す。
+`CommandBuilder` の定義と `builder` メソッドの実装を作成する上では、同じように各フィールドや初期値を作成するためのイテレータを用意することを目指す。
 
 ```rust
 #[proc_macro_derive(Builder)]
@@ -538,7 +538,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         panic!("This macro can only be applied to struct using named field only, not tuple or unit.");
     };
 
-    // 構造体を構成する各プロパティの定義には Field からアクセスすることが可能
+    // 構造体を構成する各フィールドの定義には Field からアクセスすることが可能
     // Builder の定義と builder メソッドのそれぞれで必要なトークンの形に抽出する
     let builder_fields = named.iter().map(|f| {
         let ident = &f.ident;
@@ -598,7 +598,7 @@ impl Command {
 
 ## 03-call-setters
 
-次の課題では以下のように `Command` で定義されている各プロパティに対して値を設定するための `setter` を準備します
+次の課題では以下のように `Command` で定義されている各フィールドに対して値を設定するための `setter` を準備します
 
 ```rust
 #[derive(Builder)]
@@ -611,7 +611,7 @@ pub struct Command {
 
 fn main() {
     let mut builder = Command::builder();
-    // プロパティと同じ名称で同じ型を引数に受け取るメソッドを用意する
+    // フィールドと同じ名称で同じ型を引数に受け取るメソッドを用意する
     builder.executable("cargo".to_owned());
     builder.args(vec!["build".to_owned(), "--release".to_owned()]);
     builder.env(vec![]);
@@ -622,8 +622,8 @@ fn main() {
 これは構造としては以下のパターンに従うメソッドを作成することと同義です。
 
 ```rust
-fn [プロパティ名](&mut self, [プロパティ名]: [プロパティの型]) -> &mut Self {
-    self.[プロパティ名] = Some([プロパティ名])
+fn [フィールド名](&mut self, [フィールド名]: [フィールドの型]) -> &mut Self {
+    self.[フィールド名] = Some([フィールド名])
     self
 }
 ```
@@ -680,7 +680,7 @@ impl CommandBuilder {
 
 ## 04-call-build
 
-次の課題では以下のように `build` メソッドを作成し、全てのプロパティに値が設定されている場合には `Ok(Command)` を返却し、設定されていないものがあれば `Err` を返却するようにします。
+次の課題では以下のように `build` メソッドを作成し、全てのフィールドに値が設定されている場合には `Ok(Command)` を返却し、設定されていないものがあれば `Err` を返却するようにします。
 
 ```rust
 fn main() {
@@ -691,13 +691,13 @@ fn main() {
     builder.current_dir("..".to_owned());
 
     // build() メソッドから Result を返却する
-    // 設定されていないプロパティがある場合には Err を返却する
+    // 設定されていないフィールドがある場合には Err を返却する
     let command = builder.build().unwrap();
     assert_eq!(command.executable, "cargo");
 }
 ```
 
-`Command` のプロパティの場合には、以下のように実装すれば良さそうです。
+`Command` のフィールドの場合には、以下のように実装すれば良さそうです。
 
 ```rust
 impl CommandBuilder {
@@ -767,9 +767,9 @@ fn main() {
 
 ## 06-optional-field
 
-この課題では、構造体に `Option` なプロパティが含まれる場合を想定しており、対象のプロパティに対しては `setter` の呼び出しは必須ではなく、呼び出されていない場合には初期値として `None` がそのまま代入される。
+この課題では、構造体に `Option` なフィールドが含まれる場合を想定しており、対象のフィールドに対しては `setter` の呼び出しは必須ではなく、呼び出されていない場合には初期値として `None` がそのまま代入される。
 
-これはプロパティの型を検証して `Option` であることを確認する必要があるため、これまでよりも複雑な処理が必要になります。
+これはフィールドの型を検証して `Option` であることを確認する必要があるため、これまでよりも複雑な処理が必要になります。
 
 ```rust
 #[derive(Builder)]
@@ -777,7 +777,7 @@ pub struct Command {
     executable: String,
     args: Vec<String>,
     env: Vec<String>,
-    current_dir: Option<String>, // Optionを含むプロパティ定義
+    current_dir: Option<String>, // Optionを含むフィールド定義
 }
 
 fn main() {
@@ -823,13 +823,13 @@ impl CommandBuilder {
 }
 ```
 
-そこでこの課題では `derive` マクロが適用された構造体に対して、 `Option` が定義されているプロパティの特定と、ラップされている中身の型を抽出して条件分岐的に `TokenStream` を構築していくことを目指します。
+そこでこの課題では `derive` マクロが適用された構造体に対して、 `Option` が定義されているフィールドの特定と、ラップされている中身の型を抽出して条件分岐的に `TokenStream` を構築していくことを目指します。
 
 方針としては `Field` 内の `syn::Type::Path` からトップレベルの型を抽出し、その型が `Option` であった場合にはさらにラップされている型も同じく `syn::Type::Path` として抽出していきます。
 
-![](assets/DeriveInputOptional.drawio.png)
+![](assets/derive-input-optional.drawio.png)
 
-今回は対象が `Option` であった場合には内部の型を取り出して `Some` として返却する関数を用意して、この関数を対象のプロパティが `Option` であるかどうかの判定でも利用します。
+今回は対象が `Option` であった場合には内部の型を取り出して `Some` として返却する関数を用意して、この関数を対象のフィールドが `Option` であるかどうかの判定でも利用します。
 
 ```rust
 /// Returns unwrapped Type in Option as Option<&Type>
@@ -865,7 +865,7 @@ fn unwrap_option(ty: &Type) -> Option<&Type> {
 
 後はこの関数を利用して各種 Builder の型定義やメソッドのシグネチャを変更していきます。
 
-まずは Builder の型定義を変更し、対象のプロパティが `Option` の場合は追加の `Option` でラップすることなく、元々の型をそのまま利用します。
+まずは Builder の型定義を変更し、対象のフィールドが `Option` の場合は追加の `Option` でラップすることなく、元々の型をそのまま利用します。
 
 ```rust
 let builder_fields = named.iter().map(|f| {
@@ -884,7 +884,7 @@ let builder_fields = named.iter().map(|f| {
 });
 ```
 
-これで以下のように元々の構造体のプロパティが `Option` の場合にはそのまま型を利用するようになったことがわかる。
+これで以下のように元々の構造体のフィールドが `Option` の場合にはそのまま型を利用するようになったことがわかる。
 
 ```rust
 struct Command {
@@ -904,7 +904,7 @@ pub struct CommandBuilder {
 
 同じように各メソッドや、Command の生成部分も条件分岐をさせていきます。
 
-以下は Command を生成する時に代入先のプロパティが `Option` かどうかによって内部の値をアンラップするかどうかを分岐させています。
+以下は Command を生成する時に代入先のフィールドが `Option` かどうかによって内部の値をアンラップするかどうかを分岐させています。
 
 ```rust
 let build_fields = named.iter().map(|f| {
@@ -923,7 +923,7 @@ let build_fields = named.iter().map(|f| {
 });
 ```
 
-各 `setter` メソッドの型シグネチャでは、対象のプロパティが `Option` である場合には内部の型を取り出して、その型をメソッドの引数に指定するだけで OK です。
+各 `setter` メソッドの型シグネチャでは、対象のフィールドが `Option` である場合には内部の型を取り出して、その型をメソッドの引数に指定するだけで OK です。
 
 ```rust
 let builder_setters = named.iter().map(|f| {
@@ -953,16 +953,18 @@ let builder_setters = named.iter().map(|f| {
 
 ## 07-repeated-field
 
-次の課題ではさらにマクロの機能を深掘りしていき、以下のように特定のプロパティに対して属性を付与すると、付与した値を基準に生成されるコードを動的に変更していきます。
+次の課題ではさらにマクロの機能を深掘りしていき、特定のフィールドに対して属性を付与すると、付与した値を基準に生成されるコードを動的に変更していきます。
+
+また、 `each` で指定した名称がフィールド名と重複している場合には、要素を 1 つ 1 つ登録するメソッドの生成を優先し、 `Option` 型ではないフィールド対するメソッドを呼び出さなかった場合でもデフォルト値を登録するように機能を変更します。
 
 ```rust
 #[derive(Builder)]
 pub struct Command {
     executable: String,
-    // プロパティに対して追加の属性を割り当てる
+    // フィールドに対して追加の属性を割り当てる
     #[builder(each = "arg")]
     args: Vec<String>,
-    // プロパティに対して追加の属性を割り当てる
+    // フィールドに対して追加の属性を割り当てる
     #[builder(each = "env")]
     env: Vec<String>,
     current_dir: Option<String>,
@@ -987,21 +989,35 @@ fn main() {
 
 - [Derive macro helper attributes](https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes)
 
-実際にこの属性を付与した状態でマクロを実行すると、1 つ 1 つの属性を構成する `syn::Field` の `attrs` プロパティに以下のような情報が格納されていることがわかる。
+実際にこの属性を付与した状態でマクロを実行すると、1 つ 1 つの属性を構成する `syn::Field` の `attrs` フィールドに以下のような情報が格納されていることがわかる。
 
-![](assets/DeriveInputAttributes.drawio.png)
+```rust
+pub struct Field {
+    pub attrs: Vec<Attribute>, // 指定した属性が配列として格納されている
+    pub vis: Visibility,
+    pub mutability: FieldMutability,
+    pub ident: Option<Ident>,
+    pub colon_token: Option<Colon>,
+    pub ty: Type,
+}
+```
+
+![](assets/derive-input-attribute.drawio.png)
+
+- [syn::Field](https://docs.rs/syn/latest/syn/struct.Field.html)
 
 実装方針としては以下のように進めます
 
-- 対象のプロパティが `Vec` であるかどうかを検証する
-  - `Vec` の場合には `builder` 属性が付与されているかどうかを検証する
-  - 属性が付与されている場合には `each` トークンが含まれている中から、適用するメソッド名を抽出する
+1. 対象のフィールドが `Vec` であるかどうかを検証する
+2. `Vec` の場合には `builder` 属性が付与されているかどうかを検証する
+3. 属性が付与されている場合には `each` トークンが含まれている中から、適用するメソッド名を抽出する
+4. メソッド名の抽出までできれば、各種 `setter` や `build` メソッドで生成するコートを調整する
 
-### プロパティ検証を行う関数を拡張する
+### フィールドの型の検証を行う関数を拡張する
 
-Command 構造体の各プロパティの型を検証して `Option` の場合には内部の型を `Option<&Type>` として返却する `unwrap_option` 関数を用意していた。
+Command 構造体の各フィールドの型を検証して `Option` の場合には内部の型を `Option<&Type>` として返却する `unwrap_option` 関数を用意していた。
 
-この関数を拡張して、プロパティの型が `Option` である場合には内部の型を返却し、また `Vec` である場合にも内部の型を返却します。また返却する型が `Option` のままの場合には分岐する回数が増えてしまうため、 `Option` や `Vec` 出ない場合も `enum` で表現するようにします。
+この関数を拡張して、フィールドの型が `Option` である場合には内部の型を返却し、また `Vec` である場合にも内部の型を返却します。また返却する型を `Option<T>` のままにしてしまうとその後で再度条件分岐させる必要があるため、 `Option` や `Vec` やそれ以外の場合も `enum` で表現するようにします。
 
 ```rust
 enum InnerType {
@@ -1051,34 +1067,38 @@ fn unwrap_ty(ty: &Type) -> InnerType {
 }
 ```
 
+この関数を使用して Builder の各コードを動的に制御していきます。
+
 ### TokenStream の解析
 
-`Option` や `Vec` のプロパティであるかどうかの検証はできるようになったため、次は `Vec` であった場合には `derive マクロの属性から使用するメソッドの名称を抽出する関数を作成します。
+`Option` や `Vec` のフィールドであるかどうかの検証はできるようになったため、次は `Vec` であった場合には `derive` マクロの属性から使用するメソッドの名称を抽出する関数を作成します。
 
 ただし、マクロ内で指定した属性は `TokenStream` として得られるため、まずは `TokenStream` をどのように解析すればいいのかを把握します。
 
-![](assets/AttributeTokenStream.png)
+![](assets/attribute-token-stream.png)
 
 まずは `syn` クレートにおける `TokenStream` の解析の仕組みを理解していきます。
 
 - [syn::parse](https://docs.rs/syn/2.0.28/syn/parse/index.html)
 
-`syn` クレートでは解析済みの `proc_macro2::TokenStream` を解析するための様々な parser 関数を提供しており、 `fn(input: ParseStream) -> syn::Result<Self>` というシグネチャに従って実装することで、トークンを様々な形状として解析することが可能です。
+`syn` クレートでは `proc_macro2::TokenStream` を解析するために様々な parser 関数を提供しており、 `fn(input: ParseStream) -> syn::Result<Self>` というシグネチャに従って実装することで、トークンを様々な形状として解析することが可能です。
 
 コードで理解するために、まずは以下のように今回解析する対象と同じような `TokenStream` を生成します。
 
 ```rust
 fn main() {
-    let tokens = quote! { each = "arg" };
+    let tokens = quote! { each = "arg" }; // proc_macro2::TokenStream
     println!("{:#?}", tokens);
 }
 ```
 
 このコードを実行すれば、画像で示したものと同じ構造の `TokenStream` が生成されていることがわかります。
 
-後はこの構造に従って解析できるように、それぞれのトークンに合致する型を有した構造体を定義し、 `Parse` トレイを実装していきます。
+後はこの構造に従って解析できるように、それぞれのトークンに合致する型を有した構造体を定義し、 `Parse` トレイトを実装していきます。
 
 ```rust
+// Token! マクロは指定したトークンに合致する構造体に変換する
+// 今回の場合は syn::token::Eq に内部では変換している
 struct IdentEqualExpr {
     ident: syn::Ident,
     eq_token: syn::Token![=],
@@ -1089,9 +1109,9 @@ impl syn::parse::Parse for IdentEqualExpr {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         // 解析する順番に parse を呼び出す
         // 内部でカーソル位置が移動するため、正しい順番で呼び出す必要がある
-        let ident = input.parse()?;
-        let eq_token = input.parse()?;
-        let expr = input.parse()?;
+        let ident = input.parse()?;    // ここで syn::Ident に解析
+        let eq_token = input.parse()?; // ここで syn::token::Eq に解析
+        let expr = input.parse()?;     // ここで syn::Expr に解析
         Ok(Self {
             ident,
             eq_token,
@@ -1144,7 +1164,7 @@ pub struct MetaNameValue {
 
 - [syn::MetaNameValue](https://docs.rs/syn/2.0.28/syn/struct.MetaNameValue.html)
 
-最初の解析結果に関しては `syn::Ident` ではなく `syn::Path` として定義されているため利用することができないように思えるが、実は `From` トレイトを以下のように実装しているため、入力が `Ident` であってもこの型を利用して変換することが可能です。
+最初のフィールドに関しては `syn::Ident` ではなく `syn::Path` として定義されているため利用することができないように思えるが、実は `From` トレイトを以下のように実装しているため、入力が `Ident` であってもこの型を利用して変換することが可能です。
 
 ```rust
 // https://docs.rs/syn/2.0.28/src/syn/path.rs.html#13-25
@@ -1176,9 +1196,10 @@ where
 }
 ```
 
-そのため今回のように `each = "arg"` の構造を解析して、中身の値を取り出す場合には、以下のような実装にしていけばよい。
+そのため今回のように `each = "arg"` の構造を解析して、中身の値を取り出す場合には、以下のような実装にしていけばよく、 `Field` には複数の `Attribute` が指定されるため、最初の値のみを取り出して利用する形にします。
 
 ```rust
+/// unwrap first value from #[builder(each = value)] attribute
 fn unwrap_builder_attr_value(attr: &syn::Attribute) -> Option<String> {
     if attr.path().is_ident("builder") {
         if let Ok(syn::MetaNameValue {
@@ -1200,9 +1221,280 @@ fn unwrap_builder_attr_value(attr: &syn::Attribute) -> Option<String> {
 }
 ```
 
+これで属性の値を取り出す関数は完成です。
+
 ### 生成する実装コードの変更
 
-ここまでで Builder を適用した構造体に対して、各プロパティの型を `Vec` や `Option` として解析する方法や、 `builder(each = "arg")` のように付与された属性から `"arg"` という値を取り出すことができるようになった。
+ここまでで Builder を適用した構造体に対して、各フィールドの型を `Vec` や `Option` として解析する方法や、 `builder(each = "arg")` のように付与された属性から `"arg"` という値を取り出すことができるようになった。
+
+後は元々の Builder の実装から以下の箇所を変更していきます。
+
+- build メソッド
+  - `Vec` の場合には `None` だった場合に `Vec::new` で初期化
+- Builder の各種 `setter` は、 `Vec` の場合には以下条件で実装する
+  - `each = expr` の指定がない場合は今まで通りに実装する
+  - `each = expr` の指定がある場合
+    - フィールド名と重複していない場合は、メソッドを新しく追加する
+    - フィールド名と重複している場合は、個別に設定するメソッドを優先する
+
+まずは build メソッドを以下のように変更します。
+
+```rust
+let build_fields = named.iter().map(|f| {
+    let ident = &f.ident;
+    let ty = &f.ty;
+
+    match unwrap_ty(ty) {
+        InnerType::OptionType(_) => quote! {
+            #ident: self.#ident.take()
+        },
+        InnerType::VecType(_) => quote! {
+            // None でも失敗しないように Vec::new で初期化で対応する
+            #ident: self.#ident.take().unwrap_or_else(Vec::new)
+        },
+        InnerType::PrimitiveType => quote! {
+            #ident: self.#ident.take().ok_or(format!("{} is not set", stringify!(#ident)))?
+        },
+    }
+});
+```
+
+これで `Vec<T>` として定義されているフィールドに対して `setter` が呼び出されていない場合でも初期値が代入されるようになっています。
+
+次に `setter` メソッドの定義を以下のように変更します。
+
+```rust
+// ty の場合も inner_ty の場合も同じ構造なので、依存を引数に移動させて、生成するストリームを制御する
+fn generate_default_setter_with(
+    ident: &Option<syn::Ident>,
+    ty: &syn::Type,
+) -> proc_macro2::TokenStream {
+    quote! {
+        fn #ident(&mut self, #ident: #ty) -> &mut Self {
+            self.#ident = Some(#ident);
+            self
+        }
+    }
+}
+
+let builder_setters = named.iter().map(|f| {
+    let ident = &f.ident;
+    let ty = &f.ty;
+
+    match unwrap_ty(ty) {
+        InnerType::VecType(inner_ty) => {
+            let default_setter = generate_default_setter_with(ident, ty);
+
+            if let Some(each) = unwrap_builder_attr_value(&f.attrs) {
+                let each_ident = format_ident!("{}", each);
+                let vec_setters = quote! {
+                    fn #each_ident(&mut self, #each_ident: #inner_ty) -> &mut Self {
+                        if let Some(ref mut values) = self.#ident {
+                            values.push(#each_ident);
+                        } else {
+                            self.#ident = Some(vec![#each_ident]);
+                        }
+                        self
+                    }
+                };
+
+                if ident.clone().unwrap() == each_ident {
+                    return vec_setters;
+                } else {
+                    return quote! {
+                        #vec_setters
+                        #default_setter
+                    };
+                }
+            } else {
+                return default_setter;
+            }
+        }
+        InnerType::OptionType(inner_ty) => generate_default_setter_with(ident, &inner_ty),
+        InnerType::PrimitiveType => generate_default_setter_with(ident, ty),
+    }
+});
+```
+
+これでコンパイルエラーが発生することなくテストを PASS させることができました。
+
+## 08-unrecognized-attribute
+
+次の課題では、フィールドで使用する属性に意図していない値が指定された場合にユーザーに対してわかりやすいコンパイルエラーを発生させるようにしていきます。
+
+```rust
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    #[builder(eac = "arg")] // 本当は each を設定しないといけない
+    args: Vec<String>,
+    env: Vec<String>,
+    current_dir: Option<String>,
+}
+```
+
+コンパイルエラーを発生させる方法の 1 つに `compile_error!` マクロが用意されており、手続きマクロでも利用することで間違った指定を行なったユーザーに対してコンパイルエラーを伝えることが可能です。
+
+実装方針としては、今まで `each` という名称を気にせずに値のみを取り出していた下記の処理を変更し、 `each` である `syn::Ident` であるかどうかも検証するように変更します。
+
+```rust
+/// unwrap first value from #[builder(each = value)] attribute
+fn unwrap_builder_attr_value(attrs: &[syn::Attribute]) -> Option<String> {
+    attrs.iter().find_map(|attr| {
+        if attr.path().is_ident("builder") {
+            if let Ok(syn::MetaNameValue {
+                value:
+                    syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(ref liststr),
+                        ..
+                    }),
+                ..
+            }) = attr.parse_args::<syn::MetaNameValue>()
+            {
+                return Some(liststr.value());
+            } else {
+                return None;
+            }
+        }
+
+        None
+    })
+}
+```
+
+現状の `Option<String>` だと細かい制御ができないため、以下のように `each` が存在した場合とそうではない場合を把握できるようにシグネチャを変更します。
+
+```rust
+enum ParseBuilderAttributeResult {
+    Valid(String),
+    Invalid(syn::Path),
+}
+```
+
+後は該当する処理の箇所で `syn::Ident` が `each` であることを検証する処理を追加します。
+
+```rust
+/// unwrap first value from #[builder(each = value)] attribute
+fn unwrap_builder_attr_value(attrs: &[syn::Attribute]) -> Option<ParseBuilderAttributeResult> {
+    attrs.iter().find_map(|attr| {
+        if attr.path().is_ident("builder") {
+            if let Ok(syn::MetaNameValue {
+                value:
+                    syn::Expr::Lit(syn::ExprLit {
+                        lit: syn::Lit::Str(ref liststr),
+                        ..
+                    }),
+                path,
+                ..
+            }) = attr.parse_args::<syn::MetaNameValue>()
+            {
+                // ここで検証する内容と返却値を変更する
+                if !path.is_ident("each") {
+                    return Some(ParseBuilderAttributeResult::Invalid(path));
+                }
+                return Some(ParseBuilderAttributeResult::Valid(liststr.value()));
+            } else {
+                return None;
+            }
+        }
+
+        None
+    })
+}
+```
+
+後は `setter` を生成する際に、以下のように `Invalid` なパターンの場合には `to_compile_error` を利用して `TokenStream` を作成するようにすることで、コンパイルエラーを伝えることができるようになります。
+
+```rust
+let builder_setters = named.iter().map(|f| {
+    let ident = &f.ident;
+    let ty = &f.ty;
+
+    match unwrap_ty(ty) {
+        InnerType::VecType(inner_ty) => {
+            let default_setter = generate_default_setter_with(ident, ty);
+
+            // ここを Invalid な場合に処理する
+            match unwrap_builder_attr_value(&f.attrs) {
+                Some(ParseBuilderAttributeResult::Valid(each)) => {
+                    let each_ident = format_ident!("{}", each);
+                    let vec_setters = quote! {
+                        fn #each_ident(&mut self, #each_ident: #inner_ty) -> &mut Self {
+                            if let Some(ref mut values) = self.#ident {
+                                values.push(#each_ident);
+                            } else {
+                                self.#ident = Some(vec![#each_ident]);
+                            }
+                            self
+                        }
+                    };
+
+                    if ident.clone().unwrap() == each_ident {
+                        return vec_setters;
+                    } else {
+                        return quote! {
+                            #vec_setters
+                            #default_setter
+                        };
+                    }
+                }
+                // TokenStream なので返却する値の型は合うようになっている
+                Some(ParseBuilderAttributeResult::Invalid(path)) => {
+                    return syn::Error::new_spanned(path, "expected `builder(each = expr)`")
+                        .to_compile_error()
+                        .into()
+                }
+                None => return default_setter,
+            };
+        }
+        InnerType::OptionType(inner_ty) => generate_default_setter_with(ident, &inner_ty),
+        InnerType::PrimitiveType => generate_default_setter_with(ident, ty),
+    }
+});
+```
+
+- [to_compile_error](https://docs.rs/syn/1.0.109/syn/struct.Error.html#method.to_compile_error)
+
+これで以下のように間違った値を指定した場合にはコンパイルエラーが発生するようになりました。
+
+![](assets/compile-error.png)
+
+## 追加: 複雑な属性の解析
+
+今回は以下のようにシンプルな属性を設定し、その内容を解析することを目指していた。
+
+```rust
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+    #[builder(each = "arg")] // builder という属性で name = expr 形式で指定する
+    args: Vec<String>,
+    #[builder(each = "env")]　// builder という属性で name = expr 形式で指定する
+    env: Vec<String>,
+    current_dir: Option<String>,
+}
+```
+
+サードパーティクレートの中には複雑な解析を行なっているものもあり、その 1 つが [`tracing-attributes`](https://docs.rs/tracing-attributes/0.1.11/tracing_attributes/attr.instrument.html) クレートであり、 derive マクロではなく attributes マクロではあるが、ログ管理のために以下のように複雑な設定を行うことができる。
+
+```rust
+#[instrument(
+    name = "my_name",
+    level = "debug",
+    target = "my_target",
+    skip(non_debug),
+    fields(foo="bar", id=1, show=true),
+)]
+pub fn my_function(arg: usize, non_debug: NonDebug) {
+    // ...
+}
+```
+
+今回は複雑な場合にはどのように解析をしていけばよいのかを理解するために、以下の属性を解析することを目的に進めていきます。なお、元々の課題とは関係がないため、次が気になる方は [08-unrecognized-attribute](#08-unrecognized-attribute) に遷移して OK です。
+
+```rust
+
+```
 
 ## 感想
 
