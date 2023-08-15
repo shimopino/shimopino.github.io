@@ -1,4 +1,4 @@
-# Rust の手続き的マクロをマスターする
+# proc-macro-workshop で Rust の手続き的マクロに入門する
 
 ## はじめに
 
@@ -1489,7 +1489,7 @@ pub struct Command {
 fn main() {}
 ```
 
-今までの `cargo expand` を実行した結果から分かるように、マクロはコンパイル時に展開されてRustコードとして実行されます。つまり `quote!` 内で `Result` のように指定している場合には、テストコードのようにユーザー側で `type Result = ()` と内部で使用している型と同じ名称の型を宣言してしまうと、意図していない型が適用されてしまいます。
+今までの `cargo expand` を実行した結果から分かるように、マクロはコンパイル時に展開されて Rust コードとして実行されます。つまり `quote!` 内で `Result` のように指定している場合には、テストコードのようにユーザー側で `type Result = ()` と内部で使用している型と同じ名称の型を宣言してしまうと、意図していない型が適用されてしまいます。
 
 そこで `quote!` 内で生成するコードに対しては、以下のように名前空間を指定します。
 
@@ -1510,7 +1510,7 @@ let expanded = quote! {
 };
 ```
 
-## 追加: 複雑な属性の解析
+## 追加: tracing クレートのような複雑な属性の解析
 
 Builder マクロの作成では以下のように付与された属性を解析して、動的にコードを生成していました。
 
@@ -1541,7 +1541,7 @@ pub fn my_function(arg: usize, non_debug: NonDebug) {
 }
 ```
 
-今回は複雑な場合にはどのように解析をしていけばよいのかを理解するために、以下の属性を解析することを目的に進めていきます。なお、元々の課題とは関係ありません。
+今回は `tracing` クレートが複雑な属性をどのように解析しているのかを理解するために、以下の属性を解析することを目標に進めていきます。なお、元々の課題とは関係ありません。
 
 ```rust
 fn main() {
@@ -1555,17 +1555,259 @@ fn main() {
 }
 ```
 
+### 設計方針
+
+[7 番目の課題](#07-repeated-field) で行なったように、入力される `TokenStream` をどのような型として解析するのかをまずは決める必要があります。
+
+課題の時には以下のように属性の名称と設定された値を一緒の構造体に解析していましたが、これだと解析できてもコード側でどの属性に対応するものなのかを判定する必要が出てくるため、複数の属性を解析する必要がある場合にはコードが煩雑になってしまいます。
+
+```rust
+struct IdentEqualExpr {
+    ident: syn::Ident,
+    eq_token: syn::Token![=],
+    expr: syn::Expr,
+}
+```
+
+今回は `name` / `skip` / `fields` という 3 つの属性を利用することがあらかじめ決まっており、それぞれの属性に対してどのような値を設定できるのかも決まっているため、Rust の型安全性による恩恵を受けるため、解析できた時点で実装側にできるだけ条件分岐が不要になるようにしていくことを目指します。
+
+そこで解析対象の属性名を構造体のフィールド名に設定し、対応する値に解析できた値を登録できるように、以下のように、 `Parse` するための構造体とデータを保持するための構造体を設計します。
+
+```rust
+struct Args {
+    name: Option<syn::LitStr>,
+    skips: HashSet<syn::Ident>,
+    fields: Option<Fields>,
+}
+
+// name = expr の形式に対して Parse を実装するための構造体
+// name は固定なので Key として保持する必要はない
+struct NameValue(syn::LitStr);
+
+// skip(xxx, yyy) の形式に対して Parse を実装するための構造体
+struct Skips(HashSet<syn::Ident>);
+
+// fields(key1=value1, key2=value2) の形式に対して Parse を実装するための構造体
+struct Fields(Punctuated<Field, Token![,]>);
+
+// Key と Value は自由に設定できるため、両方を保持できるようにする
+struct Field {
+    key: syn::Ident,
+    value: Option<syn::Expr>,
+}
+```
+
+この構造体に対して、それぞれ `Parse` トレイトの実装を行なっていきます。
+
+### Parse トレイトの実装 - 属性値の解析
+
+まずはそれぞれのフィールドに対して `Parse` トレイトの実装を進めていきますが、今回はフィールド値が決まっているため、 `syn::custom_keyword!` を利用して解析対象の値を定義していきます。
+
+- [syn::custom_keyword](https://docs.rs/syn/2.0.28/syn/macro.custom_keyword.html)
+
+`syn::custom_keyword!` マクロを利用して以下のように定義すれば、自動的に複数の機能が実装された構造体を生成することが可能です。
+
+- Peeking — `input.peek(kw::whatever)`
+- Parsing — `input.parse::<kw::whatever>()?`
+- Printing — `quote!( ... #whatever_token ... )`
+- Span からのトークン生成 — `let whatever_token = kw::whatever(sp)`
+- 該当 Span へのアクセス — `let sp = whatever_token.span`
+
+```rust
+mod kw {
+    syn::custom_keyword!(name);
+    syn::custom_keyword!(skip);
+    syn::custom_keyword!(fields);
+}
+```
+
+これで `TokenStream` 内に指定したキーが存在する場合には解析することが可能になりました。
+
+### Parse トレイトの実装 - name の解析
+
+`name` 属性を解析するには、 `name = expr` 形式の解析用に用意した以下の構造体に対して `Parse` トレイトの実装が必要になります。
+
+```rust
+struct Args {
+    name: Option<syn::LitStr>,
+    skips: HashSet<syn::Ident>,
+    fields: Option<Fields>,
+}
+
+struct NameValue(syn::LitStr);
+```
+
+実装自体は非常にシンプルであり、想定した `TokenStream` が入力されることを想定して、構造体を構築するのに必要な部分のみを抽出していけば OK です。
+
+```rust
+impl syn::parse::Parse for NameValue {
+    // input の TokenSteam は「 name = expr 」 を前提としたストリームが入力される前提
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        // 以下2つは保持する必要がないので、Cursorを進めるだけにする
+        let _ = input.parse::<kw::name>()?;
+        let _ = input.parse::<Token![=]>()?;
+        let value = input.parse()?;
+         Ok(Self(value))
+    }
+}
+```
+
+### Parse トレイトの実装 - skip の解析
+
+`skip` 属性を解析するには、 `skip(xxx, yyy)` 形式の解析用に用意した以下の構造体に対して `Parse` トレイトの実装が必要になります。
+
+```rust
+struct Skips(HashSet<syn::Ident>);
+```
+
+この属性は Key-Value 形式ではなく、コンマ区切りで指定された値を保持できるようにするために、以下のように `Parse` トレイトを実装していきます。
+
+```rust
+impl syn::parse::Parse for Skips {
+    // input の TokenSteam は「 skip(xxx, yyy, ...) 」 を前提としたストリームが入力される前提
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _ = input.parse::<kw::skip>()?;
+        let content;
+        let _ = syn::parenthesized!(content in input);
+        // Punctuated<Ident, Comma> として解析される
+        let names = content.parse_terminated(syn::Ident::parse_any, Token![,])?;
+        let mut skips = HashSet::new();
+        for name in names {
+            if skips.contains(&name) {
+                continue;
+            }
+            skips.insert(name);
+        }
+        Ok(Self(skips))
+    }
+}
+```
+
+`(xxx, yyy)` のような形式を解析するためには、まずは始まりのかっこ（ `(` ）と閉じかっこ（ `)` ）が存在していることを前提に、コンマ区切りで 1 つ 1 つの値を解析する必要があります。
+
+そのために実装で利用しているように `syn::parenthesized!` マクロを利用してどのような記号で囲っているのかを指定し、 `content.parse_terminated` マクロを利用してどの記号区切りでどの値として解析するのかを指定することができます。
+
+### Parse トレイトの実装 - fields の解析
+
+`fielsa` 属性を解析するには、 `fields(key1=value1, key2=value2)` 形式の解析用に用意した以下の構造体に対して `Parse` トレイトの実装が必要になります。
+
+```rust
+// fields(...) 形式を解析するための構造体
+struct Fields(Punctuated<Field, Token![,]>);
+
+// key = value 形式を1つ1つ解析するための構造体
+struct Field {
+    key: syn::Ident,
+    value: Option<syn::Expr>,
+}
+```
+
+まずは `fields(...)` 形式を解析しますが、これはほとんど 1 つ前の `skip` 属性と同じように解析することが可能です。
+
+```rust
+impl syn::parse::Parse for Fields {
+    // input の TokenSteam は「 fields(...) 」 を前提としたストリームが入力される前提
+    // 1つ1つの 「 key=value 」 は Field 型として解析する
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let _ = input.parse::<kw::fields>()?;
+        let content;
+        let _ = syn::parenthesized!(content in input);
+        let fields = content.parse_terminated(Field::parse, Token![,])?;
+        Ok(Self(fields))
+    }
+}
+```
+
+次に `key = value` 形式を解析しますが、現時点では `=` のみをサポートしていますが `tracing` クレートはログ出力用の `%` やデバッグ出力用の `?` をサポートしています。
+
+```rust
+impl syn::parse::Parse for Field {
+    // input の TokenSteam は「 key=value 」 を前提としたストリームが入力される前提
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let key = input.parse()?;
+        // 「 = 」 がある場合には Cursor を進めて Expr の部分を取り出す
+        let value = if input.peek(Token![=]) {
+            input.parse::<Token![=]>()?;
+            Some(input.parse()?)
+        } else {
+            None
+        };
+        Ok(Self { key, value })
+    }
+}
+```
+
+### Parse トレイトの実装 - Args の解析
+
+最後にこれまでに実装を型を利用して、 `TokenStream` 全体を解析するための `Args` 型に対して `Parse` トレイトの実装を進めていきます。
+
+Builder の場合と異なり、属性の値が複数設定することが可能であるため、属性の値に応じてどの型で解析するのかを決定する必要があります。
+
+そうした場合に利用できるものが `ParseStream` が提供している以下のメソッドです。
+
+- `lookahead1` - `TokenStream` からの次のトークンを 1 つだけ参照する
+- `peek` - 次のトークンを調べて、指定したトークンと一致するかどうか判定する。 `Cursor` は進めない
+
+`TokenStream` が空であることを確認できる `is_empty` メソッドを利用すれば以下のように実装できる。
+
+```rust
+mpl syn::parse::Parse for Args {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut args = Self::default();
+        while !input.is_empty() {
+            let lookahead = input.lookahead1();
+            if lookahead.peek(kw::name) {
+                let NameValue(name) = input.parse()?;
+                args.name = Some(name);
+            } else if lookahead.peek(kw::skip) {
+                let Skips(skips) = input.parse()?;
+                args.skips = skips
+            } else if lookahead.peek(kw::fields) {
+                args.fields = Some(input.parse()?);
+            } else if lookahead.peek(Token![,]) {
+                // 属性間の区切り記号 skip(xxx), <- こういったもの
+                let _ = input.parse::<Token![,]>()?;
+            } else {
+                return Err(syn::Error::new(input.span(), "unexpected token"));
+            }
+        }
+
+        Ok(args)
+    }
+}
+```
+
+これで以下のように解析すれば成功し、意図通りに解析した内容が出力されていることがわかります。
+
+```rust
+fn main() {
+    let tokens = quote! {
+        name = "sample",
+        skip(form, state),
+        fields(
+            username=name,
+        )
+    };
+
+    match syn::parse2::<Args>(tokens) {
+        Ok(args) => {
+            println!("args - {:#?}", args.name);
+            println!("skips - {:#?}", args.skips);
+            println!("fields - {:#?}", args.fields);
+        }
+        Err(e) => eprintln!("{:?}", e),
+    }
+}
+```
+
+これで複雑な属性が定義されている場合でもどのように解析しているのか把握することができました。
+
 ## 感想
 
-- `if-let` を使った値取りだしと条件分岐があまりにも使いやすい
+これで proc-macro-workshop の Builder derive マクロ構築課題は完了です。課題を解いていく中で `tracing-attribute` や `thiserror` などの実装も見ていきましたが、終盤に近づくにつれてコードに対する理解度が向上して、サードパーティのクレートの実装もかなり読めるようになっていきました。
 
-## 疑問点
+また、課題を進めていく中で `if-let` や `let-else` などの構文を利用すると、パターンマッチングの要領で型をどんどんアンラップしていく処理が非常に記述しやすく、可読性もよいと感じました。
 
-- [ ] trybuild とは何か？
-- [ ] Cargo.toml における test とは何か？
-- [ ] 外部クレートを利用せずに実装するには？
-- [ ] proc_macro を開発するときの Debugging の設定例
-- [ ] rust-analyzer が Bug った時の挙動
-  - https://github.com/rust-lang/rust-analyzer/issues/10894
-- [ ] span の出力は何か？
-- [ ] span の call_site や def_site は何か？
+ただ自由度の高い `attribute` に関しては `parse` していくと複雑になっていってしまうと思いましたが、 `tracing-attribute` クレートの実装を参考にサンプルコードを書いていく中で、使用できる属性をしっかりと設計できている場合には、構造体にマッピングでいるためある程度複雑性を下げることもできると感じました。
+
+Builder 以外の課題や `trybuild` の使い方などに興味が出てきたので、また別の記事としてまとめようかなと思います。
