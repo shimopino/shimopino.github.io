@@ -1333,6 +1333,17 @@ pub struct Command {
 }
 ```
 
+テストで利用している `trybuild` ではコンパイルエラー自体のテストも実行することが可能であり、以下のようにテキストとして用意したエラーメッセージを利用してアサーションを行うことが可能です。
+
+```bash
+error: expected `builder(each = "...")`
+  --> tests/08-unrecognized-attribute.rs:22:7
+   |
+22 |     #[builder(eac = "arg")]
+   |       ^^^^^^^^^^^^^^^^^^^^
+
+```
+
 コンパイルエラーを発生させる方法の 1 つに `compile_error!` マクロが用意されており、手続きマクロでも利用することで間違った指定を行なったユーザーに対してコンパイルエラーを伝えることが可能です。
 
 実装方針としては、今まで `each` という名称を気にせずに値のみを取り出していた下記の処理を変更し、 `each` である `syn::Ident` であるかどうかも検証するように変更します。
@@ -1367,7 +1378,7 @@ fn unwrap_builder_attr_value(attrs: &[syn::Attribute]) -> Option<String> {
 ```rust
 enum ParseBuilderAttributeResult {
     Valid(String),
-    Invalid(syn::Path),
+    Invalid(syn::Meta),
 }
 ```
 
@@ -1390,7 +1401,7 @@ fn unwrap_builder_attr_value(attrs: &[syn::Attribute]) -> Option<ParseBuilderAtt
             {
                 // ここで検証する内容と返却値を変更する
                 if !path.is_ident("each") {
-                    return Some(ParseBuilderAttributeResult::Invalid(path));
+                    return Some(ParseBuilderAttributeResult::Invalid(attr.meta.clone()));
                 }
                 return Some(ParseBuilderAttributeResult::Valid(liststr.value()));
             } else {
@@ -1439,8 +1450,8 @@ let builder_setters = named.iter().map(|f| {
                     }
                 }
                 // TokenStream なので返却する値の型は合うようになっている
-                Some(ParseBuilderAttributeResult::Invalid(path)) => {
-                    return syn::Error::new_spanned(path, "expected `builder(each = expr)`")
+                Some(ParseBuilderAttributeResult::Invalid(meta)) => {
+                    return syn::Error::new_spanned(meta, "expected `builder(each = \"...\")`")
                         .to_compile_error()
                         .into()
                 }
@@ -1459,9 +1470,49 @@ let builder_setters = named.iter().map(|f| {
 
 ![](assets/compile-error.png)
 
+## 09-redefined-prelude-type
+
+最後の課題は、ユーザーが独自に定義した型と生成するコード内で使用している型が被ってしまった場合の対応になります。
+
+```rust
+type Option = ();
+type Some = ();
+type None = ();
+type Result = ();
+type Box = ();
+
+#[derive(Builder)]
+pub struct Command {
+    executable: String,
+}
+
+fn main() {}
+```
+
+今までの `cargo expand` を実行した結果から分かるように、マクロはコンパイル時に展開されてRustコードとして実行されます。つまり `quote!` 内で `Result` のように指定している場合には、テストコードのようにユーザー側で `type Result = ()` と内部で使用している型と同じ名称の型を宣言してしまうと、意図していない型が適用されてしまいます。
+
+そこで `quote!` 内で生成するコードに対しては、以下のように名前空間を指定します。
+
+```rust
+let expanded = quote! {
+    // ...
+    impl #builder_ident {
+        #(#builder_setters)*
+
+        // Result や Box の名前空間を指定する
+        fn build(&mut self) -> std::result::Result<#ident, std::boxed::Box<dyn std::error::Error>> {
+            Ok(#ident {
+                #(#build_fields,)*
+            })
+        }
+    }
+    // ...
+};
+```
+
 ## 追加: 複雑な属性の解析
 
-今回は以下のようにシンプルな属性を設定し、その内容を解析することを目指していた。
+Builder マクロの作成では以下のように付与された属性を解析して、動的にコードを生成していました。
 
 ```rust
 #[derive(Builder)]
@@ -1475,7 +1526,7 @@ pub struct Command {
 }
 ```
 
-サードパーティクレートの中には複雑な解析を行なっているものもあり、その 1 つが [`tracing-attributes`](https://docs.rs/tracing-attributes/0.1.11/tracing_attributes/attr.instrument.html) クレートであり、 derive マクロではなく attributes マクロではあるが、ログ管理のために以下のように複雑な設定を行うことができる。
+サードパーティクレートの中には複雑な解析を行なっているものもあり、その 1 つが [`tracing-attributes`](https://docs.rs/tracing-attributes/0.1.11/tracing_attributes/attr.instrument.html) クレートです。このクレートが提供しているものは derive マクロではなく attributes マクロではありますが、ログ管理のために以下のように複雑な設定を行うことが可能です。
 
 ```rust
 #[instrument(
@@ -1490,10 +1541,18 @@ pub fn my_function(arg: usize, non_debug: NonDebug) {
 }
 ```
 
-今回は複雑な場合にはどのように解析をしていけばよいのかを理解するために、以下の属性を解析することを目的に進めていきます。なお、元々の課題とは関係がないため、次が気になる方は [08-unrecognized-attribute](#08-unrecognized-attribute) に遷移して OK です。
+今回は複雑な場合にはどのように解析をしていけばよいのかを理解するために、以下の属性を解析することを目的に進めていきます。なお、元々の課題とは関係ありません。
 
 ```rust
-
+fn main() {
+    let tokens = quote! {
+        name = "sample",
+        skip(form, state),
+        fields(
+            username=name,
+        )
+    };
+}
 ```
 
 ## 感想
