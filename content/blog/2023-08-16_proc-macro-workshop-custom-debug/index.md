@@ -24,7 +24,7 @@ pub struct Field {
 
 - [Derive macro: derive(CustomDebug)](https://github.com/dtolnay/proc-macro-workshop/tree/master#derive-macro-derivecustomdebug)
 
-このマクロを適用した構造体を標準出力に表示すると、以下のように表示される。
+このマクロを適用した構造体を標準出力に表示すると、以下のように構造体の名前や各フィールドの名前と値が表示される。
 
 ```bash
 Field { name: "st0", bitmask: 0b00011100 }
@@ -47,3 +47,22 @@ syn = { version = "2.0.28", features = ['extra-traits'] }
 ## 02-impl-debug
 
 - [ ] std::fmt::Debug トレイトを実装する前に、このトレイトの軽い説明を追加
+- [ ] まずは derive マクロ関係なく、いつも通りに Debug トレイトを実装するとどのようになるのか解説する
+
+
+```rust
+impl std::fmt::Debug for Field {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Field")
+            .field("name", &self.name)
+            .field("bitmask", &self.bitmask)
+            .finish()
+    }
+}
+```
+
+## 03-custom-format
+
+- [ ] parse_args マクロを利用して、そのまま実装する場合のやり方
+- [ ] syn::Result と unwrap_or_else での設計
+- [ ] proc_macro_derive を利用する場合のエラー設計
