@@ -66,3 +66,32 @@ impl std::fmt::Debug for Field {
 - [ ] parse_args マクロを利用して、そのまま実装する場合のやり方
 - [ ] syn::Result と unwrap_or_else での設計
 - [ ] proc_macro_derive を利用する場合のエラー設計
+
+```rust
+impl std::fmt::Debug for Field {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Field")
+            .field("name", &self.name)
+            .field("bitmask", &format_args!("{:08b}", &self.bitmask))
+            .finish()
+    }
+}
+```
+
+## 04-type-parameter
+
+```rust
+pub struct Fielded<T> {
+    value: T,
+    bitmask: u8,
+}
+
+impl<T: std::fmt::Debug> std::fmt::Debug for Fielded<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Fielded")
+            .field("value", &self.value)
+            .field("bitmask", &self.bitmask)
+            .finish()
+    }
+}
+```
