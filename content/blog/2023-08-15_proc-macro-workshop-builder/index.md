@@ -1,6 +1,6 @@
 +++
-title = "proc-macro-workshop で Rust の手続き的マクロに入門する"
-description = "proc-macro-workshop で Rust の手続き的マクロに入門する"
+title = "proc-macro-workshop を通して Rust の手続き的マクロを理解する"
+description = "proc-macro-workshop を通して Rust の手続き的マクロを理解する"
 draft = false
 
 [taxonomies]
