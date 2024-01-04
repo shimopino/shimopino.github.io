@@ -12,6 +12,12 @@ struct Node {
     next: Link,
 }
 
+impl Default for List {
+    fn default() -> Self {
+        List { head: Link::Empty }
+    }
+}
+
 impl List {
     pub fn new() -> Self {
         List { head: Link::Empty }
