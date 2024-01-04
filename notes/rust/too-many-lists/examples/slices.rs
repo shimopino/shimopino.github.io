@@ -75,4 +75,12 @@ fn main() {
 
         println!("word: {}", word);
     }
+
+    {
+        let word = String::from("あ");
+        println!("あ length: {}", word.len());
+
+        // panic !!!
+        println!("あ slices: {}", &word[0..2]);
+    }
 }
