@@ -40,6 +40,7 @@ impl List {
         //     }
         // }
 
+        // Option<A> -> map(|A| B) -> Option<B>
         self.head.take().map(|node| {
             self.head = node.next;
             node.elem
