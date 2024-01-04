@@ -23,28 +23,35 @@ impl List {
     pub fn push(&mut self, elem: i32) {
         let new_node = Node {
             elem,
-            next: std::mem::replace(&mut self.head, None),
+            // next: std::mem::replace(&mut self.head, None),
+            // Option 型の場合には take を利用すれば現在の値を取得して、参照元に None を代入する
+            next: self.head.take(),
         };
 
         self.head = Some(Box::new(new_node));
     }
 
     pub fn pop(&mut self) -> Option<i32> {
-        match std::mem::replace(&mut self.head, None) {
-            None => None,
-            Some(node) => {
-                self.head = node.next;
-                Some(node.elem)
-            }
-        }
+        // match self.head.take() {
+        //     None => None,
+        //     Some(node) => {
+        //         self.head = node.next;
+        //         Some(node.elem)
+        //     }
+        // }
+
+        self.head.take().map(|node| {
+            self.head = node.next;
+            node.elem
+        })
     }
 }
 
 impl Drop for List {
     fn drop(&mut self) {
-        let mut cur_link = std::mem::replace(&mut self.head, None);
+        let mut cur_link = self.head.take();
         while let Some(mut boxed_node) = cur_link {
-            cur_link = std::mem::replace(&mut boxed_node.next, None)
+            cur_link = boxed_node.next.take();
         }
     }
 }
