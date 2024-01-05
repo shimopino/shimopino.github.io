@@ -87,6 +87,8 @@ impl<T> List<T> {
 impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
+        // この next はただの不変共有参照なので、 map を実行したときに所有権の移動は発生しない
+        // 不変参照参照は複数人で共有できるため、 Copy トレイトが実装されている
         self.next.map(|node| {
             self.next = node.next.as_deref();
             &node.elem
