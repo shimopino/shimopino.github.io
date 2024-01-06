@@ -1,3 +1,5 @@
+#![allow(clippy::should_implement_trait)]
+
 use std::{
     cell::{Ref, RefCell, RefMut},
     rc::Rc,

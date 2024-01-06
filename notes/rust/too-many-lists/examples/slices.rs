@@ -1,3 +1,6 @@
+#![allow(unused)]
+#![allow(clippy::redundant_slicing)]
+
 fn first_word_v1(s: &String) -> usize {
     let bytes = s.as_bytes();
 
