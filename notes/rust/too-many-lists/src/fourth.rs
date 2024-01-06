@@ -81,6 +81,48 @@ impl<T> List<T> {
             .as_ref()
             .map(|node| RefMut::map(node.borrow_mut(), |node| &mut node.elem))
     }
+
+    pub fn push_back(&mut self, elem: T) {
+        let new_node = Node::new(elem);
+        match self.tail.take() {
+            Some(old_node) => {
+                old_node.borrow_mut().next = Some(Rc::clone(&new_node));
+                new_node.borrow_mut().prev = Some(old_node);
+                self.tail = Some(new_node);
+            }
+            None => {
+                self.head = Some(Rc::clone(&new_node));
+                self.tail = Some(new_node);
+            }
+        }
+    }
+
+    pub fn pop_back(&mut self) -> Option<T> {
+        self.tail.take().map(|node| {
+            match node.borrow_mut().prev.take() {
+                Some(new_tail) => {
+                    new_tail.borrow_mut().next.take();
+                    self.tail = Some(new_tail);
+                }
+                None => {
+                    self.head.take();
+                }
+            }
+            Rc::try_unwrap(node).ok().unwrap().into_inner().elem
+        })
+    }
+
+    pub fn peek_back(&self) -> Option<Ref<T>> {
+        self.tail
+            .as_ref()
+            .map(|node| Ref::map(node.borrow(), |node| &node.elem))
+    }
+
+    pub fn peek_back_mut(&mut self) -> Option<RefMut<T>> {
+        self.tail
+            .as_ref()
+            .map(|node| RefMut::map(node.borrow_mut(), |node| &mut node.elem))
+    }
 }
 
 impl<T> Drop for List<T> {
@@ -91,6 +133,8 @@ impl<T> Drop for List<T> {
 
 #[cfg(test)]
 mod test {
+    use std::ops::Deref;
+
     use super::List;
 
     #[test]
@@ -116,7 +160,28 @@ mod test {
     }
 
     #[test]
-    fn peek() {
+    fn back() {
+        let mut list = List::new();
+        assert_eq!(list.pop_back(), None);
+
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+
+        assert_eq!(list.pop_back(), Some(3));
+        assert_eq!(list.pop_back(), Some(2));
+
+        list.push_back(4);
+        list.push_back(5);
+
+        assert_eq!(list.pop_back(), Some(5));
+        assert_eq!(list.pop_back(), Some(4));
+        assert_eq!(list.pop_back(), Some(1));
+        assert_eq!(list.pop_back(), None);
+    }
+
+    #[test]
+    fn peek_front() {
         let mut list = List::new();
         assert!(list.peek_front().is_none());
 
@@ -125,5 +190,17 @@ mod test {
         list.push_front(3);
 
         assert_eq!(&*list.peek_front().unwrap(), &3);
+    }
+
+    #[test]
+    fn peek_back_mut() {
+        let mut list = List::new();
+        assert!(list.peek_back().is_none());
+
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+
+        assert_eq!(list.peek_back().unwrap().deref(), &3);
     }
 }
