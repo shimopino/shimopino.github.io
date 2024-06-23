@@ -1,0 +1,552 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>shimopino&#x27;s blog - Logging</title>
+    <subtitle>興味の赴くままに実験していく</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://shimopino.github.io/tags/logging/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://shimopino.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2023-06-02T00:00:00+00:00</updated>
+    <id>https://shimopino.github.io/tags/logging/atom.xml</id>
+    <entry xml:lang="en">
+        <title>logクレートが提供する柔軟性の仕組みを探る</title>
+        <published>2023-06-02T00:00:00+00:00</published>
+        <updated>2023-06-02T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://shimopino.github.io/blog/logging-in-rust/"/>
+        <id>https://shimopino.github.io/blog/logging-in-rust/</id>
+        
+        <content type="html" xml:base="https://shimopino.github.io/blog/logging-in-rust/">&lt;p&gt;Rust でアプリケーションを作成する際に &lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;tracing&#x2F;latest&#x2F;tracing&#x2F;&quot;&gt;&lt;code&gt;tracing&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; クレートを利用する場合も多くありますが、プロジェクトの初期段階や簡単な POC であればよりシンプルな &lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;log&#x2F;latest&#x2F;log&#x2F;&quot;&gt;&lt;code&gt;log&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; クレートを利用する選択肢もあるかと思います。&lt;&#x2F;p&gt;
+&lt;p&gt;本記事では &lt;code&gt;log&lt;&#x2F;code&gt; クレートの仕組みを追っていきながら、実装を提供している &lt;code&gt;simple_logger&lt;&#x2F;code&gt; クレートがどのように機能しているのか理解を深めていきます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;toml&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-toml &quot;&gt;&lt;code class=&quot;language-toml&quot; data-lang=&quot;toml&quot;&gt;&lt;span&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;dependencies&lt;&#x2F;span&gt;&lt;span&gt;]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;log &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;0.4.18&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;simple_logger &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;4.1.0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;log-kuretowoli-yong-sita-rust-deno-logging&quot;&gt;log クレートを利用した Rust での logging&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;code&gt;log&lt;&#x2F;code&gt; クレートは、それ自体はロギングの実装を提供しておらず、Rust で標準的なロギングを行うための API となるトレイトを提供しています。そのため &lt;code&gt;log&lt;&#x2F;code&gt; クレートを利用してロギングを行う際には、実際の実装を提供するクレートと組み合わせる必要があります。&lt;&#x2F;p&gt;
+&lt;p&gt;以下は実装を提供しているクレートの一部です。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;env_logger&#x2F;*&#x2F;env_logger&#x2F;&quot;&gt;&lt;code&gt;env_logger&lt;&#x2F;code&gt;&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;fern&#x2F;*&#x2F;fern&#x2F;&quot;&gt;&lt;code&gt;fern&lt;&#x2F;code&gt;&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;tracing-log&#x2F;latest&#x2F;tracing_log&#x2F;&quot;&gt;&lt;code&gt;tracing-log&lt;&#x2F;code&gt;&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;環境変数を利用して設定を行うことが可能な &lt;code&gt;env_logger&lt;&#x2F;code&gt; では、以下のようなコードを記述するだけでログを出力することが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    env_logger::init();
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    log::info!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;hello&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;後は環境変数を指定して実行するとログが出力されていることが確認できます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$&lt;&#x2F;span&gt;&lt;span&gt; RUST_LOG=info cargo run
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;...
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;[2023-05-27T09:50:55Z&lt;&#x2F;span&gt;&lt;span&gt; INFO  log] hello
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;これだけだと内部でどのような処理を実現しているのかを推察することが難しいため、公式ドキュメントに記載されている自作ロガーのコードも確認します。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zi-zuo-roganoshi-zhuang-woque-ren-suru&quot;&gt;自作ロガーの実装を確認する&lt;&#x2F;h2&gt;
+&lt;p&gt;公式ドキュメントのサンプルでは &lt;code&gt;Log&lt;&#x2F;code&gt; トレイトの実装として以下がが提供されています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;struct &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;SimpleLogger&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;impl &lt;&#x2F;span&gt;&lt;span&gt;log::Log for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;SimpleLogger &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;enabled&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;metadata&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;log::Metadata) -&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;bool &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;        println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;{:?}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, metadata);
+&lt;&#x2F;span&gt;&lt;span&gt;        metadata.level() &amp;lt;= Level::Info
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;log&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;record&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;log::Record) {
+&lt;&#x2F;span&gt;&lt;span&gt;        println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;{:?}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, record);
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.enabled(record.metadata()) {
+&lt;&#x2F;span&gt;&lt;span&gt;            println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt; - &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, record.level(), record.args());
+&lt;&#x2F;span&gt;&lt;span&gt;        }
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;flush&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;) {}
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;そしてこの実装を呼び出す時には以下のように &lt;code&gt;set_logger&lt;&#x2F;code&gt; 関数を呼び出してグローバルに適用するロガーを登録し、ログレベルを設定して出力されるログを制御するようにしています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; SimpleLoggerはフィールドを持たないユニット構造体である
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 型の名前自体が唯一の値となるため、単に SimpleLogger と記述すればインスタンスを作成できる
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; フィールドを有する場合には、そのフィールドを初期化する必要がある
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOGGER&lt;&#x2F;span&gt;&lt;span&gt;: SimpleLogger = SimpleLogger;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    log::set_logger(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOGGER&lt;&#x2F;span&gt;&lt;span&gt;).unwrap();
+&lt;&#x2F;span&gt;&lt;span&gt;    log::set_max_level(LevelFilter::Info);
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    log::trace!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;trace&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;    log::debug!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;debug&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;    log::info!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;info&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;    log::warn!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;warn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;    log::error!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;error&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;この場合であれば最大のログレベルに &lt;code&gt;Info&lt;&#x2F;code&gt; を設定しているため、&lt;code&gt;debug!&lt;&#x2F;code&gt; マクロや &lt;code&gt;trace!&lt;&#x2F;code&gt; マクロはメッセージを出力されないようになっています。&lt;&#x2F;p&gt;
+&lt;p&gt;これからは &lt;code&gt;log&lt;&#x2F;code&gt; クレートが提供している下記の機能の詳細を見ていきます。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Log&lt;&#x2F;code&gt; トレイト&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;set_logger&lt;&#x2F;code&gt; 関数&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;set_max_level&lt;&#x2F;code&gt; 関数&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;log-toreito&quot;&gt;Log トレイト&lt;&#x2F;h2&gt;
+&lt;p&gt;ログの実装を行うためには &lt;code&gt;log&lt;&#x2F;code&gt; クレートが提供している &lt;code&gt;Log&lt;&#x2F;code&gt; トレイトを実装することで、各マクロを実行したときのログ出力の挙動を制御する必要があります。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;Log&lt;&#x2F;code&gt; トレイトは以下のように定義されています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub trait &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Log&lt;&#x2F;span&gt;&lt;span&gt;: Sync + Send {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;enabled&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;metadata&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;Metadata&amp;lt;&amp;#39;_&amp;gt;) -&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;bool&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;log&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;record&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;Record&amp;lt;&amp;#39;_&amp;gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;flush&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;502bdb7c63ffcbad4fe6921b46d582074e49fd0a&#x2F;src&#x2F;lib.rs#L1124C1-L1150&quot;&gt;Log trait | log crate&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;この定義を 1 つ 1 つ見ていきます。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;pub-trait-log-sync-send&quot;&gt;&lt;code&gt;pub trait Log: Sync + Send&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;まずは &lt;code&gt;Log&lt;&#x2F;code&gt; トレイトのトレイト境界に設定されているマーカートレイトである &lt;code&gt;Send&lt;&#x2F;code&gt; トレイトと &lt;code&gt;Sync&lt;&#x2F;code&gt; トレイトを振り返ります。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Send&lt;&#x2F;code&gt; トレイト
+&lt;ul&gt;
+&lt;li&gt;実装した型の所有権をスレッド間で転送できることを表す&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;Sync&lt;&#x2F;code&gt; トレイト
+&lt;ul&gt;
+&lt;li&gt;複数のスレッドから参照されても安全であることを表す&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;&lt;code&gt;Log&lt;&#x2F;code&gt; トレイトを実装する全ての型は、スレッド間で安全に転送でき、スレッド間で安全に参照を共有することを保証する必要があります。&lt;&#x2F;p&gt;
+&lt;p&gt;例えばマルチスレッドでリクエストを処理するような Web サーバーの利用を考えると、各スレッドからは &lt;code&gt;Log&lt;&#x2F;code&gt; トレイトを実装したオブジェクトにアクセスできる必要があります。 &lt;code&gt;Sync&lt;&#x2F;code&gt; トレイトが実装されていれば、複数のスレッドから同時に安全にアクセスできることが保証されます。&lt;&#x2F;p&gt;
+&lt;p&gt;実際には &lt;code&gt;Send&lt;&#x2F;code&gt; トレイトと &lt;code&gt;Send&lt;&#x2F;code&gt; トレイトから構成される型は自動的にこれらのトレイトを実装するので、手動で実装する必要はありません。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;fn-enabled-self-metadata-metadata-bool&quot;&gt;&lt;code&gt;fn enabled(&amp;amp;self, metadata: &amp;amp;Metadata&amp;lt;&#x27;_&amp;gt;) -&amp;gt; bool;&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;このメソッドを実行することで、以下の構造体で定義されているメタデータを含むログメッセージを記録するかどうかを判定します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span&gt;#[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;derive&lt;&#x2F;span&gt;&lt;span&gt;(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub struct &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Metadata&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;level&lt;&#x2F;span&gt;&lt;span&gt;: Level,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;target&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a str&lt;&#x2F;span&gt;&lt;span&gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;level&lt;&#x2F;code&gt; にはそれぞれログ出力時に呼び出したマクロに対するログレベルが設定されており、この値とグローバルに設定されたログレベルなどの比較を行い、ログを出力するのかどうかを判定することが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;impl &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Log &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;enabled&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;metadata&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;log::Metadata) -&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;bool &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;      &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 必ずInfoレベル以上のログを出力しないように設定している
+&lt;&#x2F;span&gt;&lt;span&gt;      &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 基本的にはグローバルで設定したものをキャプチャしてフィルタリングを行う
+&lt;&#x2F;span&gt;&lt;span&gt;      metadata.level() &amp;lt;= Level::Info
+&lt;&#x2F;span&gt;&lt;span&gt;  }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;target&lt;&#x2F;code&gt; にはマクロを呼び出す際にオプションとして設定することが可能であり、例えばライブラリやアプリケーションの名前を設定することで、ログメッセージがどのモジュールから生成されたものを追跡できるようになっています。&lt;&#x2F;p&gt;
+&lt;p&gt;例えば以下のようにエラーメッセージを出力すると、&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;ts&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-ts &quot;&gt;&lt;code class=&quot;language-ts&quot; data-lang=&quot;ts&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;log&lt;&#x2F;span&gt;&lt;span&gt;::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;error&lt;&#x2F;span&gt;&lt;span&gt;!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;target&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Global&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;error&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;この場合は設定したログレベルとターゲット情報をもとに &lt;code&gt;Metadata&lt;&#x2F;code&gt; が生成されていることがわかります。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span&gt;Metadata { level: Error, target: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Global&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;まとめるとこのメソッドは、ログ出力時に呼び出したマクロのログレベルをキャプチャして、条件に基づいてログを出力するかどうかを決めることが可能なメソッドです。&lt;&#x2F;p&gt;
+&lt;p&gt;またこのメソッドを呼び出すことが可能な &lt;code&gt;log_enabled!&lt;&#x2F;code&gt; マクロも用意されており、ログ出力時に重い計算が必要になる箇所ではこのマクロを利用することで出力する必要のない処理は実行しないように制御することが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span&gt;log_enabled!(log::Level::Debug) {
+&lt;&#x2F;span&gt;&lt;span&gt;    log::info!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, expensive_call());
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;fn-log-self-record-log-record&quot;&gt;&lt;code&gt;fn log(&amp;amp;self, record: &amp;amp;log::Record)&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;このメソッドを実行することでログメッセージのフォーマットなどを制御することが可能であり、 &lt;code&gt;enabled&lt;&#x2F;code&gt; メソッドを呼び出してログの出力可否を細かく制御することも可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;log&lt;&#x2F;span&gt;&lt;span&gt;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;record&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;log::Record) {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.enabled(record.metadata()) {
+&lt;&#x2F;span&gt;&lt;span&gt;        println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt; - &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, record.level(), record.args());
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;このメソッドは、各マクロを呼び出した時に以下で定義されている &lt;code&gt;Record&lt;&#x2F;code&gt; を受け取り、ログマクロが実行されたときの情報を抽出します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span&gt;#[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;derive&lt;&#x2F;span&gt;&lt;span&gt;(Clone, Debug)]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub struct &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Record&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;metadata&lt;&#x2F;span&gt;&lt;span&gt;: Metadata&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;args&lt;&#x2F;span&gt;&lt;span&gt;: fmt::Arguments&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;module_path&lt;&#x2F;span&gt;&lt;span&gt;: Option&amp;lt;MaybeStaticStr&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;&amp;gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;file&lt;&#x2F;span&gt;&lt;span&gt;: Option&amp;lt;MaybeStaticStr&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;&amp;gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;line&lt;&#x2F;span&gt;&lt;span&gt;: Option&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;u32&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;    #[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;cfg&lt;&#x2F;span&gt;&lt;span&gt;(feature = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;kv_unstable&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)]
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;key_values&lt;&#x2F;span&gt;&lt;span&gt;: KeyValues&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;ログマクロを実行したときに内部でこのレコードが生成され、指定したメッセージやマクロを呼び出した行数、実行したときのファイル名などが格納されています。&lt;&#x2F;p&gt;
+&lt;p&gt;例えば以下のようにエラーメッセージを出力すると、&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;ts&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-ts &quot;&gt;&lt;code class=&quot;language-ts&quot; data-lang=&quot;ts&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;log&lt;&#x2F;span&gt;&lt;span&gt;::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;error&lt;&#x2F;span&gt;&lt;span&gt;!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;target&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Global&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;error&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;このときメタデータが格納されたレコードが生成され、Rust の標準ライブラリから提供されている &lt;code&gt;line!&lt;&#x2F;code&gt; マクロや &lt;code&gt;file!&lt;&#x2F;code&gt; マクロを呼び出した値で初期化を行っています。（今回は検証のために作成したリポジトリ内で &lt;code&gt;examples&lt;&#x2F;code&gt; ディレクトリを作成して処理を実行させています。 ）&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span&gt;Record {
+&lt;&#x2F;span&gt;&lt;span&gt;  metadata: Metadata { level: Error, target: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Global&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span&gt;},
+&lt;&#x2F;span&gt;&lt;span&gt;  args: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;error&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;  module_path: Some(Static(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;log&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)),
+&lt;&#x2F;span&gt;&lt;span&gt;  file: Some(Static(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;examples&#x2F;log&#x2F;main.rs&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)),
+&lt;&#x2F;span&gt;&lt;span&gt;  line: Some(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;31&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;macros.rs#L245-L267&quot;&gt;macros | log crate&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;他のクレートではこのメソッドの中でタイムスタンプなどのフォーマットを行なっています。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;fn-flush-self&quot;&gt;&lt;code&gt;fn flush(&amp;amp;self);&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;標準出力にメッセージを出すだけの場合にはあまり使うことはないかもしれませんが、ログメッセージをファイルに出力したりする場合など利用します。&lt;&#x2F;p&gt;
+&lt;p&gt;例えば &lt;code&gt;std::io::Write&lt;&#x2F;code&gt; トレイトでも &lt;code&gt;flush&lt;&#x2F;code&gt; メソッドは提供されており、以下のようにファイルを生成して書き込む内容を指定した後で、 &lt;code&gt;flush&lt;&#x2F;code&gt; を呼び出すことでバッファに書き込まれた内容をファイルに反映しています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;ts&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-ts &quot;&gt;&lt;code class=&quot;language-ts&quot; data-lang=&quot;ts&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() -&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;std&lt;&#x2F;span&gt;&lt;span&gt;::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;io&lt;&#x2F;span&gt;&lt;span&gt;::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Result&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;()&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    let mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;buffer &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;BufWriter&lt;&#x2F;span&gt;&lt;span&gt;::new(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;File&lt;&#x2F;span&gt;&lt;span&gt;::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;create&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;foo.txt&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)?);
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;buffer&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;write_all&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;b&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;some bytes&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)?;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;buffer&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;flush&lt;&#x2F;span&gt;&lt;span&gt;()?;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;Ok&lt;&#x2F;span&gt;&lt;span&gt;(())
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;Log&lt;&#x2F;code&gt; トレイトに限らず、 &lt;code&gt;flush&lt;&#x2F;code&gt; メソッドは上記のように、パフォーマンス向上のためにデータをメモリ上に保存して、一定の条件や任意のタイミングで永続的なストレージに書き出す時などで利用されています。&lt;&#x2F;p&gt;
+&lt;p&gt;他のクレートを例にとると、 &lt;code&gt;fern&lt;&#x2F;code&gt; クレートでは、出力先に応じてそれぞれ対応する &lt;code&gt;flush&lt;&#x2F;code&gt; メソッドを呼び出すことで、ファイルやチャンネルに対してメッセージを書き出す挙動を制御しています。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;daboross&#x2F;fern&#x2F;blob&#x2F;4f45ef9aac6c4d5929f100f756b5f4fea92794a6&#x2F;src&#x2F;log_impl.rs#L378-L407&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;daboross&#x2F;fern&#x2F;blob&#x2F;4f45ef9aac6c4d5929f100f756b5f4fea92794a6&#x2F;src&#x2F;log_impl.rs#L378-L407&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;ge-zhong-guan-shu&quot;&gt;各種関数&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;fn-set-logger-logger-static-dyn-log-result-setloggererror&quot;&gt;&lt;code&gt;fn set_logger(logger: &amp;amp;&#x27;static dyn Log) -&amp;gt; Result&amp;lt;(), SetLoggerError&amp;gt;&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;このメソッドを利用することで、アプリケーション内でグローバルに宣言されているロガーを設定することができ、このメソッドを呼び出して初めてログの出力が可能となります。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;log&#x2F;latest&#x2F;log&#x2F;fn.set_logger.html&quot;&gt;set_logger | log crate&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;このメソッドを呼び出さない場合には、マクロを実行した時には &lt;code&gt;NopLogger&lt;&#x2F;code&gt; という空の実装が用意されているメソッドが実行されます。&lt;&#x2F;p&gt;
+&lt;p&gt;処理の流れとしてはまず &lt;code&gt;info!&lt;&#x2F;code&gt; マクロを呼び出した時に、内部では &lt;code&gt;__private_api_log&lt;&#x2F;code&gt; 関数を呼び出しており、この中の &lt;code&gt;logger&lt;&#x2F;code&gt; 関数内部でロガーの初期化が実行されたかどうかを判定しています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 各種ログマクロを実行した時に呼び出されている関数
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;__private_api_log&lt;&#x2F;span&gt;&lt;span&gt;(
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;args&lt;&#x2F;span&gt;&lt;span&gt;: fmt::Arguments,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;level&lt;&#x2F;span&gt;&lt;span&gt;: Level,
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;amp;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;target&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;module_path&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;file&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;line&lt;&#x2F;span&gt;&lt;span&gt;): &amp;amp;(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;str&lt;&#x2F;span&gt;&lt;span&gt;, &amp;amp;&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;static str&lt;&#x2F;span&gt;&lt;span&gt;, &amp;amp;&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;static str&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;u32&lt;&#x2F;span&gt;&lt;span&gt;),
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;kvs&lt;&#x2F;span&gt;&lt;span&gt;: Option&amp;lt;&amp;amp;[(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;str&lt;&#x2F;span&gt;&lt;span&gt;, &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;str&lt;&#x2F;span&gt;&lt;span&gt;)]&amp;gt;,
+&lt;&#x2F;span&gt;&lt;span&gt;) {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if&lt;&#x2F;span&gt;&lt;span&gt; kvs.is_some() {
+&lt;&#x2F;span&gt;&lt;span&gt;        panic!(
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;key-value support is experimental and must be enabled using the `kv_unstable` feature&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;        )
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; この logger 関数内部でどのログ実装を使用するのかを判断する
+&lt;&#x2F;span&gt;&lt;span&gt;    logger().log(
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; Record に関しては Builder パターンを使用してオブジェクトの生成を行っている
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;amp;Record::builder()
+&lt;&#x2F;span&gt;&lt;span&gt;            .args(args)
+&lt;&#x2F;span&gt;&lt;span&gt;            .level(level)
+&lt;&#x2F;span&gt;&lt;span&gt;            .target(target)
+&lt;&#x2F;span&gt;&lt;span&gt;            .module_path_static(Some(module_path))
+&lt;&#x2F;span&gt;&lt;span&gt;            .file_static(Some(file))
+&lt;&#x2F;span&gt;&lt;span&gt;            .line(Some(line))
+&lt;&#x2F;span&gt;&lt;span&gt;            .build(),
+&lt;&#x2F;span&gt;&lt;span&gt;    );
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;f4c21c1b2dc958799eb6b3e8e713d1133862238a&#x2F;src&#x2F;lib.rs#L1468-L1490&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;f4c21c1b2dc958799eb6b3e8e713d1133862238a&#x2F;src&#x2F;lib.rs#L1468-L1490&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;実際に &lt;code&gt;logger&lt;&#x2F;code&gt; 関数の内容を確認すると以下のように &lt;code&gt;AtomicUsize&lt;&#x2F;code&gt; で管理している状態を取得し、初期化されたかどうかを判定させた後に実際に利用するロガーの判断を行なっています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ロガーの設定状態を管理する変数
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;STATE&lt;&#x2F;span&gt;&lt;span&gt;: AtomicUsize = AtomicUsize::new(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;); &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 初期値は UNINITIALIZED
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;const &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;UNINITIALIZED&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;usize &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;const &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;INITIALIZING&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;usize &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;const &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;INITIALIZED&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;usize &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; グローバルに宣言されたロガーへのポイントを保持する
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; AtomicUsizeで宣言された STATE により初期化されたかどうかを判定している
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; NopLoggerは何もプロパティが設定されていないため、そのまま型を指定してグローバルに宣言することが可能である
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOGGER&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;dyn Log = &amp;amp;NopLogger;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ...
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;logger&lt;&#x2F;span&gt;&lt;span&gt;() -&amp;gt; &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;static&lt;&#x2F;span&gt;&lt;span&gt; dyn Log {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ロガーを初期化していない場合はデフォルトの実装として NopLogger が採用される
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;STATE&lt;&#x2F;span&gt;&lt;span&gt;.load(Ordering::SeqCst) != &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;INITIALIZED &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;NOP&lt;&#x2F;span&gt;&lt;span&gt;: NopLogger = NopLogger;
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;NOP
+&lt;&#x2F;span&gt;&lt;span&gt;    } &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;else &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;unsafe &lt;&#x2F;span&gt;&lt;span&gt;{ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOGGER &lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;f4c21c1b2dc958799eb6b3e8e713d1133862238a&#x2F;src&#x2F;lib.rs#LL1348C1-L1350C2&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;f4c21c1b2dc958799eb6b3e8e713d1133862238a&#x2F;src&#x2F;lib.rs#LL1348C1-L1350C2&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;AtomicUsize&lt;&#x2F;code&gt; はマルチスレッド環境でのデータ一貫性を担保するために設計された型であり、複数のスレッドからでも値を安全に操作することが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;sync&#x2F;atomic&#x2F;struct.AtomicUsize.html&quot;&gt;AtomicUsize | std crate&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;ログ出力を行う際はマルチスレッド環境からでもロガーを呼び出す可能性はあるため、アトミックな操作でロガーが初期化されたかどうかを判定することで、どのログを利用するかの判断を安全に行っています。&lt;&#x2F;p&gt;
+&lt;p&gt;（ただ、正直なところアトミック操作やメモリ順序への理解度は怪しいので「Rust Atomics and Locks」を読みたい。）&lt;&#x2F;p&gt;
+&lt;p&gt;ここで &lt;code&gt;AtomicUsize&lt;&#x2F;code&gt; を初期化状態の管理で使用しているのは、ロガーの定義が &lt;code&gt;static&lt;&#x2F;code&gt; なライフタイムを有している可変参照として定義されているからです。&lt;&#x2F;p&gt;
+&lt;p&gt;可変参照であるためそのまま利用してしまうと、複数のスレッドからロガーの初期化が呼び出されてしまった場合、 &lt;code&gt;LOGGER&lt;&#x2F;code&gt; に対して同時アクセスを行いデータ競合が発生してしまう可能性があります。そのため &lt;code&gt;AtomicUsize&lt;&#x2F;code&gt; を利用して初期化が一度だけ安全に行われることを保証するためにこのような設計になっているのだと推察しています。&lt;&#x2F;p&gt;
+&lt;p&gt;次に &lt;code&gt;set_logger&lt;&#x2F;code&gt; メソッドが内部でどのように初期化を行っているのかを確認します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; この関数でグローバルに宣言されたロガーを受け取って、static mutな変数を変更する
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;set_logger&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;logger&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;static&lt;&#x2F;span&gt;&lt;span&gt; dyn Log) -&amp;gt; Result&amp;lt;(), SetLoggerError&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    set_logger_inner(|| logger)
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; この内部でロガーを変更するが、AtomicUsizeを利用することで安全に上書きするようにしている
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;set_logger_inner&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;F&amp;gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;make_logger&lt;&#x2F;span&gt;&lt;span&gt;: F) -&amp;gt; Result&amp;lt;(), SetLoggerError&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;where
+&lt;&#x2F;span&gt;&lt;span&gt;    F: FnOnce() -&amp;gt; &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;&amp;#39;static&lt;&#x2F;span&gt;&lt;span&gt; dyn Log,
+&lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span&gt; old_state = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;match &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;STATE&lt;&#x2F;span&gt;&lt;span&gt;.compare_exchange(
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;UNINITIALIZED&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 現在の値が第１引数と等しい場合に
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;INITIALIZING&lt;&#x2F;span&gt;&lt;span&gt;,  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 現在の値を第２引数で指定した値に交換する
+&lt;&#x2F;span&gt;&lt;span&gt;        Ordering::SeqCst,
+&lt;&#x2F;span&gt;&lt;span&gt;        Ordering::SeqCst,
+&lt;&#x2F;span&gt;&lt;span&gt;    ) {
+&lt;&#x2F;span&gt;&lt;span&gt;        Ok(s) | Err(s) =&amp;gt; s,
+&lt;&#x2F;span&gt;&lt;span&gt;    };
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;match&lt;&#x2F;span&gt;&lt;span&gt; old_state {
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;UNINITIALIZED &lt;&#x2F;span&gt;&lt;span&gt;=&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;unsafe &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOGGER &lt;&#x2F;span&gt;&lt;span&gt;= make_logger();
+&lt;&#x2F;span&gt;&lt;span&gt;            }
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;STATE&lt;&#x2F;span&gt;&lt;span&gt;.store(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;INITIALIZED&lt;&#x2F;span&gt;&lt;span&gt;, Ordering::SeqCst);
+&lt;&#x2F;span&gt;&lt;span&gt;            Ok(())
+&lt;&#x2F;span&gt;&lt;span&gt;        }
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;INITIALIZING &lt;&#x2F;span&gt;&lt;span&gt;=&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;while &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;STATE&lt;&#x2F;span&gt;&lt;span&gt;.load(Ordering::SeqCst) == &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;INITIALIZING &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; TODO: replace with `hint::spin_loop` once MSRV is 1.49.0.
+&lt;&#x2F;span&gt;&lt;span&gt;                #[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;allow&lt;&#x2F;span&gt;&lt;span&gt;(deprecated)]
+&lt;&#x2F;span&gt;&lt;span&gt;                std::sync::atomic::spin_loop_hint();
+&lt;&#x2F;span&gt;&lt;span&gt;            }
+&lt;&#x2F;span&gt;&lt;span&gt;            Err(SetLoggerError(()))
+&lt;&#x2F;span&gt;&lt;span&gt;        }
+&lt;&#x2F;span&gt;&lt;span&gt;        _ =&amp;gt; Err(SetLoggerError(())),
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#L1352-L1382&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#L1352-L1382&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;AtomicUsize&lt;&#x2F;code&gt; が提供する &lt;code&gt;compare_exchange&lt;&#x2F;code&gt; は、現在の値と第 1 引数で指定された値と比較して、同じ値の場合には第 2 引数で指定した値に置き換えます。そして、関数の返り値に置き換え前の現在の値を返却します。&lt;&#x2F;p&gt;
+&lt;p&gt;この状態の変更に関しては &lt;code&gt;Ordering::SeqCst&lt;&#x2F;code&gt; が指定されているため、必ず 1 度に 1 つのスレッドのみがアトミックに状態を &lt;code&gt;INITIALIZING&lt;&#x2F;code&gt; という初期化中であることを示す状態に変更することになります。&lt;&#x2F;p&gt;
+&lt;p&gt;もしもあるスレッドがログ設定を行なっている間に、他のスレッドがログ設定の関数を呼び出した場合には &lt;code&gt;old_state&lt;&#x2F;code&gt; に &lt;code&gt;INITIALIZING&lt;&#x2F;code&gt; が返却され、後続の処理でスピンループを行うことでそのスレッドでの初期化設定が完了するまで待機し、そのあとでエラーを返却しています。&lt;&#x2F;p&gt;
+&lt;p&gt;このような初期化処理を実現することで、グローバルにロガー設定が 1 度のみしか呼出されないことを保証しています。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;fn-set-max-level-level-levelfilter&quot;&gt;&lt;code&gt;fn set_max_level(level: LevelFilter)&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;&lt;code&gt;info!&lt;&#x2F;code&gt; マクロを呼び出せば、自動的にログレベル &lt;code&gt;Info&lt;&#x2F;code&gt; が設定された &lt;code&gt;Metadata&lt;&#x2F;code&gt; がログレコードに付与された状態になりますが、これだけだと全てのログメッセージが表示されてしまいます。&lt;&#x2F;p&gt;
+&lt;p&gt;そこで &lt;code&gt;log&lt;&#x2F;code&gt; クレートは &lt;code&gt;set_max_level&lt;&#x2F;code&gt; というログの出力を調整するための関数を用意しています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ログレベルに関してもグローバルなアトミックの設定を有している
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;MAX_LOG_LEVEL_FILTER&lt;&#x2F;span&gt;&lt;span&gt;: AtomicUsize = AtomicUsize::new(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ...
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;set_max_level&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;level&lt;&#x2F;span&gt;&lt;span&gt;: LevelFilter) {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;MAX_LOG_LEVEL_FILTER&lt;&#x2F;span&gt;&lt;span&gt;.store(level as &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;usize&lt;&#x2F;span&gt;&lt;span&gt;, Ordering::Relaxed);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#LL1220C1-L1222C2&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#LL1220C1-L1222C2&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;ここで &lt;code&gt;Ordering::Relaxed&lt;&#x2F;code&gt; を設定して制約を緩めている背景は以下の ISSUE で言及されている通り、現在設定されている最大のログレベルを取得する箇所が &lt;code&gt;Ordering::Relaxed&lt;&#x2F;code&gt; を設定しているためです。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;issues&#x2F;453&quot;&gt;Confusing memory orderings for MAX_LOG_LEVEL_FILTER&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;他のライブラリでは、このメソッドは &lt;code&gt;Log&lt;&#x2F;code&gt; トレイトの実装を行なったロガーの初期化を行うメソッドの内部で利用されていることが多い印象です。&lt;&#x2F;p&gt;
+&lt;p&gt;例えば &lt;code&gt;simple_logger&lt;&#x2F;code&gt; の場合であれば、以下のようなロガーを生成する処理の中でログレベルを設定し、そのメソッド内部で &lt;code&gt;set_max_level&lt;&#x2F;code&gt; を呼び出すようにしており、 &lt;code&gt;log&lt;&#x2F;code&gt; クレートが提供するAPIの抽象化を行なっています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span&gt;simple_logger::init_with_level(log::Level::Warn).unwrap();
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;ここで設定したログレベルを、どのように管理して、ログの出力判断を行う &lt;code&gt;enabled&lt;&#x2F;code&gt; でどのように使用しているのかは、それぞれライブラリの実装によって異なっています。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;fn-set-boxed-logger-logger-box-dyn-log-result-setloggererror&quot;&gt;&lt;code&gt;fn set_boxed_logger(logger: Box&amp;lt;dyn Log&amp;gt;) -&amp;gt; Result&amp;lt;(), SetLoggerError&amp;gt;&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;&lt;code&gt;set_logger&lt;&#x2F;code&gt; 関数では &lt;code&gt;&amp;amp;&#x27;static dyn Log&lt;&#x2F;code&gt; 型を引数に取る都合上、 &lt;code&gt;Log&lt;&#x2F;code&gt; トレイトを実装したロガーは、プログラムの実行全体にわたって有効なものでないといけません。&lt;&#x2F;p&gt;
+&lt;p&gt;そのため公式ドキュメントのサンプルでは、初期化を行う際に &lt;code&gt;static&lt;&#x2F;code&gt; でロガーを宣言するようにしていました。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;struct &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;SimpleLogger&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;impl &lt;&#x2F;span&gt;&lt;span&gt;log::Log for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;SimpleLogger &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ...
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOGGER&lt;&#x2F;span&gt;&lt;span&gt;: SimpleLogger = SimpleLogger;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    log::set_logger(&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOGGER&lt;&#x2F;span&gt;&lt;span&gt;).unwrap();
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;このように記述できるのは &lt;code&gt;SimpleLogger&lt;&#x2F;code&gt; がフィールドを持たないユニット構造体であり、その型の名前自体が唯一の値となるため &lt;code&gt;SimpleLogger&lt;&#x2F;code&gt; とだけ定義すればインスタンスを作成できるからです。&lt;&#x2F;p&gt;
+&lt;p&gt;しかし、他のライブラリのようにロガーに対して各種設定を制御するためにフィールドを追加すると、他の方法でロガーを初期化して &lt;code&gt;static&lt;&#x2F;code&gt; な参照を取得する必要があります。&lt;&#x2F;p&gt;
+&lt;p&gt;そのような場合に利用できるのは &lt;code&gt;set_boxed_logger&lt;&#x2F;code&gt; 関数です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;log&#x2F;latest&#x2F;log&#x2F;fn.set_boxed_logger.html&quot;&gt;set_boxed_logger | log crate&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;これは内部的には &lt;code&gt;set_logger&lt;&#x2F;code&gt; 関数と同様に  &lt;code&gt;set_logger_inner&lt;&#x2F;code&gt; 関数を呼び出しているだけですが、関数の引数と指定しているクロージャーの処理が異なっています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;set_boxed_logger&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;logger&lt;&#x2F;span&gt;&lt;span&gt;: Box&amp;lt;dyn Log&amp;gt;) -&amp;gt; Result&amp;lt;(), SetLoggerError&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    set_logger_inner(|| Box::leak(logger))
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;ここで使用している &lt;code&gt;Box::leak&lt;&#x2F;code&gt; メソッドは、&lt;code&gt;Box&lt;&#x2F;code&gt; を使用してヒープ上に確保されたメモリを、明示的にリークさせることでそのメモリをプログラム終了時まで保持させることのできるメソッドです。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;boxed&#x2F;struct.Box.html#method.leak&quot;&gt;Box::leak&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;このメソッドを実行することで &lt;code&gt;logger&lt;&#x2F;code&gt; をプログラム終了までヒープ上に保持させるようにし、その結果このメソッドから返却されるものは &lt;code&gt;&amp;amp;&#x27;static mut Log&lt;&#x2F;code&gt; の参照となり、エラーが発生することなくコンパイルすることが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;この &lt;code&gt;set_boxed_logger&lt;&#x2F;code&gt; を利用することで、 &lt;code&gt;static&lt;&#x2F;code&gt; な値で初期化することなく、以下のように特定のスコープ内で生成されたロガーをグローバルな変数として登録することができます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; simple_loggerの例
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; Box::leakを活用することで関数内で生成したロガーを static に登録できる
+&lt;&#x2F;span&gt;&lt;span&gt;    SimpleLogger::new().init().unwrap();
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    log::warn!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;This is an example message.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;fn-set-max-level-level-levelfilter-1&quot;&gt;&lt;code&gt;fn set_max_level(level: LevelFilter)&lt;&#x2F;code&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;&lt;code&gt;log&lt;&#x2F;code&gt; クレートではグローバルに最大のログレベルを設定することのできる関数 &lt;code&gt;set_max_logger&lt;&#x2F;code&gt; が提供されている。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;log&#x2F;latest&#x2F;log&#x2F;fn.set_max_level.html&quot;&gt;set_max_logger | log crate&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;この関数を通して設定されたログレベルを &lt;code&gt;info!&lt;&#x2F;code&gt; などの各種マクロを実行した際に参照し、ログ出力を行うかどうかを判断しています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; log!(target: &amp;quot;my_target&amp;quot;, Level::Info, &amp;quot;a {} event&amp;quot;, &amp;quot;log&amp;quot;);
+&lt;&#x2F;span&gt;&lt;span&gt;(target: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$target&lt;&#x2F;span&gt;&lt;span&gt;:expr, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$lvl&lt;&#x2F;span&gt;&lt;span&gt;:expr, $(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$arg&lt;&#x2F;span&gt;&lt;span&gt;:tt)+) =&amp;gt; ({
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span&gt; lvl = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$lvl&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ここでコンパイル時に設定したログレベルと、関数を通して設定したログレベルを参照し
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 対象するログメッセージのログレベルとの比較を行い出力判断を行なっている
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if&lt;&#x2F;span&gt;&lt;span&gt; lvl &amp;lt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$crate&lt;&#x2F;span&gt;&lt;span&gt;::&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;STATIC_MAX_LEVEL &lt;&#x2F;span&gt;&lt;span&gt;&amp;amp;&amp;amp; lvl &amp;lt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$crate&lt;&#x2F;span&gt;&lt;span&gt;::max_level() {
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$crate&lt;&#x2F;span&gt;&lt;span&gt;::__private_api_log(
+&lt;&#x2F;span&gt;&lt;span&gt;            __log_format_args!($(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$arg&lt;&#x2F;span&gt;&lt;span&gt;)+),
+&lt;&#x2F;span&gt;&lt;span&gt;            lvl,
+&lt;&#x2F;span&gt;&lt;span&gt;            &amp;amp;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$target&lt;&#x2F;span&gt;&lt;span&gt;, __log_module_path!(), __log_file!(), __log_line!()),
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$crate&lt;&#x2F;span&gt;&lt;span&gt;::__private_api::Option::None,
+&lt;&#x2F;span&gt;&lt;span&gt;        );
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;});
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;macros.rs#L45-L56&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;macros.rs#L45-L56&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;この処理の中では以下の 2 つのログレベルを参照している。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;STATIC_MAX_LEVEL&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;コンパイル時に指定したフラグで制御された最大のログレベル&lt;&#x2F;li&gt;
+&lt;li&gt;リリースビルド時に出力したいログを制御するときに利用する&lt;&#x2F;li&gt;
+&lt;li&gt;デフォルトでは &lt;code&gt;LevelFilter::Trace&lt;&#x2F;code&gt; が設定されている&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#L1586&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#L1586&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;max_level()&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;プログラム側で設定する最大のログレベル&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;set_max_level&lt;&#x2F;code&gt; 関数を通して制御する&lt;&#x2F;li&gt;
+&lt;li&gt;デフォルトでは &lt;code&gt;LevelFilter::Off&lt;&#x2F;code&gt; が設定されている（つまり、何もログ出力しない）&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#L408&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#L408&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;&lt;code&gt;log&lt;&#x2F;code&gt; クレートでは、ログレベルとして以下の &lt;code&gt;Enum&lt;&#x2F;code&gt; を定義しており、各マクロに対応するログレベルと、全てのログを出力しないレベルに設定された &lt;code&gt;Off&lt;&#x2F;code&gt; のログレベルが定義されており、この &lt;code&gt;Off&lt;&#x2F;code&gt; ログレベルが初期値として設定されています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;MAX_LOG_LEVEL_FILTER&lt;&#x2F;span&gt;&lt;span&gt;: AtomicUsize = AtomicUsize::new(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub enum &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;LevelFilter &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F;&#x2F; A level lower than all log levels.
+&lt;&#x2F;span&gt;&lt;span&gt;    Off,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F;&#x2F; Corresponds to the `Error` log level.
+&lt;&#x2F;span&gt;&lt;span&gt;    Error,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F;&#x2F; Corresponds to the `Warn` log level.
+&lt;&#x2F;span&gt;&lt;span&gt;    Warn,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F;&#x2F; Corresponds to the `Info` log level.
+&lt;&#x2F;span&gt;&lt;span&gt;    Info,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F;&#x2F; Corresponds to the `Debug` log level.
+&lt;&#x2F;span&gt;&lt;span&gt;    Debug,
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F;&#x2F; Corresponds to the `Trace` log level.
+&lt;&#x2F;span&gt;&lt;span&gt;    Trace,
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#LL552C1-L567C2&quot;&gt;LevelFilter | log crate&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;つまり関数を使用してこのログレベルを変更しなければ、デフォルトでは全てのログ出力は抑制されてしまいます。&lt;&#x2F;p&gt;
+&lt;p&gt;最大のログレベルを調整するための関数は以下のように定義されています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#LL1265C1-L1273C2
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;max_level&lt;&#x2F;span&gt;&lt;span&gt;() -&amp;gt; LevelFilter {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;unsafe &lt;&#x2F;span&gt;&lt;span&gt;{ mem::transmute(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;MAX_LOG_LEVEL_FILTER&lt;&#x2F;span&gt;&lt;span&gt;.load(Ordering::Relaxed)) }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#LL1220C1-L1222C2
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;set_max_level&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;level&lt;&#x2F;span&gt;&lt;span&gt;: LevelFilter) {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;MAX_LOG_LEVEL_FILTER&lt;&#x2F;span&gt;&lt;span&gt;.store(level as &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;usize&lt;&#x2F;span&gt;&lt;span&gt;, Ordering::Relaxed);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;std::mem::transmute&lt;&#x2F;code&gt; は非常に危険な関数ではあるが、ある型から別の型へのビット単位の移動行うため、引数で指定した値から返り値で指定した型に対してビットをコピーします。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;log&lt;&#x2F;code&gt; クレートの場合ではマルチスレッドでログレベルの変更を管理するために &lt;code&gt;AtomicUsize&lt;&#x2F;code&gt; を利用しているため、ログレベルを定義している &lt;code&gt;LevelFilter&lt;&#x2F;code&gt; と &lt;code&gt;usize&lt;&#x2F;code&gt; で型が異なっています。関数のインターフェースレベルでは &lt;code&gt;LevelFilter&lt;&#x2F;code&gt; を表に出しているため、 &lt;code&gt;LevelFilter&lt;&#x2F;code&gt; をアトミックに更新するための裏技的なやり方です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;match&lt;&#x2F;code&gt; 式などを利用してより安全に型変換を行う方法もありますが、どの値にも該当しない &lt;code&gt;exhaustive patterns&lt;&#x2F;code&gt; をどのように取り扱うのか、であったり単純なビット移動である &lt;code&gt;transmute&lt;&#x2F;code&gt; の方がパフォーマンスが良い、という理由で現状のコードになっている可能性はあります。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;doc.rust-jp.rs&#x2F;rust-nomicon-ja&#x2F;transmutes.html&quot;&gt;トランスミュート transmute&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;log-toreitonoshi-zhuang-woti-gong-siteirukureto&quot;&gt;log トレイトの実装を提供しているクレート&lt;&#x2F;h2&gt;
+&lt;p&gt;ここからはクレートがどのように &lt;code&gt;Log&lt;&#x2F;code&gt; トレイを実装しているのかを見ていきます。&lt;&#x2F;p&gt;
+&lt;p&gt;よく利用されているであろうクレートは、例えば以下のようなものだと思いますが、今回は &lt;code&gt;simple_logger&lt;&#x2F;code&gt; を対象にします。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;simple_logger&quot;&gt;simple_logger&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;env_logger&#x2F;&quot;&gt;env_logger&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;fern&quot;&gt;fern&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;simple-logger&quot;&gt;simple_logger&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;chu-qi-hua-yong-noguan-shu&quot;&gt;初期化用の関数&lt;&#x2F;h3&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;simple_logger&quot;&gt;&lt;code&gt;simple_logger&lt;&#x2F;code&gt;&lt;&#x2F;a&gt; はロガーの設定や出力メッセージがとてもシンプルで使いやすいクレートであり、本体のコードも &lt;code&gt;lib.rs&lt;&#x2F;code&gt; のみで構成されているため &lt;code&gt;Log&lt;&#x2F;code&gt; トレイトの実装例確認の最初の一歩に適しています。&lt;&#x2F;p&gt;
+&lt;p&gt;公式から提供されている Getting Started なコードを確認すると、提供されているメソッドの中で、今まで説明してきた &lt;code&gt;set_boxed_logger&lt;&#x2F;code&gt; によるグローバルなロガーの宣言や &lt;code&gt;set_max_level&lt;&#x2F;code&gt; での最大ログレベルの設定を行なっていることが想像できます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span&gt;use simple_logger::SimpleLogger;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    SimpleLogger::new().init().unwrap();
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    log::warn!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;This is an example message.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;これで以下のようにログメッセージが表示されます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;2023-05-30T11:49:38.789Z&lt;&#x2F;span&gt;&lt;span&gt; WARN  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;[&lt;&#x2F;span&gt;&lt;span&gt;simple&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;]&lt;&#x2F;span&gt;&lt;span&gt; This is an example message.
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;このクレートでは関連関数を使用していることからわかるように &lt;code&gt;SimpleLogger&lt;&#x2F;code&gt; のインスタンス生成と設定適用の関数をそれぞれ役割に分けて分離させています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;impl &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;SimpleLogger &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    #[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;must_use &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;You must call init() to begin logging&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;new&lt;&#x2F;span&gt;&lt;span&gt;() -&amp;gt; SimpleLogger {
+&lt;&#x2F;span&gt;&lt;span&gt;        SimpleLogger {
+&lt;&#x2F;span&gt;&lt;span&gt;            default_level: LevelFilter::Trace,
+&lt;&#x2F;span&gt;&lt;span&gt;            module_levels: Vec::new(),
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; 各フィーチャーフラグで有効化させるプロパティ
+&lt;&#x2F;span&gt;&lt;span&gt;        }
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL105C1-L123C6&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL105C1-L123C6&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;ここでは &lt;code&gt;#[must_use]&lt;&#x2F;code&gt; 属性を利用することで以下のようにロガー設定を行うための &lt;code&gt;init&lt;&#x2F;code&gt; 関数を呼び出していない場合には警告を発するようになっています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; warningが発生する
+&lt;&#x2F;span&gt;&lt;span&gt;    SimpleLogger::new();
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;init&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;) -&amp;gt; Result&amp;lt;(), SetLoggerError&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;&#x2F;&#x2F; ...
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.module_levels
+&lt;&#x2F;span&gt;&lt;span&gt;        .sort_by_key(|(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;_level&lt;&#x2F;span&gt;&lt;span&gt;)| name.len().wrapping_neg());
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span&gt; max_level = &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.module_levels.iter().map(|(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;_name&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;level&lt;&#x2F;span&gt;&lt;span&gt;)| level).copied().max();
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span&gt; max_level = max_level
+&lt;&#x2F;span&gt;&lt;span&gt;        .map(|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;lvl&lt;&#x2F;span&gt;&lt;span&gt;| lvl.max(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.default_level))
+&lt;&#x2F;span&gt;&lt;span&gt;        .unwrap_or(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.default_level);
+&lt;&#x2F;span&gt;&lt;span&gt;    log::set_max_level(max_level);
+&lt;&#x2F;span&gt;&lt;span&gt;    log::set_boxed_logger(Box::new(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;))?;
+&lt;&#x2F;span&gt;&lt;span&gt;    Ok(())
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL347C1-L363C6&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL347C1-L363C6&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;この &lt;code&gt;init&lt;&#x2F;code&gt; 関数で最大のログレベルの設定やロガーのグローバルな値として登録を行なっていマス。また最大のログレベルは &lt;code&gt;module_levels&lt;&#x2F;code&gt; を調整するか &lt;code&gt;default_level&lt;&#x2F;code&gt; を調整する 2 つの方法があることがわかり、それぞれ &lt;code&gt;SimpleLogger&lt;&#x2F;code&gt; が提供している &lt;code&gt;with_module_level&lt;&#x2F;code&gt; 関数や &lt;code&gt;with_level&lt;&#x2F;code&gt; 関数を通して制御することが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;SimpleLogger&lt;&#x2F;code&gt; では &lt;code&gt;env_logger&lt;&#x2F;code&gt; の挙動を模倣させ環境変数からも最大のログレベルを設定することが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span&gt;#[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;must_use &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;You must call init() to begin logging&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;env&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;) -&amp;gt; SimpleLogger {
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.default_level = std::env::var(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;RUST_LOG&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;        .ok()
+&lt;&#x2F;span&gt;&lt;span&gt;        .as_deref()
+&lt;&#x2F;span&gt;&lt;span&gt;        .map(log::LevelFilter::from_str)
+&lt;&#x2F;span&gt;&lt;span&gt;        .and_then(Result::ok)
+&lt;&#x2F;span&gt;&lt;span&gt;        .unwrap_or(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self&lt;&#x2F;span&gt;&lt;span&gt;.default_level);
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;self
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL157C1-L167C6&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL157C1-L167C6&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;こうした環境変数からの読み取りを行うメソッドが提供されているため、このメソッドを初期化の際に利用すれば、 &lt;code&gt;RUST_LOG=info cargo run&lt;&#x2F;code&gt; という形式で最大のログレベルを設定することができます。 &lt;code&gt;dotenvy&lt;&#x2F;code&gt; などと組み合わせれば、アプリケーションを動作させる環境ごとに異なるログレベルを設定することも容易です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;log&lt;&#x2F;code&gt; クレートが提供している &lt;code&gt;LevelFilter&lt;&#x2F;code&gt; は &lt;code&gt;FromStr&lt;&#x2F;code&gt; トレイトを実装しているため、環境変数から取得した文字列と事前に定義されたログレベルの文字列との比較を行うことで、対象の型への変換を行なっている。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;static &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOG_LEVEL_NAMES&lt;&#x2F;span&gt;&lt;span&gt;: [&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;str&lt;&#x2F;span&gt;&lt;span&gt;; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;6&lt;&#x2F;span&gt;&lt;span&gt;] = [&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;OFF&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;ERROR&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;WARN&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;INFO&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;DEBUG&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;TRACE&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;];
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;impl &lt;&#x2F;span&gt;&lt;span&gt;FromStr for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;LevelFilter &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;type &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Err &lt;&#x2F;span&gt;&lt;span&gt;= ParseLevelError;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;from_str&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;level&lt;&#x2F;span&gt;&lt;span&gt;: &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;str&lt;&#x2F;span&gt;&lt;span&gt;) -&amp;gt; Result&amp;lt;LevelFilter, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;Self::&lt;&#x2F;span&gt;&lt;span&gt;Err&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;        ok_or(
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#7697d6;&quot;&gt;LOG_LEVEL_NAMES
+&lt;&#x2F;span&gt;&lt;span&gt;                .iter()
+&lt;&#x2F;span&gt;&lt;span&gt;                .position(|&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;| name.eq_ignore_ascii_case(level))
+&lt;&#x2F;span&gt;&lt;span&gt;                .map(|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;p&lt;&#x2F;span&gt;&lt;span&gt;| LevelFilter::from_usize(p).unwrap()),
+&lt;&#x2F;span&gt;&lt;span&gt;            ParseLevelError(()),
+&lt;&#x2F;span&gt;&lt;span&gt;        )
+&lt;&#x2F;span&gt;&lt;span&gt;    }
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#LL583C1-L594C2&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;log&#x2F;blob&#x2F;304eef7d30526575155efbdf1056f92c5920238c&#x2F;src&#x2F;lib.rs#LL583C1-L594C2&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;なお、これらの設定を簡易的に行うための専用の関数も用意されています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;pub fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;init_with_env&lt;&#x2F;span&gt;&lt;span&gt;() -&amp;gt; Result&amp;lt;(), SetLoggerError&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span&gt;    SimpleLogger::new().env().init()
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL542C1-L544C2&quot;&gt;https:&#x2F;&#x2F;github.com&#x2F;borntyping&#x2F;rust-simple_logger&#x2F;blob&#x2F;3a78bcf7ab4f4b594c0b55290afe42a50b6a295f&#x2F;src&#x2F;lib.rs#LL542C1-L544C2&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;matome&quot;&gt;まとめ&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;code&gt;log&lt;&#x2F;code&gt; クレートの調査をしていく中で &lt;code&gt;Box::leak&lt;&#x2F;code&gt; を利用した &lt;code&gt;static&lt;&#x2F;code&gt; なライフタイムを有する参照の作成方法であったり、 &lt;code&gt;AtomicUsize&lt;&#x2F;code&gt; を利用したマルチスレッド環境を考慮した状態遷移がどのように実装されているのかを把握することができました。&lt;&#x2F;p&gt;
+&lt;p&gt;今までは以下のコードを見ても、マクロを実行したときにどのようにロガーを参照しているのか理解できていませんでしたが、コードリーディングを通してどのような機能を利用しているのか想像できるようになりました。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rs&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-rs &quot;&gt;&lt;code class=&quot;language-rs&quot; data-lang=&quot;rs&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#fad07a;&quot;&gt;main&lt;&#x2F;span&gt;&lt;span&gt;() {
+&lt;&#x2F;span&gt;&lt;span&gt;    SimpleLogger::new().init().unwrap();
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    log::warn!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;This is an example message.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;Log&lt;&#x2F;code&gt; トレイトの実装を提供している他のクレートも同じことを行なっているはずなので、 &lt;code&gt;env_logger&lt;&#x2F;code&gt; や &lt;code&gt;fern&lt;&#x2F;code&gt; などのコードリーディングを行うときも、 &lt;code&gt;log&lt;&#x2F;code&gt; クレートが裏側でどのような処理を行なっているのか想像できる状態になっているため、そこまで苦労しなさそうです、&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
