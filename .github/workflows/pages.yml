@@ -33,7 +33,7 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v3.0.0
       - name: Build and Deploy
-        uses: shalzz/zola-deploy-action@master
+        uses: shalzz/zola-deploy-action@v0.19.1
         env:
           # https://docs.github.com/ja/actions/security-guides/automatic-token-authentication
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
