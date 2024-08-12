@@ -10,14 +10,8 @@ taxonomies = [
 ]
 
 # v0.19.1 でサポートされているが、Github Actions 上で生成されなかった
-# generate_feeds = true
-# feed_filenames = ["rss.xml", "atom.xml"]
-
-generate_feed = true
-feed_filename = "rss.xml"
-
-external_links_target_blank = true
-external_links_no_referrer = true
+generate_feeds = true
+feed_filenames = ["rss.xml", "atom.xml"]
 
 [markdown]
 # Whether to do syntax highlighting
