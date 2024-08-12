@@ -1,0 +1,791 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title>shimopino&#x27;s blog - Zola</title>
+      <link>https://shimopino.github.io</link>
+      <description>興味の赴くままに実験していく</description>
+      <generator>Zola</generator>
+      <language>en</language>
+      <atom:link href="https://shimopino.github.io/tags/zola/rss.xml" rel="self" type="application/rss+xml"/>
+      <lastBuildDate>Sun, 14 May 2023 00:00:00 +0000</lastBuildDate>
+      <item>
+          <title>Zolaで始める技術ブログ</title>
+          <pubDate>Sun, 14 May 2023 00:00:00 +0000</pubDate>
+          <author>Unknown</author>
+          <link>https://shimopino.github.io/blog/crafting-tech-blog-with-zola/</link>
+          <guid>https://shimopino.github.io/blog/crafting-tech-blog-with-zola/</guid>
+          <description xml:base="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/">&lt;p&gt;最近 Rust で遊んでいますが、その過程で得た知識を記録していくためにブログを作成することにしました。せっかくなので、ブログには Rust 製の静的サイトジェネレーターである &lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;getting-started&#x2F;overview&#x2F;&quot;&gt;Zola&lt;&#x2F;a&gt; を使います。&lt;&#x2F;p&gt;
+&lt;p&gt;Zola は Jinja2 に似た Tera テンプレートエンジンを使用しており、これから見ていくように動的なテンプレートを通じて、静的な HTML ページに高速に変換することが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;さらに、Zola は Github Pages との連携も簡単に行うことができ、Github Actions を通じて Zola のサイトをビルドし、その結果を Github Pages にデプロイすることが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;今回は Zola を使って技術ブログを構築した手順を残していこうと思います。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;$&lt;&#x2F;span&gt;&lt;span&gt; zola&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt; --version
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;zola&lt;&#x2F;span&gt;&lt;span&gt; 0.17.2
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;zola-nosetutoatupu&quot;&gt;Zola のセットアップ&lt;&#x2F;h2&gt;
+&lt;p&gt;公式ドキュメントに記載されている &lt;code&gt;zola init myblog&lt;&#x2F;code&gt; コマンドを実行すれば、下記の構造のディレクトリ・ファイルが生成されます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; config.toml
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; content
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; sass
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; static
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; templates
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; themes
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;config.toml&lt;&#x2F;code&gt; は Zola の設定ファイルであり、こちらにブログの URL であったり各種設定を行うことが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;ディレクトリはそれぞれ以下の役割が設定されています。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;content
+&lt;ul&gt;
+&lt;li&gt;Markdown ファイルなどでサイトを構成する記事を管理するディレクトリ&lt;&#x2F;li&gt;
+&lt;li&gt;子ディレクトリを作成すればサイトの URL に反映される&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;sass
+&lt;ul&gt;
+&lt;li&gt;コンパイルされる Sass ファイルを配置する&lt;&#x2F;li&gt;
+&lt;li&gt;Sass 以外のファイルは無視される&lt;&#x2F;li&gt;
+&lt;li&gt;ディレクトリ構造は保持されるため &lt;code&gt;sass&#x2F;something&#x2F;site.scss&lt;&#x2F;code&gt; は &lt;code&gt;public&#x2F;something&#x2F;site.css&lt;&#x2F;code&gt; にコンパイルされる&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;static
+&lt;ul&gt;
+&lt;li&gt;任意の種類のファイルを配置する&lt;&#x2F;li&gt;
+&lt;li&gt;このディレクトリ内に配置した構造は、そのまま出力ディレクトリにコピーされる&lt;&#x2F;li&gt;
+&lt;li&gt;静的ファイルが大きい場合を考慮して、設定ファイルに &lt;code&gt;hard_link_static = true&lt;&#x2F;code&gt; を指定すれば、コピーせずにハードリンクする&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;templates
+&lt;ul&gt;
+&lt;li&gt;レンダリングする時に使用する &lt;code&gt;Tera&lt;&#x2F;code&gt; のテンプレートファイルを格納する&lt;&#x2F;li&gt;
+&lt;li&gt;構文に従って変数などを指定できる&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;themes
+&lt;ul&gt;
+&lt;li&gt;テーマを利用すると、ここにテンプレートファイル一式が保存される&lt;&#x2F;li&gt;
+&lt;li&gt;テーマを使用しない場合は空のままにしておく&lt;&#x2F;li&gt;
+&lt;li&gt;今回は 1 から作っていくので、このディレクトリは使用しない&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;初期状態のまま &lt;code&gt;zola build&lt;&#x2F;code&gt; を実行すると、下記の外観のサイトが構築されます。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;shimopino.github.io&#x2F;blog&#x2F;crafting-tech-blog-with-zola&#x2F;assets&#x2F;first-site.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;getting-started&#x2F;directory-structure&#x2F;&quot;&gt;Overview | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;これでブログを始める準備が整いました。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;github-pages-henodepuroi&quot;&gt;Github Pages へのデプロイ&lt;&#x2F;h2&gt;
+&lt;p&gt;私はブログに限らず、ソフトウェアを構築する際には最終的な成果物を完成させてからデプロイするよりも、インクリメンタルに作成していくことが好みです。&lt;&#x2F;p&gt;
+&lt;p&gt;まずは Web ページとして閲覧できる状態にするために、今回は Github Actions を使用して、Github Pages にデプロイすることを目指します。&lt;&#x2F;p&gt;
+&lt;p&gt;Github Pages では &lt;code&gt;gh-pages, main, master&lt;&#x2F;code&gt; というブランチルートに &lt;code&gt;index.html&lt;&#x2F;code&gt; を配置してページを公開したり、リポジトリの &lt;code&gt;docs&lt;&#x2F;code&gt; ディレクトリから公開することも可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;Github Pages の URL は以下のパターンで決まります。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;特定の名前のリポジトリ
+&lt;ul&gt;
+&lt;li&gt;リポジトリ名を &lt;code&gt;&amp;lt;username&amp;gt;.github.io&lt;&#x2F;code&gt; に設定する&lt;&#x2F;li&gt;
+&lt;li&gt;これは例えば以下のようなサイトが該当する
+&lt;ul&gt;
+&lt;li&gt;https:&#x2F;&#x2F;github.com&#x2F;Yelp&#x2F;yelp.github.io&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;それ以外のリポジトリ
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;&amp;lt;username&amp;gt;.github.io&#x2F;&amp;lt;repository&amp;gt;&lt;&#x2F;code&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;docs.github.com&#x2F;ja&#x2F;pages&#x2F;getting-started-with-github-pages&#x2F;about-github-pages&quot;&gt;Github Pages について&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Github Actions 経由でデプロイするには以下の 3 つのステップが必要となります。&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;他のリポジトリ経由で公開する場合は、そのリポジトリから自身のリポジトリにプッシュするための権限を付与するためのパーソナルアクセストークンを生成する&lt;&#x2F;li&gt;
+&lt;li&gt;Github Actions を用意する&lt;&#x2F;li&gt;
+&lt;li&gt;リポジトリ設定の「Github Pages」の項目を設定する&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;今回はこのリポジトリからサイトを公開するため、PAT の準備はスキップします。&lt;&#x2F;p&gt;
+&lt;p&gt;Github Actions は &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;shalzz&#x2F;zola-deploy-action&quot;&gt;zola-deploy-action&lt;&#x2F;a&gt; にサンプルが配置されているため、こちらを参考に構築します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;yml&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-yml &quot;&gt;&lt;code class=&quot;language-yml&quot; data-lang=&quot;yml&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Zola on Github Pages
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;on:
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;push&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;branches&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;      - &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;main
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;jobs&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;build&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Publish Site
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;runs-on&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;ubuntu-latest
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;steps&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;      - &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Checkout main
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;uses&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;actions&#x2F;checkout@v3.0.0
+&lt;&#x2F;span&gt;&lt;span&gt;      - &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Build and Deploy
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# v0.17.2 では git config --global --add safe.directory &amp;#39;*&amp;#39; に失敗する時があった
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 最新版の参照する形式に変更
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# https:&#x2F;&#x2F;github.com&#x2F;shalzz&#x2F;zola-deploy-action&#x2F;issues&#x2F;53#issuecomment-1409707948
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;uses&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;shalzz&#x2F;zola-deploy-action@master
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;env&lt;&#x2F;span&gt;&lt;span&gt;:
+&lt;&#x2F;span&gt;&lt;span&gt;          &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# https:&#x2F;&#x2F;docs.github.com&#x2F;ja&#x2F;actions&#x2F;security-guides&#x2F;automatic-token-authentication
+&lt;&#x2F;span&gt;&lt;span&gt;          &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;GITHUB_TOKEN&lt;&#x2F;span&gt;&lt;span&gt;: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;${{ secrets.GITHUB_TOKEN }}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Github Actions が実行されると、新しく &lt;code&gt;gh-pages&lt;&#x2F;code&gt; ブランチが作成され、そこに &lt;code&gt;zola build&lt;&#x2F;code&gt; によって生成された静的ファイルが配置されます。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;shimopino.github.io&#x2F;blog&#x2F;crafting-tech-blog-with-zola&#x2F;assets&#x2F;github-pages-visit.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;これでローカルで確認した時と、同じ内容のサイトを構築することができました。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;shimopino.github.io&#x2F;blog&#x2F;crafting-tech-blog-with-zola&#x2F;assets&#x2F;github-pages-first-deploy.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;deployment&#x2F;github-pages&#x2F;&quot;&gt;Github Pages | Deployment | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zui-chu-noburoguji-shi-wozuo-cheng-suru&quot;&gt;最初のブログ記事を作成する&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;besutonarutenpuretohuairuwozuo-cheng-suru&quot;&gt;ベースとなるテンプレートファイルを作成する&lt;&#x2F;h3&gt;
+&lt;p&gt;公式ページの手順に従ってサンプルページを作成していけば、おおよそのテンプレートやコンテンツの挙動を理解することができます。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tera.netlify.app&#x2F;docs&#x2F;#base-template&quot;&gt;Overview | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;template&lt;&#x2F;code&gt; ディレクトリでは、　&lt;code&gt;Tera&lt;&#x2F;code&gt; の構文に従ったテンプレートファイルを定義することができ、ここで定義した HTML ファイルを元に様々なページを作成していきます。&lt;&#x2F;p&gt;
+&lt;p&gt;以下のように &lt;code&gt;template&#x2F;base.html&lt;&#x2F;code&gt; を作成すれば、 &lt;code&gt;block&lt;&#x2F;code&gt; で定義した箇所を child として設定したテンプレートファイルで上書きすることができます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span&gt;&amp;lt;!DOCTYPE html&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;html lang=&amp;quot;en&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;head&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;meta charset=&amp;quot;utf-8&amp;quot; &#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;title&amp;gt;MyBlog&amp;lt;&#x2F;title&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;head&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;body&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;section class=&amp;quot;section&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;      &amp;lt;div class=&amp;quot;container&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;        (* このテンプレートを継承すれば、この部分を上書きすることができる *)
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;      &amp;lt;&#x2F;div&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;&#x2F;section&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;body&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;html&amp;gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;tenpuretohuairuwokuo-zhang-suru&quot;&gt;テンプレートファイルを拡張する&lt;&#x2F;h3&gt;
+&lt;p&gt;child のテンプレートでは親側のテンプレートファイルを拡張し、拡張対象のテンプレートで定義されているブロック &lt;code&gt;content&lt;&#x2F;code&gt; を上書きすることが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;template&#x2F;index.html&lt;&#x2F;code&gt; を作成し、以下のように &lt;code&gt;content&lt;&#x2F;code&gt; を定義すれば親側の &lt;code&gt;content&lt;&#x2F;code&gt; を指定した要素で上書きすることができます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;extends &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;base.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;h1 class=&amp;quot;title&amp;quot;&amp;gt;This is my blog made with Zola.&amp;lt;&#x2F;h1&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;shimopino.github.io&#x2F;blog&#x2F;crafting-tech-blog-with-zola&#x2F;assets&#x2F;first-home-page.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;burogusekusiyonnozuo-cheng-suru&quot;&gt;ブログセクションの作成する&lt;&#x2F;h3&gt;
+&lt;p&gt;&lt;code&gt;content&lt;&#x2F;code&gt; ディレクトリには Markdown ファイルで記述した記事の内容を配置していきます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; content
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; blog
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; _index.md
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Zola ではファイルベースのパスを構築するため、上記の構造でファイルを定義すれば、 &lt;code&gt;&amp;lt;base_url&amp;gt;&#x2F;blog&lt;&#x2F;code&gt; の URL の設定を記述することが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;例えば TOML 形式で以下の設定を記述すれば、対象 URL で使用するテンプレートファイルであったり、個別の記事で使用するテンプレートやページのタイトル、記事のソート順を指定することができます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;title = &amp;quot;List of blog posts&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;sort_by = &amp;quot;date&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;template = &amp;quot;blog.html&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;page_template = &amp;quot;blog-page.html&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;次にブログのトップページと個別の記事で利用するテンプレートファイルを準備します。&lt;&#x2F;p&gt;
+&lt;p&gt;ここでは公式ドキュメントに従い、設定で記述した通りに &lt;code&gt;template&#x2F;blog.html&lt;&#x2F;code&gt; や &lt;code&gt;template&#x2F;blog-page.html&lt;&#x2F;code&gt; を定義してきます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;extends &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;base.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;h1 class=&amp;quot;title&amp;quot;&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ section&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;title }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;h1&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;!-- section （今回では blog） に配置されているコンテンツを一覧で取得する --&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;section&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;pages %}
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;!-- pageオブジェクトで個別の設定を使用する --&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;      &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;permalink &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;title }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;&#x2F;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endfor &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;burogukontentunozuo-cheng-suru&quot;&gt;ブログコンテンツの作成する&lt;&#x2F;h3&gt;
+&lt;p&gt;&lt;code&gt;_index.md&lt;&#x2F;code&gt; というファイル名は対象のディレクトリに対してセクションの設定を行うことが可能ですが、 &lt;code&gt;content&#x2F;blog&lt;&#x2F;code&gt; ディレクトリにそれ以外のファイル名で記事を作成していくことで、個別の記事のページを作成することが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;今回は最初の記事として &lt;code&gt;content&#x2F;blog&#x2F;first.md&lt;&#x2F;code&gt; ファイルを作成し、ブログセクションの設定で追加したように &lt;code&gt;title&lt;&#x2F;code&gt; と、セクションページで記事をソートするための &lt;code&gt;date&lt;&#x2F;code&gt; を設定します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;title = &amp;quot;My first post&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;date = 2019-11-27
+&lt;&#x2F;span&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;This is my first blog post.
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;個別の記事に対して、今までと同じように &lt;code&gt;content&lt;&#x2F;code&gt; をどのように上書きしていくのかをテンプレートファイルで記述していきます。そのときにコンテンツの内容には &lt;code&gt;page.content&lt;&#x2F;code&gt; という変数でアクセスすることが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;extends &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;base.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;h1 class=&amp;quot;title&amp;quot;&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;title }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;h1&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;p class=&amp;quot;subtitle&amp;quot;&amp;gt;&amp;lt;strong&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;date }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;strong&amp;gt;&amp;lt;&#x2F;p&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;!-- ここにMarkdownファイルで記述した内容が挿入される --&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;ここまで完了すれば、以下のようにセクションページと個別のページが作成されていることが確認できます。なお確認のために &lt;code&gt;content&#x2F;blog&#x2F;second.md&lt;&#x2F;code&gt; という追加の記事を配置しています。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;セクション: &lt;code&gt;&amp;lt;base_url&amp;gt;&#x2F;blog&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+
+  &lt;img 
+    src=&quot;assets&#x2F;first-section.png&quot;
+     alt=&quot;ブログ記事の一覧ページ&quot; 
+     width=&quot;300px&quot; 
+    
+  &#x2F;&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;ページ: &lt;code&gt;&amp;lt;base_url&amp;gt;&#x2F;blog&#x2F;first&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+
+  &lt;img 
+    src=&quot;assets&#x2F;first-contents.png&quot;
+     alt=&quot;ブログ記事のページ&quot; 
+     width=&quot;300px&quot; 
+    
+  &#x2F;&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h3 id=&quot;totupupezinirinkuwozhui-jia-suru&quot;&gt;トップページにリンクを追加する&lt;&#x2F;h3&gt;
+&lt;p&gt;現在のトップページにはテキストが配置されているだけですが、 &lt;code&gt;get_url&lt;&#x2F;code&gt; 関数を使用すれば直接 &lt;code&gt;content&lt;&#x2F;code&gt; ディレクトリへの内部リンクを反映したリンクを取得することが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;index.html&lt;&#x2F;code&gt; に以下のようにリンクを設定すればコンテンツへのリンクを設定できます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;extends &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;base.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;h1 class=&amp;quot;title&amp;quot;&amp;gt;This is my blog made with Zola.&amp;lt;&#x2F;h1&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; contentに配置したファイル先にリンクを設定することが可能である &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;p&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; `@` はじまりで他のディレクトリのファイルを指定できる &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;    Click &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ get_url&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;path&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;@&#x2F;blog&#x2F;_index.md&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;}}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;here&amp;lt;&#x2F;a&amp;gt; to see my
+&lt;&#x2F;span&gt;&lt;span&gt;  posts.
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;p&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;github-pages-denodui-ying&quot;&gt;Github Pages での対応&lt;&#x2F;h3&gt;
+&lt;p&gt;ローカル開発では記事へのリンクは、開発サーバーが &lt;code&gt;127.0.0.1&#x2F;1111&lt;&#x2F;code&gt; で起動されている場合にはこの URL が使用されますが、Github Pages で利用するためには &lt;code&gt;config.toml&lt;&#x2F;code&gt; でドメインの設定が必要になります。&lt;&#x2F;p&gt;
+&lt;p&gt;現在は初期化された状態のままであり、以下のように &lt;code&gt;base_url&lt;&#x2F;code&gt; が設定されています。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;toml&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-toml &quot;&gt;&lt;code class=&quot;language-toml&quot; data-lang=&quot;toml&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;base_url &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;https:&#x2F;&#x2F;example.com&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;この場合であれば各記事へのリンクは以下のようにこの URL を基準に構築されます。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;https:&#x2F;&#x2F;example.com&#x2F;blog&#x2F;first&lt;&#x2F;code&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;今回は Github Pages を利用するため公開先の URL を設定する必要があります。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;tml&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-tml &quot;&gt;&lt;code class=&quot;language-tml&quot; data-lang=&quot;tml&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;base_url &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;https:&#x2F;&#x2F;shimopino.github.io&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;これで Github Pages で動作するリンクを構築することができ、実際に Web 上で動作するブログを作成することができました。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;shi-yong-sitage-zhong-gou-wen&quot;&gt;使用した各種構文&lt;&#x2F;h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;{{  }}&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;expressions&lt;&#x2F;code&gt; であり各種変数を指定することができる&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;{%  %}&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;statements&lt;&#x2F;code&gt; であり for ループであったりブロックの設定ができる&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;{{ page.content | safe }}&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;|&lt;&#x2F;code&gt; はパイプライン演算子のように、1 つ前の値を式に代入することが可能である&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;safe&lt;&#x2F;code&gt; は指定された値をエスケープ処理することで安全に取り扱うことが可能である&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;get_url&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;指定されたパスの &lt;code&gt;permalink&lt;&#x2F;code&gt; を取得する&lt;&#x2F;li&gt;
+&lt;li&gt;先頭が &lt;code&gt;@&#x2F;&lt;&#x2F;code&gt; で始まる場合は &lt;code&gt;content&lt;&#x2F;code&gt; ディレクトリから始める内部リンクとして処理する&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;static&lt;&#x2F;code&gt; ファイルを指定することもでき、 &lt;code&gt;static&#x2F;css&#x2F;app.css&lt;&#x2F;code&gt; を参照したい場合は &lt;code&gt;get_url(&quot;css&#x2F;app.css&quot;)&lt;&#x2F;code&gt; と指定する&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;参考資料&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tera.netlify.app&#x2F;docs&#x2F;#tera-basics&quot;&gt;Basic | Tera&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tera.netlify.app&#x2F;docs&#x2F;#safe&quot;&gt;safe | Tera&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;templates&#x2F;overview&#x2F;#get-url&quot;&gt;get_url | Template | Zola&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;frontmatter&quot;&gt;FrontMatter&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;code&gt;content&lt;&#x2F;code&gt; 以下に配置する &lt;code&gt;_index.md&lt;&#x2F;code&gt; は、対象のセクションに表示するコンテンツやメタデータの設定を行うことが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;content&#x2F;section&#x2F;#front-matter&quot;&gt;FrontMatter | Content | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;例えば以下のような &lt;code&gt;_index.md&lt;&#x2F;code&gt; が存在していた場合、これは &lt;code&gt;&amp;lt;base_url&amp;gt;&#x2F;blog&lt;&#x2F;code&gt; 以下のセクションでのコンテンツやメタデータの設定を行うことが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; content
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; blog
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; _index.md
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; entry1.md
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; entry2.md
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;この設定は以下のように &lt;code&gt;+++&lt;&#x2F;code&gt; で囲まれたファイルの冒頭で宣言することができ、宣言した内容はテンプレートから &lt;code&gt;section.content&lt;&#x2F;code&gt; 変数で利用できるようになります。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;toml&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-toml &quot;&gt;&lt;code class=&quot;language-toml&quot; data-lang=&quot;toml&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 必要になりそうな変数のみを抽出する。全部確認したいときは公式ドキュメントを参照する。
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# htmlの &amp;lt;title&amp;gt; と同じようにタイトルを設定可能
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# ここで設定した内容を &amp;lt;head&amp;gt; 要素などに設定してメタ情報を追加できる
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;title &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Blog Title&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 各種CLIで `--drafts` を付与したした時にのみ読み込むかどうか
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 下書きなら true にしてビルドされないようにする
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;draft &lt;&#x2F;span&gt;&lt;span&gt;= false
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# コンテンツをどのようにソートするのか指定できる
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# ブログOnlyならおおよそ投稿日時とかで良さそう
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;sort_by &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;none&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 明示的にセクションでどのテンプレートを使用するのか指定できる
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# セクションごとにテンプレートを作成しておくのが良さそう
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;template &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;section.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# セクションページも検索インデックスに含めるかどうか
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;in_search_index &lt;&#x2F;span&gt;&lt;span&gt;= true
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# セクションのURLにアクセスされた場合のリダイレクト先を決定する
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 例えばセクションに直接アクセスされた時に 404 ページを表示したくない時などに使う
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;redirect_to &lt;&#x2F;span&gt;&lt;span&gt;=
+&lt;&#x2F;span&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;コンテンツを記述する
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;記事をソートすることもでき、以下のディレクトリ構造であった場合に、&lt;code&gt;_index.md&lt;&#x2F;code&gt; の設定に &lt;code&gt;sort_by = &quot;date&quot;&lt;&#x2F;code&gt; を設定し、各ページには &lt;code&gt;date = 2023-04-01&lt;&#x2F;code&gt; などと設定すれば、記事を日付の降順でソートした状態でテンプレートファイルから参照できます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; content
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; poc
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; _index.md
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; entry1.md
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; entry2.md
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; entry3.md
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;今回は &lt;code&gt;content&#x2F;poc&lt;&#x2F;code&gt; 配下のセクションに &lt;code&gt;draft = true&lt;&#x2F;code&gt; を設定し、本番のページに対してはビルドされないように検証用専用のページとして配置しています。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;ji-shi-henotagufu-ke&quot;&gt;記事へのタグ付け&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;dan-chun-nagurupingu&quot;&gt;単純なグルーピング&lt;&#x2F;h3&gt;
+&lt;p&gt;Zola ではデフォルトで &lt;code&gt;Taxonomy&lt;&#x2F;code&gt; というタグ管理の仕組みがサポートされており、事前に定義した Taxonomy のカテゴリに従って、コンテンツをグルーピングすることが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;content&#x2F;taxonomies&#x2F;&quot;&gt;Taxonomy | Content | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;ビルド時に設定されたタグをもとに、全ての Taxonomy がリストアップされたページを作成し、また各 Taxonomy 名に対応するコンテンツの全てをリストアップしたページを自動的に構築することが可能です。&lt;&#x2F;p&gt;
+&lt;p&gt;まずは &lt;code&gt;config.toml&lt;&#x2F;code&gt; に対して事前に Taxonomy を定義します。今回は各記事に対して単純に &lt;code&gt;tags&lt;&#x2F;code&gt; を定義し、この &lt;code&gt;tags&lt;&#x2F;code&gt; に対してそれぞれ &lt;code&gt;Rust&lt;&#x2F;code&gt; や &lt;code&gt;Terraform&lt;&#x2F;code&gt; などのグルーピングするための値を設定していきます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;toml&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-toml &quot;&gt;&lt;code class=&quot;language-toml&quot; data-lang=&quot;toml&quot;&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# name = URLで使用される名称。通常は複数形
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# paginate_by = ここで指定した値を基準にページネーションを行う
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# paginate_path = ページングされた時のページ番号。例えば page&#x2F;1 のようなURlとなる
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# feed = 各タグに対して生成されるFeed（デフォルトでAtomフィードが生成される）
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# lang = 多言語対応させたい時に利用する
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# render = 対象のタグをレンダリングするかどうか決定する
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;taxonomies &lt;&#x2F;span&gt;&lt;span&gt;= [
+&lt;&#x2F;span&gt;&lt;span&gt;    { &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;tags&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;feed &lt;&#x2F;span&gt;&lt;span&gt;= true},
+&lt;&#x2F;span&gt;&lt;span&gt;]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;次に各ページに対して、以下のようにタグを設定していきます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; content
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; poc
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; _index.md
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; entry1.md &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# Rust
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; entry2.md &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# Terraform
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; entry3.md &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# TypeScript
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;このためには各記事の FrontMatter に対して以下のように設定すればよく、配列なので複数のタグを付与することも可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;title = &amp;quot;Entry1&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;date = 2023-01-01
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;[taxonomies]
+&lt;&#x2F;span&gt;&lt;span&gt;tags = [&amp;quot;Rust&amp;quot;]
+&lt;&#x2F;span&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;This is date = 2023-01-01
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;これでコンテンツの準備はできましたが、タグの一覧やそれぞれのグループに該当するコンテンツの一覧を表示するためのテンプレートが存在していないため、ビルドすると以下のようなエラーが発生します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Error:&lt;&#x2F;span&gt;&lt;span&gt; Failed to build the site
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Error:&lt;&#x2F;span&gt;&lt;span&gt; Failed to render a list of tags page.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;Error:&lt;&#x2F;span&gt;&lt;span&gt; Reason: Tried to render `&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;taxonomy_list.html&lt;&#x2F;span&gt;&lt;span&gt;` but the template wasn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;t found
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Zola では Taxonomy に対して設定した値に基づき、テンプレートディレクトリの以下のファイルを使用して、Taxonomy の一覧やそれぞれの値に対応するページを表示できます。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;$TAXONOMY_NAME&#x2F;single.html&lt;&#x2F;code&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;$TAXONOMY_NAME&#x2F;list.html&lt;&#x2F;code&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;templates&#x2F;taxonomies&#x2F;&quot;&gt;Taxonomy | Templates | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;それぞれのページでは以下の変数を利用することが可能です（全ては載せていません）。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;$TAXONOMY_NAME&#x2F;single.html
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;config&lt;&#x2F;code&gt; Web サイトの設定&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;taxonomy&lt;&#x2F;code&gt; 設定した Taxonomy のデータ&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;terms&lt;&#x2F;code&gt; 設定された Taxonomy のグルーピングデータ&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;$TAXONOMY_NAME&#x2F;list.html
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;config&lt;&#x2F;code&gt; Web サイトの設定&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;taxonomy&lt;&#x2F;code&gt; 設定した Taxonomy のデータ&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;term&lt;&#x2F;code&gt; 描画されている Taxonomy の値&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;まずは一覧ページを &lt;code&gt;templates&#x2F;tags&#x2F;list.html&lt;&#x2F;code&gt; として作成します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;extends &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;base.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;div&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;h1&amp;gt;All Tags&amp;lt;&#x2F;h1&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;      &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; tags配下に作成しているため、tagsのそれぞれに設定した値を取得できる &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;      &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;term &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;terms %}
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;lt;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;          &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; それぞれのタグに対応するページへのリンクを設定できる &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;          &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ term&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;permalink &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ term&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name }}&lt;&#x2F;span&gt;&lt;span&gt; (&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ term&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;pages &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;length }}&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;          &amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;lt;&#x2F;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;      &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endfor &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;&#x2F;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;div&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;次に特定のタグに該当するページを &lt;code&gt;templates&#x2F;tags&#x2F;single.html&lt;&#x2F;code&gt; に作します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;extends &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;base.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;div&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;h1&amp;gt;Tag: #&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ term&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name }}&lt;&#x2F;span&gt;&lt;span&gt; (&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ term&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;pages &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;length }}&lt;&#x2F;span&gt;&lt;span&gt;)&amp;lt;&#x2F;h1&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ config&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;base_url &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&#x2F;tags&amp;quot;&amp;gt;Show all tags&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;      &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;term&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;pages %}
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;lt;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;          &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;permalink &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;title }}&lt;&#x2F;span&gt;&lt;span&gt; 投稿日: (&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;date &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;date&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;format&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;%Y-%m-%d&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;}}&lt;&#x2F;span&gt;&lt;span&gt;)
+&lt;&#x2F;span&gt;&lt;span&gt;          &amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;lt;&#x2F;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;      &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endfor &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;&#x2F;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;div&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;これで以下のようにタグの一覧ページと個別のページを作成することができました。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;&amp;lt;base_url&amp;gt;&#x2F;tags&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+
+  &lt;img 
+    src=&quot;assets&#x2F;first-tags-list.png&quot;
+     alt=&quot;タグの一覧ページ&quot; 
+     width=&quot;300px&quot; 
+    
+  &#x2F;&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;code&gt;&amp;lt;base_url&amp;gt;&#x2F;tags&#x2F;rust&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+
+  &lt;img 
+    src=&quot;assets&#x2F;first-tags-single.png&quot;
+     alt=&quot;Rustのタグのページ&quot; 
+     width=&quot;300px&quot; 
+    
+  &#x2F;&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h3 id=&quot;shi-yong-sitage-zhong-gou-wen-1&quot;&gt;使用した各種構文&lt;&#x2F;h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;{{ term.pages | length }}&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;配列、オブジェクト、文字列の要素数を返す&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;{{ page.date | date(format=&quot;%Y-%m-%d&quot;) }}&lt;&#x2F;code&gt;
+&lt;ul&gt;
+&lt;li&gt;タイムスタンプを指定したフォーマットに変換する&lt;&#x2F;li&gt;
+&lt;li&gt;デフォルトでは &lt;code&gt;YYYY-MM-DD&lt;&#x2F;code&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;タイムゾーンも設定できるが、ブログだと基本的に日付しか使わなそう&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;参考資料&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tera.netlify.app&#x2F;docs&#x2F;#length&quot;&gt;length | Tera&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tera.netlify.app&#x2F;docs&#x2F;#date&quot;&gt;date(format) | Tera&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;mu-ci-nozuo-cheng&quot;&gt;目次の作成&lt;&#x2F;h2&gt;
+&lt;p&gt;ページやセクションでは &lt;code&gt;toc&lt;&#x2F;code&gt; という目次を表す変数を使用することができ、これは Markdown で記述した見出しを配列として抽出することのできる機能です。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;content&#x2F;table-of-contents&#x2F;&quot;&gt;Table of Contents | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;例えば記事の内容を以下のように記述します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;title = &amp;quot;Table of Contentsの検証&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;date = 2023-01-10
+&lt;&#x2F;span&gt;&lt;span&gt;+++
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;# &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;見出しレベル 1
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;## &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;見出しレベル 2-1
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;### &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;見出しレベル 2-1-1
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;### &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;見出しレベル 2-1-2
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;### &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;見出しレベル 2-1-3
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;## &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;見出しレベル 2-2
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;## &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;見出しレベル 2-3
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;次に各ページのテンプレートを記述している箇所に、以下のように &lt;code&gt;toc&lt;&#x2F;code&gt; の変数を通じて各種の見出しレベルを抽出します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; 目次を抽出することが可能なときのみHTMLに反映する &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;toc %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; h1が取れているわけではなく、その記事のトップレベルの見出し要素を取得する &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;h1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;toc %}
+&lt;&#x2F;span&gt;&lt;span&gt;      &amp;lt;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ h1&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;permalink &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ h1&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;title }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; さらに下位の階層の見出しがあればHTMLに書き出す &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;h1&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;children %}
+&lt;&#x2F;span&gt;&lt;span&gt;          &amp;lt;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;h2 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;h1&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;children %}
+&lt;&#x2F;span&gt;&lt;span&gt;              &amp;lt;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;                &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ h2&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;permalink &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ h2&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;title }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;              &amp;lt;&#x2F;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endfor &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;          &amp;lt;&#x2F;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;      &amp;lt;&#x2F;li&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endfor &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;ul&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;ここでは見出しレベル 2 までの要素で目次が構築されます。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;shimopino.github.io&#x2F;blog&#x2F;crafting-tech-blog-with-zola&#x2F;assets&#x2F;first-heading-1.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;テンプレートで指定している &lt;code&gt;toc&lt;&#x2F;code&gt; は必ず見出しレベル 1 のものから抽出されるわけではなく、設定されている Markdown のコンテンツに依存します。&lt;&#x2F;p&gt;
+&lt;p&gt;例えば Markdown のファイルの中から見出しレベル 1 の箇所をコメントアウトすれば、以下のように目次が生成されます。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;shimopino.github.io&#x2F;blog&#x2F;crafting-tech-blog-with-zola&#x2F;assets&#x2F;first-heading-2.png&quot; alt=&quot;&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;例えばページで 1 つのみ設定する &lt;code&gt;h1&lt;&#x2F;code&gt; レベルの見出しに関しては、FrontMatter の &lt;code&gt;title&lt;&#x2F;code&gt; 要素で設定を行い、Markdown 形式の記事の中身では &lt;code&gt;h2&lt;&#x2F;code&gt; レベル以下の見出ししか使用しない、といったルールを設ければスタイル調整などにも一貫性を持たせることが可能かもしれない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;sutairunoshe-ding&quot;&gt;スタイルの設定&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;sass-woli-yong-suru&quot;&gt;Sass を利用する&lt;&#x2F;h3&gt;
+&lt;p&gt;スタイルの設定は &lt;code&gt;sass&lt;&#x2F;code&gt; ディレクトリに Sass ファイルを配置しておけば、CSS ファイルにコンパイルされて同じディレクトリ構造で &lt;code&gt;public&lt;&#x2F;code&gt; ディレクトリ以下に配置されます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; sass
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;│&lt;&#x2F;span&gt;&lt;span&gt;   ├─ main.scss
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;│&lt;&#x2F;span&gt;&lt;span&gt;   └─ layout
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;│&lt;&#x2F;span&gt;&lt;span&gt;          ├─ header.scss
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;│&lt;&#x2F;span&gt;&lt;span&gt;          └─ footer.scss
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; public &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 同じ構造で以下のようにコンパイルされる
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; main.css
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; layout
+&lt;&#x2F;span&gt;&lt;span&gt;              &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; header.css
+&lt;&#x2F;span&gt;&lt;span&gt;              &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; footer.css
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;テンプレート側から CSS ファイルを参照する場合には、以下の 2 つの方法があります。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; ルートディレクトリを指定するパターン &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; これは Web サイトのルートディレクトリを指している &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;link rel=&amp;quot;stylesheet&amp;quot; href=&amp;quot;&#x2F;main.css&amp;quot; &#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; `get_url` を指定するパターン &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt; ファイルへの URL を動的に生成する &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;#}
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;link rel=&amp;quot;stylesheet&amp;quot; href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ get_url&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;path&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;main.css&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;trailing_slash&lt;&#x2F;span&gt;&lt;span&gt;=false) |
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;後者の &lt;code&gt;get_url&lt;&#x2F;code&gt; を使用するパターンであれば、Zola の設定ファイルや生成されるファイルの位置に基づいて動作するので、基本的にはこちらを採用します。&lt;&#x2F;p&gt;
+&lt;p&gt;なお &lt;code&gt;public&lt;&#x2F;code&gt; ディレクトリに全ての Sass ファイルをコンパイルしたくない場合は、アンダーバーをつけて &lt;code&gt;_header.scss&lt;&#x2F;code&gt; のようにすれば、依存関係は解決された状態でファイル自体はコンパイルされないように設定できます。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;kasutamuhuontonoshe-ding&quot;&gt;カスタムフォントの設定&lt;&#x2F;h3&gt;
+&lt;p&gt;カスタムフォントを設定する場合には、CDN 経由で配信されているフォントファイルをダウンロードする形式と、サーバーに保存されたフォントファイルを配信するパターンがあります。&lt;&#x2F;p&gt;
+&lt;p&gt;CDN からフォントファイルを利用する際には、HTML へリンクを追加した後で、CSS でフォントファミリーを指定する必要があります。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;html&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-html &quot;&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;head&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;link rel&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;preconnect&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;href&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;https:&#x2F;&#x2F;fonts.googleapis.com&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;link rel&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;preconnect&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;href&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;https:&#x2F;&#x2F;fonts.gstatic.com&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;crossorigin &lt;&#x2F;span&gt;&lt;span&gt;&#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;link
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;href&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;https:&#x2F;&#x2F;fonts.googleapis.com&#x2F;css2?family=Noto+Sans+JP:wght@400;700&amp;amp;display=swap&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;rel&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;stylesheet&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;  &#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;head&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;CSS では以下のようにフォントを指定すれば対応完了です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;css&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-css &quot;&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;body &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;  font-family: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;Noto Sans JP&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, sans-serif;
+&lt;&#x2F;span&gt;&lt;span&gt;  font-weight: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;400&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;サーバーにフォントファイルを配置する場合には &lt;code&gt;static&lt;&#x2F;code&gt; ディレクトリにフォントファイルを配置して利用することが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-bash &quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; static
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;│&lt;&#x2F;span&gt;&lt;span&gt;   └─ fonts
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;│&lt;&#x2F;span&gt;&lt;span&gt;           ├─ HackGen-Bold.ttf
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;│&lt;&#x2F;span&gt;&lt;span&gt;           └─ HackGen-Regular.ttf
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; public &lt;&#x2F;span&gt;&lt;span style=&quot;color:#888888;&quot;&gt;# 同じ構造で以下のようにコンパイルされる
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; fonts
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;├─&lt;&#x2F;span&gt;&lt;span&gt; HackGen-Bold.ttf
+&lt;&#x2F;span&gt;&lt;span&gt;                &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;└─&lt;&#x2F;span&gt;&lt;span&gt; HackGen-Regular.ttf
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;今回はプログラミングフォント 白源（はくげん &#x2F; HackGen）を利用します。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;yuru7&#x2F;HackGen&quot;&gt;HackGen&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;これでコンパイルされることを前提に以下のように Sass ファイルから参照することが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;css&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-css &quot;&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;@font-face &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;  font-family: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;HackGen&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;  src: url(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;fonts&#x2F;HackGen-Regular.ttf&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;) format(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;truetype&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;  font-weight: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;400&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;@font-face &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;  font-family: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;HackGen&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;  src: url(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;fonts&#x2F;HackGen-Bold.ttf&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;) format(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;truetype&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;);
+&lt;&#x2F;span&gt;&lt;span&gt;  font-weight: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;700&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h3 id=&quot;peziquan-ti-notemakarashe-ding&quot;&gt;ページ全体のテーマカラー設定&lt;&#x2F;h3&gt;
+&lt;p&gt;直接的には Zola とは関係ない箇所ではありますが、サイトを構築した時の手順として記録を残しておきます。&lt;&#x2F;p&gt;
+&lt;p&gt;ページ全体のテーマカラーや背景色、テキストカラーを設定する時には &lt;a href=&quot;https:&#x2F;&#x2F;colormagic.app&#x2F;&quot;&gt;ColorMagic&lt;&#x2F;a&gt; というサービスを利用することができ、指定したキーワードの雰囲気やイメージに合った配色を簡単に作成することができます。&lt;&#x2F;p&gt;
+&lt;p&gt;今回は何度か配色生成を行い、このブログサイトの各種カラーを設定しています。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;peziquan-ti-noreiautoshe-ding&quot;&gt;ページ全体のレイアウト設定&lt;&#x2F;h3&gt;
+&lt;p&gt;まずはヘッダーやコンテンツ、フッターを含めたページ全体のスタイル調整を行なっていきますが、可能な限りセマンティックな HTML タグを利用してクラスを利用しないスタイリングを採用します。&lt;&#x2F;p&gt;
+&lt;p&gt;このクラスレスなスタイリングの方法は &lt;a href=&quot;https:&#x2F;&#x2F;picocss.com&#x2F;&quot;&gt;PicoCSS&lt;&#x2F;a&gt; を参考にしています。&lt;&#x2F;p&gt;
+&lt;p&gt;そのために &lt;code&gt;templates&#x2F;base.html&lt;&#x2F;code&gt; のトップレベルのセクションの対して余白調整を行うためのスタイルを設定します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span&gt;&amp;lt;div class=&amp;quot;container&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;header&amp;gt;&amp;lt;&#x2F;header&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;main&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %} {% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;main&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;footer&amp;gt;&amp;lt;&#x2F;footer&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;div&amp;gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;今回はブログの横幅などの全体的なスタイルを以下のように設定します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;css&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-css &quot;&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;.container &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;  height: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;100%&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;  max-width: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;50rem&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;  margin: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;0 &lt;&#x2F;span&gt;&lt;span&gt;auto;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;これで左右の余白調整ができた状態となったため、あとはヘッダーやフッターを設定していきます。&lt;&#x2F;p&gt;
+&lt;p&gt;将来的にはマクロなどを活用してヘッダーなどの HTML 要素のみを外だしすることも考慮しますが、現時点では複雑な構造を導入せずに直接 &lt;code&gt;templates&#x2F;base.html&lt;&#x2F;code&gt; を編集していきます。&lt;&#x2F;p&gt;
+&lt;p&gt;ヘッダーに対しては以下のようにナビゲーションなどの HTML 構造を定義します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span&gt;&amp;lt;header&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;div class=&amp;quot;logo&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ config&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;base_url }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;Blog&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;span class=&amp;quot;cursor&amp;quot;&amp;gt;&amp;lt;&#x2F;span&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;div&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;nav&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;a href=&amp;quot;&#x2F;blog&amp;quot; target=&amp;quot;_blank&amp;quot; rel=&amp;quot;noreferrer noopener&amp;quot;&amp;gt;Posts&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;a href=&amp;quot;&#x2F;tags&amp;quot; target=&amp;quot;_blank&amp;quot; rel=&amp;quot;noreferrer noopener&amp;quot;&amp;gt;Tags&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;a href=&amp;quot;https:&#x2F;&#x2F;github.com&#x2F;shimopino&amp;quot; target=&amp;quot;_blank&amp;quot; rel=&amp;quot;noreferrer noopener&amp;quot;&amp;gt;Github&amp;lt;&#x2F;a&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;nav&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;header&amp;gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;あとはヘッダー自体のレイアウト構造に対して以下のように、ナビゲーションも含めて横並びに設定しておき、後は個別にスタイリングをすれば完了です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;css&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-css &quot;&gt;&lt;code class=&quot;language-css&quot; data-lang=&quot;css&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;header &lt;&#x2F;span&gt;&lt;span&gt;{
+&lt;&#x2F;span&gt;&lt;span&gt;  padding: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cf6a4c;&quot;&gt;2rem&lt;&#x2F;span&gt;&lt;span&gt;;
+&lt;&#x2F;span&gt;&lt;span&gt;  display: flex;
+&lt;&#x2F;span&gt;&lt;span&gt;  justify-content: space-between;
+&lt;&#x2F;span&gt;&lt;span&gt;  align-items: center;
+&lt;&#x2F;span&gt;&lt;span&gt;  flex-wrap: wrap;
+&lt;&#x2F;span&gt;&lt;span&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;フッターには以下のようにシンプルにコピーライトと Zola へのリンクのみを設定します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span&gt;&amp;lt;footer&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;span&amp;gt;© 2023 shimopino. All rights reserved.&amp;lt;&#x2F;span&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  ::
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;span&amp;gt;Made by &amp;lt;a href=&amp;quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;&amp;quot;&amp;gt;Zola&amp;lt;&#x2F;a&amp;gt;&amp;lt;&#x2F;span&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;footer&amp;gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;feed-noshe-ding&quot;&gt;Feed の設定&lt;&#x2F;h2&gt;
+&lt;p&gt;Zola ではデフォルトで Feed の機能をサポートしており、 &lt;code&gt;config.toml&lt;&#x2F;code&gt; ファイルに &lt;code&gt;generate_feed = true&lt;&#x2F;code&gt; を設定すれば、サイトの Feed ファイルを作成することができます。&lt;&#x2F;p&gt;
+&lt;p&gt;このときに設定で &lt;code&gt;feed_filename&lt;&#x2F;code&gt; を設定していればその名前でファイルが生成されますが、指定されていない場合はデフォルトの &lt;code&gt;atom.xml&lt;&#x2F;code&gt; が生成されます。&lt;&#x2F;p&gt;
+&lt;p&gt;ファイル名には &lt;code&gt;atom.xml&lt;&#x2F;code&gt; を指定すれば組み込みの Atom テンプレートで Atom 1.0 形式で生成され、 &lt;code&gt;rss.xml&lt;&#x2F;code&gt; を指定すれば組み込みのテンプレートを使用して RSS 2.0 形式で生成され、それ以外のファイル名では自身でテンプレートを用意する必要があります。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;toml&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-toml &quot;&gt;&lt;code class=&quot;language-toml&quot; data-lang=&quot;toml&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;generate_feed &lt;&#x2F;span&gt;&lt;span&gt;= true
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;feed_filename &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;rss.xml&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;code&gt;templates&#x2F;base.html&lt;&#x2F;code&gt; ファイルに以下のコードを指定して、記事の自動検出を有効にし、フィードリーダーやブラウザが Web サイトで利用可能な RSS や Atom フィードについて通知できるようにします。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{%- &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;config&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;generate_feed %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;link rel=&amp;quot;alternate&amp;quot; type=&amp;quot;application&#x2F;rss+xml&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;title=&amp;quot;RSS&amp;quot; href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ get_url&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;path&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;rss.xml&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;) | &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;-%}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;画面でリンクを表示させたい場合には、以下のようにリンクを追加するだけで対応できます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;html&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-html &quot;&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span&gt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;a href&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;{{ get_url(path=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;rss.xml&amp;quot;) | safe }}&amp;quot; target&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;_blank&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;rel&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;noreferrer noopener&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;Feed&amp;lt;&#x2F;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;a&lt;&#x2F;span&gt;&lt;span&gt;&amp;gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;templates&#x2F;feeds&#x2F;&quot;&gt;Feed | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;404-pezi&quot;&gt;404 ページ&lt;&#x2F;h2&gt;
+&lt;p&gt;どの URL にも該当しない場合に表示する 404 ページは単純に &lt;code&gt;templates&#x2F;404.html&lt;&#x2F;code&gt; を用意すれば、このテンプレートファイルを利用して描画されます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;extends &lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;base.html&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;block &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;h1&amp;gt;404 Not Found&amp;lt;&#x2F;h1&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endblock &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;content %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;templates&#x2F;404&#x2F;&quot;&gt;404 error page | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;macros-woli-yong-sitazhong-fu-noxue-chu&quot;&gt;Macros を利用した重複の削除&lt;&#x2F;h2&gt;
+&lt;p&gt;Zola では Tera のマクロ機能を利用して、重複するコードを関数化させることができます。&lt;&#x2F;p&gt;
+&lt;p&gt;例えば以下のように &lt;code&gt;templates&#x2F;macros&#x2F;sample.html&lt;&#x2F;code&gt; に対して入力された値をベースに &lt;code&gt;input&lt;&#x2F;code&gt; 要素を作成する関数を作成します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;macro &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;input&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;label&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;type&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;text&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;label&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ label }}
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;input type=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ type }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot; &#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;&#x2F;label&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endmacro &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;input %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;このマクロを利用するには対象のテンプレートファイルから以下のようにインポートし、別名を付与します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;html&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-html &quot;&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span&gt;{% import &amp;quot;macros&#x2F;sample.html&amp;quot; as sample_macro %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;あとは付与した別名を元に対象のマクロを呼び出せば処理を実行することができます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;html&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-html &quot;&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span&gt;{{ sample_macros::input(label=&amp;quot;Name&amp;quot;, type=&amp;quot;text&amp;quot;) }}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;tera.netlify.app&#x2F;docs#macros&quot;&gt;macros | Tera&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;今回は個別のページや記事一覧ページで利用しているタグつけの部分をマクロ化させていくため、以下のように専用のマクロを用意します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;macro &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;tags&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page&lt;&#x2F;span&gt;&lt;span&gt;) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;taxonomies &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;and &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;taxonomies&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;tags %}
+&lt;&#x2F;span&gt;&lt;span&gt;    &amp;lt;span&amp;gt;::&amp;lt;&#x2F;span&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;for &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;tag &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;in &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;page&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;taxonomies&lt;&#x2F;span&gt;&lt;span&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;tags %}
+&lt;&#x2F;span&gt;&lt;span&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;set &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;tag_url &lt;&#x2F;span&gt;&lt;span&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;get_taxonomy_url&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;kind&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#99ad6a;&quot;&gt;tags&lt;&#x2F;span&gt;&lt;span style=&quot;color:#556633;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;name&lt;&#x2F;span&gt;&lt;span&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;tag&lt;&#x2F;span&gt;&lt;span&gt;) | &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe %}
+&lt;&#x2F;span&gt;&lt;span&gt;        &amp;lt;a href=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ tag_url }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;&amp;gt;#&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ tag }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;lt;&#x2F;a&amp;gt;&amp;amp;nbsp;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endfor &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;  &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endmacro &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;tags %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;あとはこのマクロを &lt;code&gt;base.html&lt;&#x2F;code&gt; で読み込んでおきます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;html&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-html &quot;&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span&gt;{% import &amp;quot;macros&#x2F;tags.html&amp;quot; as tags_macro %}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;そして &lt;code&gt;blog.html&lt;&#x2F;code&gt; や &lt;code&gt;blog-page.html&lt;&#x2F;code&gt; でタグを定義している箇所で、このマクロを呼び出せばタグ部分の HTML 箇所を 1 箇所に集約することができます。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;html&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-html &quot;&gt;&lt;code class=&quot;language-html&quot; data-lang=&quot;html&quot;&gt;&lt;span&gt;{{ tags_macro::tags(page=page) }}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;他にも記事の目次などは、マクロ化させておくと記事の構造を変更する時に変更箇所がはっきりと理解できるようになります（あまりにも乱用すると処理が分散してしまっていることによる可読性の悪化がひどくなるので注意が必要です）。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;shortcodes-woli-yong-suru&quot;&gt;Shortcodes を利用する&lt;&#x2F;h2&gt;
+&lt;p&gt;Markdown で記述した記事の中に画像への参照が含まれている場合、以下のようにパスや alt テキストを指定するだけで、画像のサイズを設定することができません。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;![caption](.&#x2F;path&#x2F;to&#x2F;image.png)
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;こうした場合に Shortcodes の機能を利用すれば、Markdown ファイルから事前に定義された HTML 要素を呼び出すことで、追加の属性などを設定することができます。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;documentation&#x2F;content&#x2F;shortcodes&#x2F;&quot;&gt;Shortcodes | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;まずは &lt;code&gt;templates&#x2F;shortcodes&#x2F;image.html&lt;&#x2F;code&gt; を作成し、以下のようにテンプレートを作成します。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;jinja2&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-jinja2 &quot;&gt;&lt;code class=&quot;language-jinja2&quot; data-lang=&quot;jinja2&quot;&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;src %}
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;img
+&lt;&#x2F;span&gt;&lt;span&gt;    src=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ src &lt;&#x2F;span&gt;&lt;span&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;safe }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;alt %}&lt;&#x2F;span&gt;&lt;span&gt; alt=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ alt }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;width %}&lt;&#x2F;span&gt;&lt;span&gt; width=&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{{ width }}&lt;&#x2F;span&gt;&lt;span&gt;&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;center %}
+&lt;&#x2F;span&gt;&lt;span&gt;      style=&amp;quot;display: block; margin: 0 auto;&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;span&gt;  &#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;{% &lt;&#x2F;span&gt;&lt;span style=&quot;color:#8fbfdc;&quot;&gt;endif &lt;&#x2F;span&gt;&lt;span style=&quot;color:#ffb964;&quot;&gt;%}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;あとは Markdown 側でこのファイルを指定して、所定の引数を指定すれば簡易的にスタイルを調整した HTML 要素を記述することが可能です。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;md&quot; style=&quot;background-color:#151515;color:#e8e8d3;&quot; class=&quot;language-md &quot;&gt;&lt;code class=&quot;language-md&quot; data-lang=&quot;md&quot;&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;span&gt;  &amp;lt;img 
+&lt;&#x2F;span&gt;&lt;span&gt;    src=&amp;quot;assets&#x2F;first-section.png&amp;quot;
+&lt;&#x2F;span&gt;&lt;span&gt;     alt=&amp;quot;sample&amp;quot; 
+&lt;&#x2F;span&gt;&lt;span&gt;     width=&amp;quot;300px&amp;quot; 
+&lt;&#x2F;span&gt;&lt;span&gt;    
+&lt;&#x2F;span&gt;&lt;span&gt;  &#x2F;&amp;gt;
+&lt;&#x2F;span&gt;&lt;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;これで Markdown 側からも柔軟に HTML 要素を指定することが可能であることがわかりました。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;googlejian-suo-debiao-shi-saseru&quot;&gt;Google検索で表示させる&lt;&#x2F;h2&gt;
+&lt;p&gt;Google検索で今回作成したGithub PagesのURLを指定して検索を行なっても、検索結果に表示されない状態となっています。&lt;&#x2F;p&gt;
+&lt;p&gt;そのため参考サイトをもとに以下の3つの対策を実施します。&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;Google Search Consoleへの登録&lt;&#x2F;li&gt;
+&lt;li&gt;サイトマップへの登録&lt;&#x2F;li&gt;
+&lt;li&gt;Googleアナリティクスへの登録&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.bedroomcomputing.com&#x2F;2020&#x2F;04&#x2F;2020-0408-googleconsole&#x2F;&quot;&gt;GitHub Pagesで作ったブログをGoogle検索にヒットさせる&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;google-search-consolehenodeng-lu&quot;&gt;Google Search Consoleへの登録&lt;&#x2F;h3&gt;
+&lt;p&gt;URLプレフィックスに対して自身のサイト（ &lt;code&gt;https:&#x2F;&#x2F;shimopino.github.io&lt;&#x2F;code&gt; ）を指定すれば、確認方法としてトップレベルのパスに検証用のHTMLファイルを配置するように促されます。&lt;&#x2F;p&gt;
+&lt;p&gt;そこで今回は &lt;code&gt;static&lt;&#x2F;code&gt; ディレクトリ直下に指定されたファイルを配置します。&lt;&#x2F;p&gt;
+&lt;p&gt;これで再度Google Search Consoleで所有権の確認を行えば、確認が成功しプロパティ設定の画面に遷移できます。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;saitomatupunodeng-lu&quot;&gt;サイトマップの登録&lt;&#x2F;h3&gt;
+&lt;p&gt;Zolaで組み込みでサイトマップを生成することでき、 &lt;code&gt;&amp;lt;base_url&amp;gt;&#x2F;sitemap.xml&lt;&#x2F;code&gt; にアクセスすれば、自動的に構築されたサイトマップを確認することができます。&lt;&#x2F;p&gt;
+&lt;p&gt;こちらをプロパティ設定画面の「サイトマップ」から上記のURLを登録すれば、送信されたサイトマップに対してスタータスが成功状態となっており登録が完了したことがわかります。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;google-analyticshenodeng-lu&quot;&gt;Google Analyticsへの登録&lt;&#x2F;h3&gt;
+&lt;p&gt;Google Analyticsへアカウント登録やプロパティの登録を行えば、Googleタグをインストールする手段が提供されます。その際に手動でインストールを選択して表示されるスクリプトを &lt;code&gt;base.html&lt;&#x2F;code&gt; に配置すれば登録することができます。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;gan-xiang&quot;&gt;感想&lt;&#x2F;h2&gt;
+&lt;p&gt;触ってみた感じ Zola は薄いライブラリであり、HTML と CSS、ある程度のテンプレート構文を理解できていればそこまでつまづくことなくブログサイトを構築することができました。&lt;&#x2F;p&gt;
+&lt;p&gt;マクロや Shortcodes などの乱用すれば運用が難しくなってしまいそうな機能もありますが、必要最小限の利用の留めれば今後も問題なくブログを運用できそうです。&lt;&#x2F;p&gt;
+&lt;p&gt;Zola には各種テーマが事前に用意されており、ソースコードも一緒に公開されているので、他のテーマの実装を見ながら挙動確認を進めていくことができたので、こうしたサンプルが豊富に公開されているライブラリは導入が楽で助かりますね。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;themes&#x2F;&quot;&gt;Theme | Zola&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+</description>
+      </item>
+    </channel>
+</rss>

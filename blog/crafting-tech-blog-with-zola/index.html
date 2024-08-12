@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="alternate" type="application/rss+xml"
+    title="RSS" href="https://shimopino.github.io/rss.xml">
+    <meta name="generator" content="Zola v0.16.1">
+
+    <link rel="stylesheet" href="https://shimopino.github.io/main.css">
+
+
+
+
+    <link rel="icon" href="https://shimopino.github.io/favicon.ico" sizes="any">
+<link rel="icon" href="https://shimopino.github.io/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://shimopino.github.io/apple-touch-icon.png">
+<link rel="manifest" href=https://shimopino.github.io/manifest.webmanifest>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<title>Zolaで始める技術ブログ</title>
+<meta name="author" content="shimopino">
+<meta name="description" content="Zolaを使ってGithub Pagesにブログを構築したのでその手順を残す">
+
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/">
+<meta property="og:site_name" content="shimopino&#x27;s blog">
+<meta property="og:title" content="Zolaで始める技術ブログ">
+<meta property="og:description" content="Zolaを使ってGithub Pagesにブログを構築したのでその手順を残す">
+<meta property="og:image" content="https:&#x2F;&#x2F;shimopino.github.io&#x2F;images&#x2F;ogp&#x2F;first-site.png">
+
+
+
+
+<meta property="twitter:card" content="summary">
+<meta property="twitter:url" content="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/">
+<meta property="twitter:title" content="Zolaで始める技術ブログ">
+<meta property="twitter:description" content="Zolaを使ってGithub Pagesにブログを構築したのでその手順を残す">
+<meta property="twitter:image" content="https:&#x2F;&#x2F;shimopino.github.io&#x2F;images&#x2F;ogp&#x2F;first-site.png">
+
+
+
+
+<link rel="canonical" href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/">
+
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VEDHV3HEDG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-VEDHV3HEDG');
+</script>
+
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo">
+          <a href="https:&#x2F;&#x2F;shimopino.github.io/blog">shimopino's blog</a>
+          <span class="cursor"></span>
+        </div>
+        <nav>
+          <a href="/blog" target="_blank" rel="noreferrer noopener">Posts</a>
+          <a href="/tags" target="_blank" rel="noreferrer noopener">Tags</a>
+          <a href="https://github.com/shimopino" target="_blank" rel="noreferrer noopener">Github</a>
+          <a href="https://shimopino.github.io/rss.xml" target="_blank" rel="noreferrer noopener">Feed</a>
+        </nav>
+      </header>
+
+      <main>
+        
+<h1>Zolaで始める技術ブログ</h1>
+<span>2023-05-14</span>
+
+
+  
+    <span>::</span>
+    
+        
+        <a href="https:&#x2F;&#x2F;shimopino.github.io&#x2F;tags&#x2F;zola&#x2F;">#Zola</a>&nbsp;
+    
+  
+
+
+  
+    <details class="toc" open>
+      <summary>> 目次</summary>
+      <ul>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#zola-nosetutoatupu">Zola のセットアップ</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#github-pages-henodepuroi">Github Pages へのデプロイ</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#zui-chu-noburoguji-shi-wozuo-cheng-suru">最初のブログ記事を作成する</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#besutonarutenpuretohuairuwozuo-cheng-suru">ベースとなるテンプレートファイルを作成する</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#tenpuretohuairuwokuo-zhang-suru">テンプレートファイルを拡張する</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#burogusekusiyonnozuo-cheng-suru">ブログセクションの作成する</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#burogukontentunozuo-cheng-suru">ブログコンテンツの作成する</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#totupupezinirinkuwozhui-jia-suru">トップページにリンクを追加する</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#github-pages-denodui-ying">Github Pages での対応</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#shi-yong-sitage-zhong-gou-wen">使用した各種構文</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#frontmatter">FrontMatter</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#ji-shi-henotagufu-ke">記事へのタグ付け</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#dan-chun-nagurupingu">単純なグルーピング</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#shi-yong-sitage-zhong-gou-wen-1">使用した各種構文</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#mu-ci-nozuo-cheng">目次の作成</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#sutairunoshe-ding">スタイルの設定</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#sass-woli-yong-suru">Sass を利用する</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#kasutamuhuontonoshe-ding">カスタムフォントの設定</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#peziquan-ti-notemakarashe-ding">ページ全体のテーマカラー設定</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#peziquan-ti-noreiautoshe-ding">ページ全体のレイアウト設定</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#feed-noshe-ding">Feed の設定</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#404-pezi">404 ページ</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#macros-woli-yong-sitazhong-fu-noxue-chu">Macros を利用した重複の削除</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#shortcodes-woli-yong-suru">Shortcodes を利用する</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#googlejian-suo-debiao-shi-saseru">Google検索で表示させる</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#google-search-consolehenodeng-lu">Google Search Consoleへの登録</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#saitomatupunodeng-lu">サイトマップの登録</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#google-analyticshenodeng-lu">Google Analyticsへの登録</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/#gan-xiang">感想</a>
+            
+          </li>
+        
+      </ul>
+    </details>
+  
+
+<p>最近 Rust で遊んでいますが、その過程で得た知識を記録していくためにブログを作成することにしました。せっかくなので、ブログには Rust 製の静的サイトジェネレーターである <a href="https://www.getzola.org/documentation/getting-started/overview/">Zola</a> を使います。</p>
+<p>Zola は Jinja2 に似た Tera テンプレートエンジンを使用しており、これから見ていくように動的なテンプレートを通じて、静的な HTML ページに高速に変換することが可能です。</p>
+<p>さらに、Zola は Github Pages との連携も簡単に行うことができ、Github Actions を通じて Zola のサイトをビルドし、その結果を Github Pages にデプロイすることが可能です。</p>
+<p>今回は Zola を使って技術ブログを構築した手順を残していこうと思います。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">$</span><span> zola</span><span style="color:#ffb964;"> --version
+</span><span style="color:#ffb964;">zola</span><span> 0.17.2
+</span></code></pre>
+<h2 id="zola-nosetutoatupu">Zola のセットアップ</h2>
+<p>公式ドキュメントに記載されている <code>zola init myblog</code> コマンドを実行すれば、下記の構造のディレクトリ・ファイルが生成されます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">├─</span><span> config.toml
+</span><span style="color:#ffb964;">├─</span><span> content
+</span><span style="color:#ffb964;">├─</span><span> sass
+</span><span style="color:#ffb964;">├─</span><span> static
+</span><span style="color:#ffb964;">├─</span><span> templates
+</span><span style="color:#ffb964;">└─</span><span> themes
+</span></code></pre>
+<p><code>config.toml</code> は Zola の設定ファイルであり、こちらにブログの URL であったり各種設定を行うことが可能です。</p>
+<p>ディレクトリはそれぞれ以下の役割が設定されています。</p>
+<ul>
+<li>content
+<ul>
+<li>Markdown ファイルなどでサイトを構成する記事を管理するディレクトリ</li>
+<li>子ディレクトリを作成すればサイトの URL に反映される</li>
+</ul>
+</li>
+<li>sass
+<ul>
+<li>コンパイルされる Sass ファイルを配置する</li>
+<li>Sass 以外のファイルは無視される</li>
+<li>ディレクトリ構造は保持されるため <code>sass/something/site.scss</code> は <code>public/something/site.css</code> にコンパイルされる</li>
+</ul>
+</li>
+<li>static
+<ul>
+<li>任意の種類のファイルを配置する</li>
+<li>このディレクトリ内に配置した構造は、そのまま出力ディレクトリにコピーされる</li>
+<li>静的ファイルが大きい場合を考慮して、設定ファイルに <code>hard_link_static = true</code> を指定すれば、コピーせずにハードリンクする</li>
+</ul>
+</li>
+<li>templates
+<ul>
+<li>レンダリングする時に使用する <code>Tera</code> のテンプレートファイルを格納する</li>
+<li>構文に従って変数などを指定できる</li>
+</ul>
+</li>
+<li>themes
+<ul>
+<li>テーマを利用すると、ここにテンプレートファイル一式が保存される</li>
+<li>テーマを使用しない場合は空のままにしておく</li>
+<li>今回は 1 から作っていくので、このディレクトリは使用しない</li>
+</ul>
+</li>
+</ul>
+<p>初期状態のまま <code>zola build</code> を実行すると、下記の外観のサイトが構築されます。</p>
+<p><img src="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/assets/first-site.png" alt="" /></p>
+<p><a href="https://www.getzola.org/documentation/getting-started/directory-structure/">Overview | Zola</a></p>
+<p>これでブログを始める準備が整いました。</p>
+<h2 id="github-pages-henodepuroi">Github Pages へのデプロイ</h2>
+<p>私はブログに限らず、ソフトウェアを構築する際には最終的な成果物を完成させてからデプロイするよりも、インクリメンタルに作成していくことが好みです。</p>
+<p>まずは Web ページとして閲覧できる状態にするために、今回は Github Actions を使用して、Github Pages にデプロイすることを目指します。</p>
+<p>Github Pages では <code>gh-pages, main, master</code> というブランチルートに <code>index.html</code> を配置してページを公開したり、リポジトリの <code>docs</code> ディレクトリから公開することも可能です。</p>
+<p>Github Pages の URL は以下のパターンで決まります。</p>
+<ul>
+<li>特定の名前のリポジトリ
+<ul>
+<li>リポジトリ名を <code>&lt;username&gt;.github.io</code> に設定する</li>
+<li>これは例えば以下のようなサイトが該当する
+<ul>
+<li>https://github.com/Yelp/yelp.github.io</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>それ以外のリポジトリ
+<ul>
+<li><code>&lt;username&gt;.github.io/&lt;repository&gt;</code></li>
+</ul>
+</li>
+</ul>
+<p><a href="https://docs.github.com/ja/pages/getting-started-with-github-pages/about-github-pages">Github Pages について</a></p>
+<p>Github Actions 経由でデプロイするには以下の 3 つのステップが必要となります。</p>
+<ol>
+<li>他のリポジトリ経由で公開する場合は、そのリポジトリから自身のリポジトリにプッシュするための権限を付与するためのパーソナルアクセストークンを生成する</li>
+<li>Github Actions を用意する</li>
+<li>リポジトリ設定の「Github Pages」の項目を設定する</li>
+</ol>
+<p>今回はこのリポジトリからサイトを公開するため、PAT の準備はスキップします。</p>
+<p>Github Actions は <a href="https://github.com/shalzz/zola-deploy-action">zola-deploy-action</a> にサンプルが配置されているため、こちらを参考に構築します。</p>
+<pre data-lang="yml" style="background-color:#151515;color:#e8e8d3;" class="language-yml "><code class="language-yml" data-lang="yml"><span style="color:#ffb964;">name</span><span>: </span><span style="color:#99ad6a;">Zola on Github Pages
+</span><span>
+</span><span>on:
+</span><span>  </span><span style="color:#ffb964;">push</span><span>:
+</span><span>    </span><span style="color:#ffb964;">branches</span><span>:
+</span><span>      - </span><span style="color:#99ad6a;">main
+</span><span>
+</span><span style="color:#ffb964;">jobs</span><span>:
+</span><span>  </span><span style="color:#ffb964;">build</span><span>:
+</span><span>    </span><span style="color:#ffb964;">name</span><span>: </span><span style="color:#99ad6a;">Publish Site
+</span><span>    </span><span style="color:#ffb964;">runs-on</span><span>: </span><span style="color:#99ad6a;">ubuntu-latest
+</span><span>    </span><span style="color:#ffb964;">steps</span><span>:
+</span><span>      - </span><span style="color:#ffb964;">name</span><span>: </span><span style="color:#99ad6a;">Checkout main
+</span><span>        </span><span style="color:#ffb964;">uses</span><span>: </span><span style="color:#99ad6a;">actions/checkout@v3.0.0
+</span><span>      - </span><span style="color:#ffb964;">name</span><span>: </span><span style="color:#99ad6a;">Build and Deploy
+</span><span>        </span><span style="color:#888888;"># v0.17.2 では git config --global --add safe.directory &#39;*&#39; に失敗する時があった
+</span><span>        </span><span style="color:#888888;"># 最新版の参照する形式に変更
+</span><span>        </span><span style="color:#888888;"># https://github.com/shalzz/zola-deploy-action/issues/53#issuecomment-1409707948
+</span><span>        </span><span style="color:#ffb964;">uses</span><span>: </span><span style="color:#99ad6a;">shalzz/zola-deploy-action@master
+</span><span>        </span><span style="color:#ffb964;">env</span><span>:
+</span><span>          </span><span style="color:#888888;"># https://docs.github.com/ja/actions/security-guides/automatic-token-authentication
+</span><span>          </span><span style="color:#ffb964;">GITHUB_TOKEN</span><span>: </span><span style="color:#99ad6a;">${{ secrets.GITHUB_TOKEN }}
+</span></code></pre>
+<p>Github Actions が実行されると、新しく <code>gh-pages</code> ブランチが作成され、そこに <code>zola build</code> によって生成された静的ファイルが配置されます。</p>
+<p><img src="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/assets/github-pages-visit.png" alt="" /></p>
+<p>これでローカルで確認した時と、同じ内容のサイトを構築することができました。</p>
+<p><img src="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/assets/github-pages-first-deploy.png" alt="" /></p>
+<p><a href="https://www.getzola.org/documentation/deployment/github-pages/">Github Pages | Deployment | Zola</a></p>
+<h2 id="zui-chu-noburoguji-shi-wozuo-cheng-suru">最初のブログ記事を作成する</h2>
+<h3 id="besutonarutenpuretohuairuwozuo-cheng-suru">ベースとなるテンプレートファイルを作成する</h3>
+<p>公式ページの手順に従ってサンプルページを作成していけば、おおよそのテンプレートやコンテンツの挙動を理解することができます。</p>
+<p><a href="https://tera.netlify.app/docs/#base-template">Overview | Zola</a></p>
+<p><code>template</code> ディレクトリでは、　<code>Tera</code> の構文に従ったテンプレートファイルを定義することができ、ここで定義した HTML ファイルを元に様々なページを作成していきます。</p>
+<p>以下のように <code>template/base.html</code> を作成すれば、 <code>block</code> で定義した箇所を child として設定したテンプレートファイルで上書きすることができます。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span>&lt;!DOCTYPE html&gt;
+</span><span>&lt;html lang=&quot;en&quot;&gt;
+</span><span>  &lt;head&gt;
+</span><span>    &lt;meta charset=&quot;utf-8&quot; /&gt;
+</span><span>    &lt;title&gt;MyBlog&lt;/title&gt;
+</span><span>  &lt;/head&gt;
+</span><span>
+</span><span>  &lt;body&gt;
+</span><span>    &lt;section class=&quot;section&quot;&gt;
+</span><span>      &lt;div class=&quot;container&quot;&gt;
+</span><span>        </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>        (* このテンプレートを継承すれば、この部分を上書きすることができる *)
+</span><span>        </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span><span>      &lt;/div&gt;
+</span><span>    &lt;/section&gt;
+</span><span>  &lt;/body&gt;
+</span><span>&lt;/html&gt;
+</span></code></pre>
+<h3 id="tenpuretohuairuwokuo-zhang-suru">テンプレートファイルを拡張する</h3>
+<p>child のテンプレートでは親側のテンプレートファイルを拡張し、拡張対象のテンプレートで定義されているブロック <code>content</code> を上書きすることが可能です。</p>
+<p><code>template/index.html</code> を作成し、以下のように <code>content</code> を定義すれば親側の <code>content</code> を指定した要素で上書きすることができます。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">extends </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">base.html</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>&lt;h1 class=&quot;title&quot;&gt;This is my blog made with Zola.&lt;/h1&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span></code></pre>
+<p><img src="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/assets/first-home-page.png" alt="" /></p>
+<h3 id="burogusekusiyonnozuo-cheng-suru">ブログセクションの作成する</h3>
+<p><code>content</code> ディレクトリには Markdown ファイルで記述した記事の内容を配置していきます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">└─</span><span> content
+</span><span>        </span><span style="color:#ffb964;">└─</span><span> blog
+</span><span>                </span><span style="color:#ffb964;">└─</span><span> _index.md
+</span></code></pre>
+<p>Zola ではファイルベースのパスを構築するため、上記の構造でファイルを定義すれば、 <code>&lt;base_url&gt;/blog</code> の URL の設定を記述することが可能です。</p>
+<p>例えば TOML 形式で以下の設定を記述すれば、対象 URL で使用するテンプレートファイルであったり、個別の記事で使用するテンプレートやページのタイトル、記事のソート順を指定することができます。</p>
+<pre data-lang="md" style="background-color:#151515;color:#e8e8d3;" class="language-md "><code class="language-md" data-lang="md"><span>+++
+</span><span>title = &quot;List of blog posts&quot;
+</span><span>sort_by = &quot;date&quot;
+</span><span>template = &quot;blog.html&quot;
+</span><span>page_template = &quot;blog-page.html&quot;
+</span><span>+++
+</span></code></pre>
+<p>次にブログのトップページと個別の記事で利用するテンプレートファイルを準備します。</p>
+<p>ここでは公式ドキュメントに従い、設定で記述した通りに <code>template/blog.html</code> や <code>template/blog-page.html</code> を定義してきます。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">extends </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">base.html</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>&lt;h1 class=&quot;title&quot;&gt;</span><span style="color:#ffb964;">{{ section</span><span>.</span><span style="color:#ffb964;">title }}</span><span>&lt;/h1&gt;
+</span><span>&lt;ul&gt;
+</span><span>  &lt;!-- section （今回では blog） に配置されているコンテンツを一覧で取得する --&gt;
+</span><span>  </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">for </span><span style="color:#ffb964;">page </span><span style="color:#8fbfdc;">in </span><span style="color:#ffb964;">section</span><span>.</span><span style="color:#ffb964;">pages %}
+</span><span>    &lt;!-- pageオブジェクトで個別の設定を使用する --&gt;
+</span><span>    &lt;li&gt;
+</span><span>      &lt;a href=&quot;</span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">permalink </span><span>| </span><span style="color:#ffb964;">safe }}</span><span>&quot;&gt;</span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">title }}</span><span>&lt;/a&gt;
+</span><span>    &lt;/li&gt;
+</span><span>  </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endfor </span><span style="color:#ffb964;">%}
+</span><span>&lt;/ul&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span></code></pre>
+<h3 id="burogukontentunozuo-cheng-suru">ブログコンテンツの作成する</h3>
+<p><code>_index.md</code> というファイル名は対象のディレクトリに対してセクションの設定を行うことが可能ですが、 <code>content/blog</code> ディレクトリにそれ以外のファイル名で記事を作成していくことで、個別の記事のページを作成することが可能です。</p>
+<p>今回は最初の記事として <code>content/blog/first.md</code> ファイルを作成し、ブログセクションの設定で追加したように <code>title</code> と、セクションページで記事をソートするための <code>date</code> を設定します。</p>
+<pre data-lang="md" style="background-color:#151515;color:#e8e8d3;" class="language-md "><code class="language-md" data-lang="md"><span>+++
+</span><span>title = &quot;My first post&quot;
+</span><span>date = 2019-11-27
+</span><span>+++
+</span><span>
+</span><span>This is my first blog post.
+</span></code></pre>
+<p>個別の記事に対して、今までと同じように <code>content</code> をどのように上書きしていくのかをテンプレートファイルで記述していきます。そのときにコンテンツの内容には <code>page.content</code> という変数でアクセスすることが可能です。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">extends </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">base.html</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>  &lt;h1 class=&quot;title&quot;&gt;</span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">title }}</span><span>&lt;/h1&gt;
+</span><span>  &lt;p class=&quot;subtitle&quot;&gt;&lt;strong&gt;</span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">date }}</span><span>&lt;/strong&gt;&lt;/p&gt;
+</span><span>
+</span><span>  &lt;!-- ここにMarkdownファイルで記述した内容が挿入される --&gt;
+</span><span>  </span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">content </span><span>| </span><span style="color:#ffb964;">safe }}
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span></code></pre>
+<p>ここまで完了すれば、以下のようにセクションページと個別のページが作成されていることが確認できます。なお確認のために <code>content/blog/second.md</code> という追加の記事を配置しています。</p>
+<ul>
+<li>
+<p>セクション: <code>&lt;base_url&gt;/blog</code></p>
+
+  <img 
+    src="assets/first-section.png"
+     alt="ブログ記事の一覧ページ" 
+     width="300px" 
+    
+  />
+</li>
+<li>
+<p>ページ: <code>&lt;base_url&gt;/blog/first</code></p>
+
+  <img 
+    src="assets/first-contents.png"
+     alt="ブログ記事のページ" 
+     width="300px" 
+    
+  />
+</li>
+</ul>
+<h3 id="totupupezinirinkuwozhui-jia-suru">トップページにリンクを追加する</h3>
+<p>現在のトップページにはテキストが配置されているだけですが、 <code>get_url</code> 関数を使用すれば直接 <code>content</code> ディレクトリへの内部リンクを反映したリンクを取得することが可能です。</p>
+<p><code>index.html</code> に以下のようにリンクを設定すればコンテンツへのリンクを設定できます。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">extends </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">base.html</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>  &lt;h1 class=&quot;title&quot;&gt;This is my blog made with Zola.&lt;/h1&gt;
+</span><span>
+</span><span>  </span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> contentに配置したファイル先にリンクを設定することが可能である </span><span style="color:#ffb964;">#}
+</span><span>  &lt;p&gt;
+</span><span>    </span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> `@` はじまりで他のディレクトリのファイルを指定できる </span><span style="color:#ffb964;">#}
+</span><span>    Click &lt;a href=&quot;</span><span style="color:#ffb964;">{{ get_url</span><span>(</span><span style="color:#ffb964;">path</span><span>=</span><span style="color:#556633;">&#39;</span><span style="color:#99ad6a;">@/blog/_index.md</span><span style="color:#556633;">&#39;</span><span>) </span><span style="color:#ffb964;">}}</span><span>&quot;&gt;here&lt;/a&gt; to see my
+</span><span>  posts.
+</span><span>  &lt;/p&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span></code></pre>
+<h3 id="github-pages-denodui-ying">Github Pages での対応</h3>
+<p>ローカル開発では記事へのリンクは、開発サーバーが <code>127.0.0.1/1111</code> で起動されている場合にはこの URL が使用されますが、Github Pages で利用するためには <code>config.toml</code> でドメインの設定が必要になります。</p>
+<p>現在は初期化された状態のままであり、以下のように <code>base_url</code> が設定されています。</p>
+<pre data-lang="toml" style="background-color:#151515;color:#e8e8d3;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="color:#ffb964;">base_url </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">https://example.com</span><span style="color:#556633;">&quot;
+</span></code></pre>
+<p>この場合であれば各記事へのリンクは以下のようにこの URL を基準に構築されます。</p>
+<ul>
+<li><code>https://example.com/blog/first</code></li>
+</ul>
+<p>今回は Github Pages を利用するため公開先の URL を設定する必要があります。</p>
+<pre data-lang="tml" style="background-color:#151515;color:#e8e8d3;" class="language-tml "><code class="language-tml" data-lang="tml"><span style="color:#ffb964;">base_url </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">https://shimopino.github.io</span><span style="color:#556633;">&quot;
+</span></code></pre>
+<p>これで Github Pages で動作するリンクを構築することができ、実際に Web 上で動作するブログを作成することができました。</p>
+<h3 id="shi-yong-sitage-zhong-gou-wen">使用した各種構文</h3>
+<ul>
+<li><code>{{  }}</code>
+<ul>
+<li><code>expressions</code> であり各種変数を指定することができる</li>
+</ul>
+</li>
+<li><code>{%  %}</code>
+<ul>
+<li><code>statements</code> であり for ループであったりブロックの設定ができる</li>
+</ul>
+</li>
+<li><code>{{ page.content | safe }}</code>
+<ul>
+<li><code>|</code> はパイプライン演算子のように、1 つ前の値を式に代入することが可能である</li>
+<li><code>safe</code> は指定された値をエスケープ処理することで安全に取り扱うことが可能である</li>
+</ul>
+</li>
+<li><code>get_url</code>
+<ul>
+<li>指定されたパスの <code>permalink</code> を取得する</li>
+<li>先頭が <code>@/</code> で始まる場合は <code>content</code> ディレクトリから始める内部リンクとして処理する</li>
+<li><code>static</code> ファイルを指定することもでき、 <code>static/css/app.css</code> を参照したい場合は <code>get_url("css/app.css")</code> と指定する</li>
+</ul>
+</li>
+</ul>
+<p>参考資料</p>
+<ul>
+<li><a href="https://tera.netlify.app/docs/#tera-basics">Basic | Tera</a></li>
+<li><a href="https://tera.netlify.app/docs/#safe">safe | Tera</a></li>
+<li><a href="https://www.getzola.org/documentation/templates/overview/#get-url">get_url | Template | Zola</a></li>
+</ul>
+<h2 id="frontmatter">FrontMatter</h2>
+<p><code>content</code> 以下に配置する <code>_index.md</code> は、対象のセクションに表示するコンテンツやメタデータの設定を行うことが可能です。</p>
+<p><a href="https://www.getzola.org/documentation/content/section/#front-matter">FrontMatter | Content | Zola</a></p>
+<p>例えば以下のような <code>_index.md</code> が存在していた場合、これは <code>&lt;base_url&gt;/blog</code> 以下のセクションでのコンテンツやメタデータの設定を行うことが可能です。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">└─</span><span> content
+</span><span>        </span><span style="color:#ffb964;">└─</span><span> blog
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> _index.md
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> entry1.md
+</span><span>                </span><span style="color:#ffb964;">└─</span><span> entry2.md
+</span></code></pre>
+<p>この設定は以下のように <code>+++</code> で囲まれたファイルの冒頭で宣言することができ、宣言した内容はテンプレートから <code>section.content</code> 変数で利用できるようになります。</p>
+<pre data-lang="toml" style="background-color:#151515;color:#e8e8d3;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="color:#888888;"># 必要になりそうな変数のみを抽出する。全部確認したいときは公式ドキュメントを参照する。
+</span><span>
+</span><span>+++
+</span><span style="color:#888888;"># htmlの &lt;title&gt; と同じようにタイトルを設定可能
+</span><span style="color:#888888;"># ここで設定した内容を &lt;head&gt; 要素などに設定してメタ情報を追加できる
+</span><span style="color:#ffb964;">title </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Blog Title</span><span style="color:#556633;">&quot;
+</span><span>
+</span><span style="color:#888888;"># 各種CLIで `--drafts` を付与したした時にのみ読み込むかどうか
+</span><span style="color:#888888;"># 下書きなら true にしてビルドされないようにする
+</span><span style="color:#ffb964;">draft </span><span>= false
+</span><span>
+</span><span style="color:#888888;"># コンテンツをどのようにソートするのか指定できる
+</span><span style="color:#888888;"># ブログOnlyならおおよそ投稿日時とかで良さそう
+</span><span style="color:#ffb964;">sort_by </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">none</span><span style="color:#556633;">&quot;
+</span><span>
+</span><span style="color:#888888;"># 明示的にセクションでどのテンプレートを使用するのか指定できる
+</span><span style="color:#888888;"># セクションごとにテンプレートを作成しておくのが良さそう
+</span><span style="color:#ffb964;">template </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">section.html</span><span style="color:#556633;">&quot;
+</span><span>
+</span><span style="color:#888888;"># セクションページも検索インデックスに含めるかどうか
+</span><span style="color:#ffb964;">in_search_index </span><span>= true
+</span><span>
+</span><span style="color:#888888;"># セクションのURLにアクセスされた場合のリダイレクト先を決定する
+</span><span style="color:#888888;"># 例えばセクションに直接アクセスされた時に 404 ページを表示したくない時などに使う
+</span><span style="color:#ffb964;">redirect_to </span><span>=
+</span><span>+++
+</span><span>
+</span><span>コンテンツを記述する
+</span></code></pre>
+<p>記事をソートすることもでき、以下のディレクトリ構造であった場合に、<code>_index.md</code> の設定に <code>sort_by = "date"</code> を設定し、各ページには <code>date = 2023-04-01</code> などと設定すれば、記事を日付の降順でソートした状態でテンプレートファイルから参照できます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">└─</span><span> content
+</span><span>        </span><span style="color:#ffb964;">└─</span><span> poc
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> _index.md
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> entry1.md
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> entry2.md
+</span><span>                </span><span style="color:#ffb964;">└─</span><span> entry3.md
+</span></code></pre>
+<p>今回は <code>content/poc</code> 配下のセクションに <code>draft = true</code> を設定し、本番のページに対してはビルドされないように検証用専用のページとして配置しています。</p>
+<h2 id="ji-shi-henotagufu-ke">記事へのタグ付け</h2>
+<h3 id="dan-chun-nagurupingu">単純なグルーピング</h3>
+<p>Zola ではデフォルトで <code>Taxonomy</code> というタグ管理の仕組みがサポートされており、事前に定義した Taxonomy のカテゴリに従って、コンテンツをグルーピングすることが可能です。</p>
+<p><a href="https://www.getzola.org/documentation/content/taxonomies/">Taxonomy | Content | Zola</a></p>
+<p>ビルド時に設定されたタグをもとに、全ての Taxonomy がリストアップされたページを作成し、また各 Taxonomy 名に対応するコンテンツの全てをリストアップしたページを自動的に構築することが可能です。</p>
+<p>まずは <code>config.toml</code> に対して事前に Taxonomy を定義します。今回は各記事に対して単純に <code>tags</code> を定義し、この <code>tags</code> に対してそれぞれ <code>Rust</code> や <code>Terraform</code> などのグルーピングするための値を設定していきます。</p>
+<pre data-lang="toml" style="background-color:#151515;color:#e8e8d3;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="color:#888888;"># name = URLで使用される名称。通常は複数形
+</span><span style="color:#888888;"># paginate_by = ここで指定した値を基準にページネーションを行う
+</span><span style="color:#888888;"># paginate_path = ページングされた時のページ番号。例えば page/1 のようなURlとなる
+</span><span style="color:#888888;"># feed = 各タグに対して生成されるFeed（デフォルトでAtomフィードが生成される）
+</span><span style="color:#888888;"># lang = 多言語対応させたい時に利用する
+</span><span style="color:#888888;"># render = 対象のタグをレンダリングするかどうか決定する
+</span><span style="color:#ffb964;">taxonomies </span><span>= [
+</span><span>    { </span><span style="color:#ffb964;">name </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">tags</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#ffb964;">feed </span><span>= true},
+</span><span>]
+</span></code></pre>
+<p>次に各ページに対して、以下のようにタグを設定していきます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">└─</span><span> content
+</span><span>        </span><span style="color:#ffb964;">└─</span><span> poc
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> _index.md
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> entry1.md </span><span style="color:#888888;"># Rust
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> entry2.md </span><span style="color:#888888;"># Terraform
+</span><span>                </span><span style="color:#ffb964;">└─</span><span> entry3.md </span><span style="color:#888888;"># TypeScript
+</span></code></pre>
+<p>このためには各記事の FrontMatter に対して以下のように設定すればよく、配列なので複数のタグを付与することも可能です。</p>
+<pre data-lang="md" style="background-color:#151515;color:#e8e8d3;" class="language-md "><code class="language-md" data-lang="md"><span>+++
+</span><span>title = &quot;Entry1&quot;
+</span><span>date = 2023-01-01
+</span><span>
+</span><span>[taxonomies]
+</span><span>tags = [&quot;Rust&quot;]
+</span><span>+++
+</span><span>
+</span><span>This is date = 2023-01-01
+</span></code></pre>
+<p>これでコンテンツの準備はできましたが、タグの一覧やそれぞれのグループに該当するコンテンツの一覧を表示するためのテンプレートが存在していないため、ビルドすると以下のようなエラーが発生します。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">Error:</span><span> Failed to build the site
+</span><span style="color:#ffb964;">Error:</span><span> Failed to render a list of tags page.
+</span><span style="color:#ffb964;">Error:</span><span> Reason: Tried to render `</span><span style="color:#ffb964;">taxonomy_list.html</span><span>` but the template wasn</span><span style="color:#556633;">&#39;</span><span style="color:#99ad6a;">t found
+</span></code></pre>
+<p>Zola では Taxonomy に対して設定した値に基づき、テンプレートディレクトリの以下のファイルを使用して、Taxonomy の一覧やそれぞれの値に対応するページを表示できます。</p>
+<ul>
+<li><code>$TAXONOMY_NAME/single.html</code></li>
+<li><code>$TAXONOMY_NAME/list.html</code></li>
+</ul>
+<p><a href="https://www.getzola.org/documentation/templates/taxonomies/">Taxonomy | Templates | Zola</a></p>
+<p>それぞれのページでは以下の変数を利用することが可能です（全ては載せていません）。</p>
+<ul>
+<li>$TAXONOMY_NAME/single.html
+<ul>
+<li><code>config</code> Web サイトの設定</li>
+<li><code>taxonomy</code> 設定した Taxonomy のデータ</li>
+<li><code>terms</code> 設定された Taxonomy のグルーピングデータ</li>
+</ul>
+</li>
+<li>$TAXONOMY_NAME/list.html
+<ul>
+<li><code>config</code> Web サイトの設定</li>
+<li><code>taxonomy</code> 設定した Taxonomy のデータ</li>
+<li><code>term</code> 描画されている Taxonomy の値</li>
+</ul>
+</li>
+</ul>
+<p>まずは一覧ページを <code>templates/tags/list.html</code> として作成します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">extends </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">base.html</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>  &lt;div&gt;
+</span><span>    &lt;h1&gt;All Tags&lt;/h1&gt;
+</span><span>    &lt;ul&gt;
+</span><span>      </span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> tags配下に作成しているため、tagsのそれぞれに設定した値を取得できる </span><span style="color:#ffb964;">#}
+</span><span>      </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">for </span><span style="color:#ffb964;">term </span><span style="color:#8fbfdc;">in </span><span style="color:#ffb964;">terms %}
+</span><span>        &lt;li&gt;
+</span><span>          </span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> それぞれのタグに対応するページへのリンクを設定できる </span><span style="color:#ffb964;">#}
+</span><span>          &lt;a href=&quot;</span><span style="color:#ffb964;">{{ term</span><span>.</span><span style="color:#ffb964;">permalink </span><span>| </span><span style="color:#ffb964;">safe }}</span><span>&quot;&gt;
+</span><span>            </span><span style="color:#ffb964;">{{ term</span><span>.</span><span style="color:#ffb964;">name }}</span><span> (</span><span style="color:#ffb964;">{{ term</span><span>.</span><span style="color:#ffb964;">pages </span><span>| </span><span style="color:#ffb964;">length }}</span><span>)
+</span><span>          &lt;/a&gt;
+</span><span>        &lt;/li&gt;
+</span><span>      </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endfor </span><span style="color:#ffb964;">%}
+</span><span>    &lt;/ul&gt;
+</span><span>  &lt;/div&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span></code></pre>
+<p>次に特定のタグに該当するページを <code>templates/tags/single.html</code> に作します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">extends </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">base.html</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>  &lt;div&gt;
+</span><span>    &lt;h1&gt;Tag: #</span><span style="color:#ffb964;">{{ term</span><span>.</span><span style="color:#ffb964;">name }}</span><span> (</span><span style="color:#ffb964;">{{ term</span><span>.</span><span style="color:#ffb964;">pages </span><span>| </span><span style="color:#ffb964;">length }}</span><span>)&lt;/h1&gt;
+</span><span>
+</span><span>    &lt;a href=&quot;</span><span style="color:#ffb964;">{{ config</span><span>.</span><span style="color:#ffb964;">base_url </span><span>| </span><span style="color:#ffb964;">safe }}</span><span>/tags&quot;&gt;Show all tags&lt;/a&gt;
+</span><span>
+</span><span>    &lt;ul&gt;
+</span><span>      </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">for </span><span style="color:#ffb964;">page </span><span style="color:#8fbfdc;">in </span><span style="color:#ffb964;">term</span><span>.</span><span style="color:#ffb964;">pages %}
+</span><span>        &lt;li&gt;
+</span><span>          &lt;a href=&quot;</span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">permalink </span><span>| </span><span style="color:#ffb964;">safe }}</span><span>&quot;&gt;
+</span><span>            </span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">title }}</span><span> 投稿日: (</span><span style="color:#ffb964;">{{ page</span><span>.</span><span style="color:#ffb964;">date </span><span>| </span><span style="color:#ffb964;">date</span><span>(</span><span style="color:#ffb964;">format</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">%Y-%m-%d</span><span style="color:#556633;">&quot;</span><span>) </span><span style="color:#ffb964;">}}</span><span>)
+</span><span>          &lt;/a&gt;
+</span><span>        &lt;/li&gt;
+</span><span>      </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endfor </span><span style="color:#ffb964;">%}
+</span><span>    &lt;/ul&gt;
+</span><span>  &lt;/div&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span></code></pre>
+<p>これで以下のようにタグの一覧ページと個別のページを作成することができました。</p>
+<ul>
+<li>
+<p><code>&lt;base_url&gt;/tags</code></p>
+
+  <img 
+    src="assets/first-tags-list.png"
+     alt="タグの一覧ページ" 
+     width="300px" 
+    
+  />
+</li>
+<li>
+<p><code>&lt;base_url&gt;/tags/rust</code></p>
+
+  <img 
+    src="assets/first-tags-single.png"
+     alt="Rustのタグのページ" 
+     width="300px" 
+    
+  />
+</li>
+</ul>
+<h3 id="shi-yong-sitage-zhong-gou-wen-1">使用した各種構文</h3>
+<ul>
+<li><code>{{ term.pages | length }}</code>
+<ul>
+<li>配列、オブジェクト、文字列の要素数を返す</li>
+</ul>
+</li>
+<li><code>{{ page.date | date(format="%Y-%m-%d") }}</code>
+<ul>
+<li>タイムスタンプを指定したフォーマットに変換する</li>
+<li>デフォルトでは <code>YYYY-MM-DD</code></li>
+<li>タイムゾーンも設定できるが、ブログだと基本的に日付しか使わなそう</li>
+</ul>
+</li>
+</ul>
+<p>参考資料</p>
+<ul>
+<li><a href="https://tera.netlify.app/docs/#length">length | Tera</a></li>
+<li><a href="https://tera.netlify.app/docs/#date">date(format) | Tera</a></li>
+</ul>
+<h2 id="mu-ci-nozuo-cheng">目次の作成</h2>
+<p>ページやセクションでは <code>toc</code> という目次を表す変数を使用することができ、これは Markdown で記述した見出しを配列として抽出することのできる機能です。</p>
+<p><a href="https://www.getzola.org/documentation/content/table-of-contents/">Table of Contents | Zola</a></p>
+<p>例えば記事の内容を以下のように記述します。</p>
+<pre data-lang="md" style="background-color:#151515;color:#e8e8d3;" class="language-md "><code class="language-md" data-lang="md"><span>+++
+</span><span>title = &quot;Table of Contentsの検証&quot;
+</span><span>date = 2023-01-10
+</span><span>+++
+</span><span>
+</span><span># </span><span style="color:#ffb964;">見出しレベル 1
+</span><span>
+</span><span>## </span><span style="color:#ffb964;">見出しレベル 2-1
+</span><span>
+</span><span>### </span><span style="color:#ffb964;">見出しレベル 2-1-1
+</span><span>
+</span><span>### </span><span style="color:#ffb964;">見出しレベル 2-1-2
+</span><span>
+</span><span>### </span><span style="color:#ffb964;">見出しレベル 2-1-3
+</span><span>
+</span><span>## </span><span style="color:#ffb964;">見出しレベル 2-2
+</span><span>
+</span><span>## </span><span style="color:#ffb964;">見出しレベル 2-3
+</span></code></pre>
+<p>次に各ページのテンプレートを記述している箇所に、以下のように <code>toc</code> の変数を通じて各種の見出しレベルを抽出します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{#</span><span style="color:#888888;"> 目次を抽出することが可能なときのみHTMLに反映する </span><span style="color:#ffb964;">#}
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">page</span><span>.</span><span style="color:#ffb964;">toc %}
+</span><span>  &lt;ul&gt;
+</span><span>    </span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> h1が取れているわけではなく、その記事のトップレベルの見出し要素を取得する </span><span style="color:#ffb964;">#}
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">for </span><span style="color:#ffb964;">h1 </span><span style="color:#8fbfdc;">in </span><span style="color:#ffb964;">page</span><span>.</span><span style="color:#ffb964;">toc %}
+</span><span>      &lt;li&gt;
+</span><span>        &lt;a href=&quot;</span><span style="color:#ffb964;">{{ h1</span><span>.</span><span style="color:#ffb964;">permalink </span><span>| </span><span style="color:#ffb964;">safe }}</span><span>&quot;&gt;</span><span style="color:#ffb964;">{{ h1</span><span>.</span><span style="color:#ffb964;">title }}</span><span>&lt;/a&gt;
+</span><span>
+</span><span>        </span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> さらに下位の階層の見出しがあればHTMLに書き出す </span><span style="color:#ffb964;">#}
+</span><span>        </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">h1</span><span>.</span><span style="color:#ffb964;">children %}
+</span><span>          &lt;ul&gt;
+</span><span>            </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">for </span><span style="color:#ffb964;">h2 </span><span style="color:#8fbfdc;">in </span><span style="color:#ffb964;">h1</span><span>.</span><span style="color:#ffb964;">children %}
+</span><span>              &lt;li&gt;
+</span><span>                &lt;a href=&quot;</span><span style="color:#ffb964;">{{ h2</span><span>.</span><span style="color:#ffb964;">permalink </span><span>| </span><span style="color:#ffb964;">safe }}</span><span>&quot;&gt;</span><span style="color:#ffb964;">{{ h2</span><span>.</span><span style="color:#ffb964;">title }}</span><span>&lt;/a&gt;
+</span><span>              &lt;/li&gt;
+</span><span>            </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endfor </span><span style="color:#ffb964;">%}
+</span><span>          &lt;/ul&gt;
+</span><span>        </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span>      &lt;/li&gt;
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endfor </span><span style="color:#ffb964;">%}
+</span><span>  &lt;/ul&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">%}
+</span></code></pre>
+<p>ここでは見出しレベル 2 までの要素で目次が構築されます。</p>
+<p><img src="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/assets/first-heading-1.png" alt="" /></p>
+<p>テンプレートで指定している <code>toc</code> は必ず見出しレベル 1 のものから抽出されるわけではなく、設定されている Markdown のコンテンツに依存します。</p>
+<p>例えば Markdown のファイルの中から見出しレベル 1 の箇所をコメントアウトすれば、以下のように目次が生成されます。</p>
+<p><img src="https://shimopino.github.io/blog/crafting-tech-blog-with-zola/assets/first-heading-2.png" alt="" /></p>
+<p>例えばページで 1 つのみ設定する <code>h1</code> レベルの見出しに関しては、FrontMatter の <code>title</code> 要素で設定を行い、Markdown 形式の記事の中身では <code>h2</code> レベル以下の見出ししか使用しない、といったルールを設ければスタイル調整などにも一貫性を持たせることが可能かもしれない。</p>
+<h2 id="sutairunoshe-ding">スタイルの設定</h2>
+<h3 id="sass-woli-yong-suru">Sass を利用する</h3>
+<p>スタイルの設定は <code>sass</code> ディレクトリに Sass ファイルを配置しておけば、CSS ファイルにコンパイルされて同じディレクトリ構造で <code>public</code> ディレクトリ以下に配置されます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">├─</span><span> sass
+</span><span style="color:#ffb964;">│</span><span>   ├─ main.scss
+</span><span style="color:#ffb964;">│</span><span>   └─ layout
+</span><span style="color:#ffb964;">│</span><span>          ├─ header.scss
+</span><span style="color:#ffb964;">│</span><span>          └─ footer.scss
+</span><span style="color:#ffb964;">└─</span><span> public </span><span style="color:#888888;"># 同じ構造で以下のようにコンパイルされる
+</span><span>        </span><span style="color:#ffb964;">├─</span><span> main.css
+</span><span>        </span><span style="color:#ffb964;">└─</span><span> layout
+</span><span>              </span><span style="color:#ffb964;">├─</span><span> header.css
+</span><span>              </span><span style="color:#ffb964;">└─</span><span> footer.css
+</span></code></pre>
+<p>テンプレート側から CSS ファイルを参照する場合には、以下の 2 つの方法があります。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{#</span><span style="color:#888888;"> ルートディレクトリを指定するパターン </span><span style="color:#ffb964;">#}
+</span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> これは Web サイトのルートディレクトリを指している </span><span style="color:#ffb964;">#}
+</span><span>&lt;link rel=&quot;stylesheet&quot; href=&quot;/main.css&quot; /&gt;
+</span><span>
+</span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> `get_url` を指定するパターン </span><span style="color:#ffb964;">#}
+</span><span style="color:#ffb964;">{#</span><span style="color:#888888;"> ファイルへの URL を動的に生成する </span><span style="color:#ffb964;">#}
+</span><span>&lt;link rel=&quot;stylesheet&quot; href=&quot;</span><span style="color:#ffb964;">{{ get_url</span><span>(</span><span style="color:#ffb964;">path</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">main.css</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#ffb964;">trailing_slash</span><span>=false) |
+</span><span style="color:#ffb964;">safe }}</span><span>&quot;&gt;
+</span></code></pre>
+<p>後者の <code>get_url</code> を使用するパターンであれば、Zola の設定ファイルや生成されるファイルの位置に基づいて動作するので、基本的にはこちらを採用します。</p>
+<p>なお <code>public</code> ディレクトリに全ての Sass ファイルをコンパイルしたくない場合は、アンダーバーをつけて <code>_header.scss</code> のようにすれば、依存関係は解決された状態でファイル自体はコンパイルされないように設定できます。</p>
+<h3 id="kasutamuhuontonoshe-ding">カスタムフォントの設定</h3>
+<p>カスタムフォントを設定する場合には、CDN 経由で配信されているフォントファイルをダウンロードする形式と、サーバーに保存されたフォントファイルを配信するパターンがあります。</p>
+<p>CDN からフォントファイルを利用する際には、HTML へリンクを追加した後で、CSS でフォントファミリーを指定する必要があります。</p>
+<pre data-lang="html" style="background-color:#151515;color:#e8e8d3;" class="language-html "><code class="language-html" data-lang="html"><span>&lt;</span><span style="color:#ffb964;">head</span><span>&gt;
+</span><span>  &lt;</span><span style="color:#ffb964;">link rel</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">preconnect</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">href</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">https://fonts.googleapis.com</span><span style="color:#556633;">&quot; </span><span>/&gt;
+</span><span>  &lt;</span><span style="color:#ffb964;">link rel</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">preconnect</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">href</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">https://fonts.gstatic.com</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">crossorigin </span><span>/&gt;
+</span><span>  &lt;</span><span style="color:#ffb964;">link
+</span><span>    </span><span style="color:#ffb964;">href</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&amp;display=swap</span><span style="color:#556633;">&quot;
+</span><span>    </span><span style="color:#ffb964;">rel</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">stylesheet</span><span style="color:#556633;">&quot;
+</span><span>  /&gt;
+</span><span>&lt;/</span><span style="color:#ffb964;">head</span><span>&gt;
+</span></code></pre>
+<p>CSS では以下のようにフォントを指定すれば対応完了です。</p>
+<pre data-lang="css" style="background-color:#151515;color:#e8e8d3;" class="language-css "><code class="language-css" data-lang="css"><span style="color:#ffb964;">body </span><span>{
+</span><span>  font-family: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Noto Sans JP</span><span style="color:#556633;">&quot;</span><span>, sans-serif;
+</span><span>  font-weight: </span><span style="color:#cf6a4c;">400</span><span>;
+</span><span>}
+</span></code></pre>
+<p>サーバーにフォントファイルを配置する場合には <code>static</code> ディレクトリにフォントファイルを配置して利用することが可能です。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">├─</span><span> static
+</span><span style="color:#ffb964;">│</span><span>   └─ fonts
+</span><span style="color:#ffb964;">│</span><span>           ├─ HackGen-Bold.ttf
+</span><span style="color:#ffb964;">│</span><span>           └─ HackGen-Regular.ttf
+</span><span style="color:#ffb964;">└─</span><span> public </span><span style="color:#888888;"># 同じ構造で以下のようにコンパイルされる
+</span><span>        </span><span style="color:#ffb964;">└─</span><span> fonts
+</span><span>                </span><span style="color:#ffb964;">├─</span><span> HackGen-Bold.ttf
+</span><span>                </span><span style="color:#ffb964;">└─</span><span> HackGen-Regular.ttf
+</span></code></pre>
+<p>今回はプログラミングフォント 白源（はくげん / HackGen）を利用します。</p>
+<p><a href="https://github.com/yuru7/HackGen">HackGen</a></p>
+<p>これでコンパイルされることを前提に以下のように Sass ファイルから参照することが可能です。</p>
+<pre data-lang="css" style="background-color:#151515;color:#e8e8d3;" class="language-css "><code class="language-css" data-lang="css"><span style="color:#8fbfdc;">@font-face </span><span>{
+</span><span>  font-family: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">HackGen</span><span style="color:#556633;">&quot;</span><span>;
+</span><span>  src: url(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">fonts/HackGen-Regular.ttf</span><span style="color:#556633;">&quot;</span><span>) format(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">truetype</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>  font-weight: </span><span style="color:#cf6a4c;">400</span><span>;
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">@font-face </span><span>{
+</span><span>  font-family: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">HackGen</span><span style="color:#556633;">&quot;</span><span>;
+</span><span>  src: url(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">fonts/HackGen-Bold.ttf</span><span style="color:#556633;">&quot;</span><span>) format(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">truetype</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>  font-weight: </span><span style="color:#cf6a4c;">700</span><span>;
+</span><span>}
+</span></code></pre>
+<h3 id="peziquan-ti-notemakarashe-ding">ページ全体のテーマカラー設定</h3>
+<p>直接的には Zola とは関係ない箇所ではありますが、サイトを構築した時の手順として記録を残しておきます。</p>
+<p>ページ全体のテーマカラーや背景色、テキストカラーを設定する時には <a href="https://colormagic.app/">ColorMagic</a> というサービスを利用することができ、指定したキーワードの雰囲気やイメージに合った配色を簡単に作成することができます。</p>
+<p>今回は何度か配色生成を行い、このブログサイトの各種カラーを設定しています。</p>
+<h3 id="peziquan-ti-noreiautoshe-ding">ページ全体のレイアウト設定</h3>
+<p>まずはヘッダーやコンテンツ、フッターを含めたページ全体のスタイル調整を行なっていきますが、可能な限りセマンティックな HTML タグを利用してクラスを利用しないスタイリングを採用します。</p>
+<p>このクラスレスなスタイリングの方法は <a href="https://picocss.com/">PicoCSS</a> を参考にしています。</p>
+<p>そのために <code>templates/base.html</code> のトップレベルのセクションの対して余白調整を行うためのスタイルを設定します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span>&lt;div class=&quot;container&quot;&gt;
+</span><span>  &lt;header&gt;&lt;/header&gt;
+</span><span>  &lt;main&gt;</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %} {% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}</span><span>&lt;/main&gt;
+</span><span>  &lt;footer&gt;&lt;/footer&gt;
+</span><span>&lt;/div&gt;
+</span></code></pre>
+<p>今回はブログの横幅などの全体的なスタイルを以下のように設定します。</p>
+<pre data-lang="css" style="background-color:#151515;color:#e8e8d3;" class="language-css "><code class="language-css" data-lang="css"><span style="color:#ffb964;">.container </span><span>{
+</span><span>  height: </span><span style="color:#cf6a4c;">100%</span><span>;
+</span><span>  max-width: </span><span style="color:#cf6a4c;">50rem</span><span>;
+</span><span>  margin: </span><span style="color:#cf6a4c;">0 </span><span>auto;
+</span><span>}
+</span></code></pre>
+<p>これで左右の余白調整ができた状態となったため、あとはヘッダーやフッターを設定していきます。</p>
+<p>将来的にはマクロなどを活用してヘッダーなどの HTML 要素のみを外だしすることも考慮しますが、現時点では複雑な構造を導入せずに直接 <code>templates/base.html</code> を編集していきます。</p>
+<p>ヘッダーに対しては以下のようにナビゲーションなどの HTML 構造を定義します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span>&lt;header&gt;
+</span><span>  &lt;div class=&quot;logo&quot;&gt;
+</span><span>    &lt;a href=&quot;</span><span style="color:#ffb964;">{{ config</span><span>.</span><span style="color:#ffb964;">base_url }}</span><span>&quot;&gt;Blog&lt;/a&gt;
+</span><span>    &lt;span class=&quot;cursor&quot;&gt;&lt;/span&gt;
+</span><span>  &lt;/div&gt;
+</span><span>  &lt;nav&gt;
+</span><span>    &lt;a href=&quot;/blog&quot; target=&quot;_blank&quot; rel=&quot;noreferrer noopener&quot;&gt;Posts&lt;/a&gt;
+</span><span>    &lt;a href=&quot;/tags&quot; target=&quot;_blank&quot; rel=&quot;noreferrer noopener&quot;&gt;Tags&lt;/a&gt;
+</span><span>    &lt;a href=&quot;https://github.com/shimopino&quot; target=&quot;_blank&quot; rel=&quot;noreferrer noopener&quot;&gt;Github&lt;/a&gt;
+</span><span>  &lt;/nav&gt;
+</span><span>&lt;/header&gt;
+</span></code></pre>
+<p>あとはヘッダー自体のレイアウト構造に対して以下のように、ナビゲーションも含めて横並びに設定しておき、後は個別にスタイリングをすれば完了です。</p>
+<pre data-lang="css" style="background-color:#151515;color:#e8e8d3;" class="language-css "><code class="language-css" data-lang="css"><span style="color:#ffb964;">header </span><span>{
+</span><span>  padding: </span><span style="color:#cf6a4c;">2rem</span><span>;
+</span><span>  display: flex;
+</span><span>  justify-content: space-between;
+</span><span>  align-items: center;
+</span><span>  flex-wrap: wrap;
+</span><span>}
+</span></code></pre>
+<p>フッターには以下のようにシンプルにコピーライトと Zola へのリンクのみを設定します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span>&lt;footer&gt;
+</span><span>  &lt;span&gt;© 2023 shimopino. All rights reserved.&lt;/span&gt;
+</span><span>  ::
+</span><span>  &lt;span&gt;Made by &lt;a href=&quot;https://www.getzola.org/&quot;&gt;Zola&lt;/a&gt;&lt;/span&gt;
+</span><span>&lt;/footer&gt;
+</span></code></pre>
+<h2 id="feed-noshe-ding">Feed の設定</h2>
+<p>Zola ではデフォルトで Feed の機能をサポートしており、 <code>config.toml</code> ファイルに <code>generate_feed = true</code> を設定すれば、サイトの Feed ファイルを作成することができます。</p>
+<p>このときに設定で <code>feed_filename</code> を設定していればその名前でファイルが生成されますが、指定されていない場合はデフォルトの <code>atom.xml</code> が生成されます。</p>
+<p>ファイル名には <code>atom.xml</code> を指定すれば組み込みの Atom テンプレートで Atom 1.0 形式で生成され、 <code>rss.xml</code> を指定すれば組み込みのテンプレートを使用して RSS 2.0 形式で生成され、それ以外のファイル名では自身でテンプレートを用意する必要があります。</p>
+<pre data-lang="toml" style="background-color:#151515;color:#e8e8d3;" class="language-toml "><code class="language-toml" data-lang="toml"><span style="color:#ffb964;">generate_feed </span><span>= true
+</span><span style="color:#ffb964;">feed_filename </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">rss.xml</span><span style="color:#556633;">&quot;
+</span></code></pre>
+<p><code>templates/base.html</code> ファイルに以下のコードを指定して、記事の自動検出を有効にし、フィードリーダーやブラウザが Web サイトで利用可能な RSS や Atom フィードについて通知できるようにします。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{%- </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">config</span><span>.</span><span style="color:#ffb964;">generate_feed %}
+</span><span>  &lt;link rel=&quot;alternate&quot; type=&quot;application/rss+xml&quot;
+</span><span>title=&quot;RSS&quot; href=&quot;</span><span style="color:#ffb964;">{{ get_url</span><span>(</span><span style="color:#ffb964;">path</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">rss.xml</span><span style="color:#556633;">&quot;</span><span>) | </span><span style="color:#ffb964;">safe }}</span><span>&quot;&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">-%}
+</span></code></pre>
+<p>画面でリンクを表示させたい場合には、以下のようにリンクを追加するだけで対応できます。</p>
+<pre data-lang="html" style="background-color:#151515;color:#e8e8d3;" class="language-html "><code class="language-html" data-lang="html"><span>&lt;</span><span style="color:#ffb964;">a href</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{{ get_url(path=</span><span style="color:#556633;">&quot;</span><span style="color:#ffb964;">rss.xml&quot;) | safe }}&quot; target</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">_blank</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">rel</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">noreferrer noopener</span><span style="color:#556633;">&quot;</span><span>&gt;Feed&lt;/</span><span style="color:#ffb964;">a</span><span>&gt;
+</span></code></pre>
+<p><a href="https://www.getzola.org/documentation/templates/feeds/">Feed | Zola</a></p>
+<h2 id="404-pezi">404 ページ</h2>
+<p>どの URL にも該当しない場合に表示する 404 ページは単純に <code>templates/404.html</code> を用意すれば、このテンプレートファイルを利用して描画されます。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">extends </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">base.html</span><span style="color:#556633;">&quot; </span><span style="color:#ffb964;">%}
+</span><span>
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">block </span><span style="color:#ffb964;">content %}
+</span><span>  &lt;h1&gt;404 Not Found&lt;/h1&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endblock </span><span style="color:#ffb964;">content %}
+</span></code></pre>
+<p><a href="https://www.getzola.org/documentation/templates/404/">404 error page | Zola</a></p>
+<h2 id="macros-woli-yong-sitazhong-fu-noxue-chu">Macros を利用した重複の削除</h2>
+<p>Zola では Tera のマクロ機能を利用して、重複するコードを関数化させることができます。</p>
+<p>例えば以下のように <code>templates/macros/sample.html</code> に対して入力された値をベースに <code>input</code> 要素を作成する関数を作成します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">macro </span><span style="color:#ffb964;">input</span><span>(</span><span style="color:#ffb964;">label</span><span>, </span><span style="color:#ffb964;">type</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">text</span><span style="color:#556633;">&quot;</span><span>) </span><span style="color:#ffb964;">%}
+</span><span>  &lt;label&gt;
+</span><span>    </span><span style="color:#ffb964;">{{ label }}
+</span><span>    &lt;input type=&quot;</span><span style="color:#ffb964;">{{ type }}</span><span>&quot; /&gt;
+</span><span>  &lt;/label&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endmacro </span><span style="color:#ffb964;">input %}
+</span></code></pre>
+<p>このマクロを利用するには対象のテンプレートファイルから以下のようにインポートし、別名を付与します。</p>
+<pre data-lang="html" style="background-color:#151515;color:#e8e8d3;" class="language-html "><code class="language-html" data-lang="html"><span>{% import &quot;macros/sample.html&quot; as sample_macro %}
+</span></code></pre>
+<p>あとは付与した別名を元に対象のマクロを呼び出せば処理を実行することができます。</p>
+<pre data-lang="html" style="background-color:#151515;color:#e8e8d3;" class="language-html "><code class="language-html" data-lang="html"><span>{{ sample_macros::input(label=&quot;Name&quot;, type=&quot;text&quot;) }}
+</span></code></pre>
+<p><a href="https://tera.netlify.app/docs#macros">macros | Tera</a></p>
+<p>今回は個別のページや記事一覧ページで利用しているタグつけの部分をマクロ化させていくため、以下のように専用のマクロを用意します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">macro </span><span style="color:#ffb964;">tags</span><span>(</span><span style="color:#ffb964;">page</span><span>) </span><span style="color:#ffb964;">%}
+</span><span>  </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">page</span><span>.</span><span style="color:#ffb964;">taxonomies </span><span style="color:#8fbfdc;">and </span><span style="color:#ffb964;">page</span><span>.</span><span style="color:#ffb964;">taxonomies</span><span>.</span><span style="color:#ffb964;">tags %}
+</span><span>    &lt;span&gt;::&lt;/span&gt;
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">for </span><span style="color:#ffb964;">tag </span><span style="color:#8fbfdc;">in </span><span style="color:#ffb964;">page</span><span>.</span><span style="color:#ffb964;">taxonomies</span><span>.</span><span style="color:#ffb964;">tags %}
+</span><span>        </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">set </span><span style="color:#ffb964;">tag_url </span><span>= </span><span style="color:#ffb964;">get_taxonomy_url</span><span>(</span><span style="color:#ffb964;">kind</span><span>=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">tags</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#ffb964;">name</span><span>=</span><span style="color:#ffb964;">tag</span><span>) | </span><span style="color:#ffb964;">safe %}
+</span><span>        &lt;a href=&quot;</span><span style="color:#ffb964;">{{ tag_url }}</span><span>&quot;&gt;#</span><span style="color:#ffb964;">{{ tag }}</span><span>&lt;/a&gt;&amp;nbsp;
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endfor </span><span style="color:#ffb964;">%}
+</span><span>  </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">%}
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endmacro </span><span style="color:#ffb964;">tags %}
+</span></code></pre>
+<p>あとはこのマクロを <code>base.html</code> で読み込んでおきます。</p>
+<pre data-lang="html" style="background-color:#151515;color:#e8e8d3;" class="language-html "><code class="language-html" data-lang="html"><span>{% import &quot;macros/tags.html&quot; as tags_macro %}
+</span></code></pre>
+<p>そして <code>blog.html</code> や <code>blog-page.html</code> でタグを定義している箇所で、このマクロを呼び出せばタグ部分の HTML 箇所を 1 箇所に集約することができます。</p>
+<pre data-lang="html" style="background-color:#151515;color:#e8e8d3;" class="language-html "><code class="language-html" data-lang="html"><span>{{ tags_macro::tags(page=page) }}
+</span></code></pre>
+<p>他にも記事の目次などは、マクロ化させておくと記事の構造を変更する時に変更箇所がはっきりと理解できるようになります（あまりにも乱用すると処理が分散してしまっていることによる可読性の悪化がひどくなるので注意が必要です）。</p>
+<h2 id="shortcodes-woli-yong-suru">Shortcodes を利用する</h2>
+<p>Markdown で記述した記事の中に画像への参照が含まれている場合、以下のようにパスや alt テキストを指定するだけで、画像のサイズを設定することができません。</p>
+<pre data-lang="md" style="background-color:#151515;color:#e8e8d3;" class="language-md "><code class="language-md" data-lang="md"><span>![caption](./path/to/image.png)
+</span></code></pre>
+<p>こうした場合に Shortcodes の機能を利用すれば、Markdown ファイルから事前に定義された HTML 要素を呼び出すことで、追加の属性などを設定することができます。</p>
+<p><a href="https://www.getzola.org/documentation/content/shortcodes/">Shortcodes | Zola</a></p>
+<p>まずは <code>templates/shortcodes/image.html</code> を作成し、以下のようにテンプレートを作成します。</p>
+<pre data-lang="jinja2" style="background-color:#151515;color:#e8e8d3;" class="language-jinja2 "><code class="language-jinja2" data-lang="jinja2"><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">src %}
+</span><span>  &lt;img
+</span><span>    src=&quot;</span><span style="color:#ffb964;">{{ src </span><span>| </span><span style="color:#ffb964;">safe }}</span><span>&quot;
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">alt %}</span><span> alt=&quot;</span><span style="color:#ffb964;">{{ alt }}</span><span>&quot; </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">%}
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">width %}</span><span> width=&quot;</span><span style="color:#ffb964;">{{ width }}</span><span>&quot; </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">%}
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">center %}
+</span><span>      style=&quot;display: block; margin: 0 auto;&quot;
+</span><span>    </span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">%}
+</span><span>  /&gt;
+</span><span style="color:#ffb964;">{% </span><span style="color:#8fbfdc;">endif </span><span style="color:#ffb964;">%}
+</span></code></pre>
+<p>あとは Markdown 側でこのファイルを指定して、所定の引数を指定すれば簡易的にスタイルを調整した HTML 要素を記述することが可能です。</p>
+<pre data-lang="md" style="background-color:#151515;color:#e8e8d3;" class="language-md "><code class="language-md" data-lang="md"><span>
+</span><span>  &lt;img 
+</span><span>    src=&quot;assets/first-section.png&quot;
+</span><span>     alt=&quot;sample&quot; 
+</span><span>     width=&quot;300px&quot; 
+</span><span>    
+</span><span>  /&gt;
+</span><span>
+</span></code></pre>
+<p>これで Markdown 側からも柔軟に HTML 要素を指定することが可能であることがわかりました。</p>
+<h2 id="googlejian-suo-debiao-shi-saseru">Google検索で表示させる</h2>
+<p>Google検索で今回作成したGithub PagesのURLを指定して検索を行なっても、検索結果に表示されない状態となっています。</p>
+<p>そのため参考サイトをもとに以下の3つの対策を実施します。</p>
+<ol>
+<li>Google Search Consoleへの登録</li>
+<li>サイトマップへの登録</li>
+<li>Googleアナリティクスへの登録</li>
+</ol>
+<p><a href="https://www.bedroomcomputing.com/2020/04/2020-0408-googleconsole/">GitHub Pagesで作ったブログをGoogle検索にヒットさせる</a></p>
+<h3 id="google-search-consolehenodeng-lu">Google Search Consoleへの登録</h3>
+<p>URLプレフィックスに対して自身のサイト（ <code>https://shimopino.github.io</code> ）を指定すれば、確認方法としてトップレベルのパスに検証用のHTMLファイルを配置するように促されます。</p>
+<p>そこで今回は <code>static</code> ディレクトリ直下に指定されたファイルを配置します。</p>
+<p>これで再度Google Search Consoleで所有権の確認を行えば、確認が成功しプロパティ設定の画面に遷移できます。</p>
+<h3 id="saitomatupunodeng-lu">サイトマップの登録</h3>
+<p>Zolaで組み込みでサイトマップを生成することでき、 <code>&lt;base_url&gt;/sitemap.xml</code> にアクセスすれば、自動的に構築されたサイトマップを確認することができます。</p>
+<p>こちらをプロパティ設定画面の「サイトマップ」から上記のURLを登録すれば、送信されたサイトマップに対してスタータスが成功状態となっており登録が完了したことがわかります。</p>
+<h3 id="google-analyticshenodeng-lu">Google Analyticsへの登録</h3>
+<p>Google Analyticsへアカウント登録やプロパティの登録を行えば、Googleタグをインストールする手段が提供されます。その際に手動でインストールを選択して表示されるスクリプトを <code>base.html</code> に配置すれば登録することができます。</p>
+<h2 id="gan-xiang">感想</h2>
+<p>触ってみた感じ Zola は薄いライブラリであり、HTML と CSS、ある程度のテンプレート構文を理解できていればそこまでつまづくことなくブログサイトを構築することができました。</p>
+<p>マクロや Shortcodes などの乱用すれば運用が難しくなってしまいそうな機能もありますが、必要最小限の利用の留めれば今後も問題なくブログを運用できそうです。</p>
+<p>Zola には各種テーマが事前に用意されており、ソースコードも一緒に公開されているので、他のテーマの実装を見ながら挙動確認を進めていくことができたので、こうしたサンプルが豊富に公開されているライブラリは導入が楽で助かりますね。</p>
+<p><a href="https://www.getzola.org/themes/">Theme | Zola</a></p>
+
+<!--  -->
+
+      </main>
+
+      <footer>
+        <span>© 2023 shimopino. All rights reserved.</span>
+        ::
+        <span>Made by <a href="https://www.getzola.org/">Zola</a></span>
+      </footer>
+    </div>
+  </body>
+</html>

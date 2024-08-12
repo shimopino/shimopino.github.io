@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://shimopino.github.io/</loc>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/blog/</loc>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/blog/crafting-tech-blog-with-zola/</loc>
+        <lastmod>2023-05-14</lastmod>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/blog/logging-in-rust/</loc>
+        <lastmod>2023-06-02</lastmod>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/blog/proc-macro-workshop-builder/</loc>
+        <lastmod>2023-08-15</lastmod>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/tags/</loc>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/tags/logging/</loc>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/tags/macro/</loc>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/tags/rust/</loc>
+    </url>
+    <url>
+        <loc>https://shimopino.github.io/tags/zola/</loc>
+    </url>
+</urlset>

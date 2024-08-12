@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="alternate" type="application/rss+xml"
+    title="RSS" href="https://shimopino.github.io/rss.xml">
+    <meta name="generator" content="Zola v0.16.1">
+
+    <link rel="stylesheet" href="https://shimopino.github.io/main.css">
+
+
+
+
+    <link rel="icon" href="https://shimopino.github.io/favicon.ico" sizes="any">
+<link rel="icon" href="https://shimopino.github.io/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://shimopino.github.io/apple-touch-icon.png">
+<link rel="manifest" href=https://shimopino.github.io/manifest.webmanifest>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<title>logクレートが提供する柔軟性の仕組みを探る</title>
+<meta name="author" content="shimopino">
+<meta name="description" content="普段tracingクレートを使っているので、あたらめてlogクレートを調べる">
+
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shimopino.github.io/blog/logging-in-rust/">
+<meta property="og:site_name" content="shimopino&#x27;s blog">
+<meta property="og:title" content="logクレートが提供する柔軟性の仕組みを探る">
+<meta property="og:description" content="普段tracingクレートを使っているので、あたらめてlogクレートを調べる">
+<meta property="og:image" content="https:&#x2F;&#x2F;shimopino.github.io&#x2F;images&#x2F;logo.png">
+
+
+
+
+<meta property="twitter:card" content="summary">
+<meta property="twitter:url" content="https://shimopino.github.io/blog/logging-in-rust/">
+<meta property="twitter:title" content="logクレートが提供する柔軟性の仕組みを探る">
+<meta property="twitter:description" content="普段tracingクレートを使っているので、あたらめてlogクレートを調べる">
+<meta property="twitter:image" content="https:&#x2F;&#x2F;shimopino.github.io&#x2F;images&#x2F;logo.png">
+
+
+
+
+<link rel="canonical" href="https://shimopino.github.io/blog/logging-in-rust/">
+
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VEDHV3HEDG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-VEDHV3HEDG');
+</script>
+
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo">
+          <a href="https:&#x2F;&#x2F;shimopino.github.io/blog">shimopino's blog</a>
+          <span class="cursor"></span>
+        </div>
+        <nav>
+          <a href="/blog" target="_blank" rel="noreferrer noopener">Posts</a>
+          <a href="/tags" target="_blank" rel="noreferrer noopener">Tags</a>
+          <a href="https://github.com/shimopino" target="_blank" rel="noreferrer noopener">Github</a>
+          <a href="https://shimopino.github.io/rss.xml" target="_blank" rel="noreferrer noopener">Feed</a>
+        </nav>
+      </header>
+
+      <main>
+        
+<h1>logクレートが提供する柔軟性の仕組みを探る</h1>
+<span>2023-06-02</span>
+
+
+  
+    <span>::</span>
+    
+        
+        <a href="https:&#x2F;&#x2F;shimopino.github.io&#x2F;tags&#x2F;rust&#x2F;">#Rust</a>&nbsp;
+    
+        
+        <a href="https:&#x2F;&#x2F;shimopino.github.io&#x2F;tags&#x2F;logging&#x2F;">#Logging</a>&nbsp;
+    
+  
+
+
+  
+    <details class="toc" open>
+      <summary>> 目次</summary>
+      <ul>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/logging-in-rust/#log-kuretowoli-yong-sita-rust-deno-logging">log クレートを利用した Rust での logging</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/logging-in-rust/#zi-zuo-roganoshi-zhuang-woque-ren-suru">自作ロガーの実装を確認する</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/logging-in-rust/#log-toreito">Log トレイト</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#pub-trait-log-sync-send">pub trait Log: Sync + Send</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#fn-enabled-self-metadata-metadata-bool">fn enabled(&amp;self, metadata: &amp;Metadata&lt;&#x27;_&gt;) -&gt; bool;</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#fn-log-self-record-log-record">fn log(&amp;self, record: &amp;log::Record)</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#fn-flush-self">fn flush(&amp;self);</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/logging-in-rust/#ge-zhong-guan-shu">各種関数</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#fn-set-logger-logger-static-dyn-log-result-setloggererror">fn set_logger(logger: &amp;&#x27;static dyn Log) -&gt; Result&lt;(), SetLoggerError&gt;</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#fn-set-max-level-level-levelfilter">fn set_max_level(level: LevelFilter)</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#fn-set-boxed-logger-logger-box-dyn-log-result-setloggererror">fn set_boxed_logger(logger: Box&lt;dyn Log&gt;) -&gt; Result&lt;(), SetLoggerError&gt;</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#fn-set-max-level-level-levelfilter-1">fn set_max_level(level: LevelFilter)</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/logging-in-rust/#log-toreitonoshi-zhuang-woti-gong-siteirukureto">log トレイトの実装を提供しているクレート</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/logging-in-rust/#simple-logger">simple_logger</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/logging-in-rust/#chu-qi-hua-yong-noguan-shu">初期化用の関数</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/logging-in-rust/#matome">まとめ</a>
+            
+          </li>
+        
+      </ul>
+    </details>
+  
+
+<p>Rust でアプリケーションを作成する際に <a href="https://docs.rs/tracing/latest/tracing/"><code>tracing</code></a> クレートを利用する場合も多くありますが、プロジェクトの初期段階や簡単な POC であればよりシンプルな <a href="https://docs.rs/log/latest/log/"><code>log</code></a> クレートを利用する選択肢もあるかと思います。</p>
+<p>本記事では <code>log</code> クレートの仕組みを追っていきながら、実装を提供している <code>simple_logger</code> クレートがどのように機能しているのか理解を深めていきます。</p>
+<pre data-lang="toml" style="background-color:#151515;color:#e8e8d3;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[</span><span style="color:#ffb964;">dependencies</span><span>]
+</span><span style="color:#ffb964;">log </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">0.4.18</span><span style="color:#556633;">&quot;
+</span><span style="color:#ffb964;">simple_logger </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">4.1.0</span><span style="color:#556633;">&quot;
+</span></code></pre>
+<h2 id="log-kuretowoli-yong-sita-rust-deno-logging">log クレートを利用した Rust での logging</h2>
+<p><code>log</code> クレートは、それ自体はロギングの実装を提供しておらず、Rust で標準的なロギングを行うための API となるトレイトを提供しています。そのため <code>log</code> クレートを利用してロギングを行う際には、実際の実装を提供するクレートと組み合わせる必要があります。</p>
+<p>以下は実装を提供しているクレートの一部です。</p>
+<ul>
+<li><a href="https://docs.rs/env_logger/*/env_logger/"><code>env_logger</code></a></li>
+<li><a href="https://docs.rs/fern/*/fern/"><code>fern</code></a></li>
+<li><a href="https://docs.rs/tracing-log/latest/tracing_log/"><code>tracing-log</code></a></li>
+</ul>
+<p>環境変数を利用して設定を行うことが可能な <code>env_logger</code> では、以下のようなコードを記述するだけでログを出力することが可能です。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    env_logger::init();
+</span><span>
+</span><span>    log::info!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">hello</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<p>後は環境変数を指定して実行するとログが出力されていることが確認できます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">$</span><span> RUST_LOG=info cargo run
+</span><span style="color:#ffb964;">...
+</span><span style="color:#ffb964;">[2023-05-27T09:50:55Z</span><span> INFO  log] hello
+</span></code></pre>
+<p>これだけだと内部でどのような処理を実現しているのかを推察することが難しいため、公式ドキュメントに記載されている自作ロガーのコードも確認します。</p>
+<h2 id="zi-zuo-roganoshi-zhuang-woque-ren-suru">自作ロガーの実装を確認する</h2>
+<p>公式ドキュメントのサンプルでは <code>Log</code> トレイトの実装として以下がが提供されています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">SimpleLogger</span><span>;
+</span><span>
+</span><span style="color:#8fbfdc;">impl </span><span>log::Log for </span><span style="color:#ffb964;">SimpleLogger </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">enabled</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">metadata</span><span>: &amp;log::Metadata) -&gt; </span><span style="color:#8fbfdc;">bool </span><span>{
+</span><span>        println!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{:?}</span><span style="color:#556633;">&quot;</span><span>, metadata);
+</span><span>        metadata.level() &lt;= Level::Info
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">log</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">record</span><span>: &amp;log::Record) {
+</span><span>        println!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{:?}</span><span style="color:#556633;">&quot;</span><span>, record);
+</span><span>        </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">self</span><span>.enabled(record.metadata()) {
+</span><span>            println!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{}</span><span style="color:#99ad6a;"> - </span><span style="color:#7697d6;">{}</span><span style="color:#556633;">&quot;</span><span>, record.level(), record.args());
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">flush</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>) {}
+</span><span>}
+</span></code></pre>
+<p>そしてこの実装を呼び出す時には以下のように <code>set_logger</code> 関数を呼び出してグローバルに適用するロガーを登録し、ログレベルを設定して出力されるログを制御するようにしています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// SimpleLoggerはフィールドを持たないユニット構造体である
+</span><span style="color:#888888;">// 型の名前自体が唯一の値となるため、単に SimpleLogger と記述すればインスタンスを作成できる
+</span><span style="color:#888888;">// フィールドを有する場合には、そのフィールドを初期化する必要がある
+</span><span style="color:#8fbfdc;">static </span><span style="color:#7697d6;">LOGGER</span><span>: SimpleLogger = SimpleLogger;
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    log::set_logger(&amp;</span><span style="color:#7697d6;">LOGGER</span><span>).unwrap();
+</span><span>    log::set_max_level(LevelFilter::Info);
+</span><span>
+</span><span>    log::trace!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">trace</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>    log::debug!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">debug</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>    log::info!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">info</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>    log::warn!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">warn</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>    log::error!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">error</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<p>この場合であれば最大のログレベルに <code>Info</code> を設定しているため、<code>debug!</code> マクロや <code>trace!</code> マクロはメッセージを出力されないようになっています。</p>
+<p>これからは <code>log</code> クレートが提供している下記の機能の詳細を見ていきます。</p>
+<ul>
+<li><code>Log</code> トレイト</li>
+<li><code>set_logger</code> 関数</li>
+<li><code>set_max_level</code> 関数</li>
+</ul>
+<h2 id="log-toreito">Log トレイト</h2>
+<p>ログの実装を行うためには <code>log</code> クレートが提供している <code>Log</code> トレイトを実装することで、各マクロを実行したときのログ出力の挙動を制御する必要があります。</p>
+<p><code>Log</code> トレイトは以下のように定義されています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">pub trait </span><span style="color:#ffb964;">Log</span><span>: Sync + Send {
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">enabled</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">metadata</span><span>: &amp;Metadata&lt;&#39;_&gt;) -&gt; </span><span style="color:#8fbfdc;">bool</span><span>;
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">log</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">record</span><span>: &amp;Record&lt;&#39;_&gt;);
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">flush</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>);
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/502bdb7c63ffcbad4fe6921b46d582074e49fd0a/src/lib.rs#L1124C1-L1150">Log trait | log crate</a></p>
+<p>この定義を 1 つ 1 つ見ていきます。</p>
+<h3 id="pub-trait-log-sync-send"><code>pub trait Log: Sync + Send</code></h3>
+<p>まずは <code>Log</code> トレイトのトレイト境界に設定されているマーカートレイトである <code>Send</code> トレイトと <code>Sync</code> トレイトを振り返ります。</p>
+<ul>
+<li><code>Send</code> トレイト
+<ul>
+<li>実装した型の所有権をスレッド間で転送できることを表す</li>
+</ul>
+</li>
+<li><code>Sync</code> トレイト
+<ul>
+<li>複数のスレッドから参照されても安全であることを表す</li>
+</ul>
+</li>
+</ul>
+<p><code>Log</code> トレイトを実装する全ての型は、スレッド間で安全に転送でき、スレッド間で安全に参照を共有することを保証する必要があります。</p>
+<p>例えばマルチスレッドでリクエストを処理するような Web サーバーの利用を考えると、各スレッドからは <code>Log</code> トレイトを実装したオブジェクトにアクセスできる必要があります。 <code>Sync</code> トレイトが実装されていれば、複数のスレッドから同時に安全にアクセスできることが保証されます。</p>
+<p>実際には <code>Send</code> トレイトと <code>Send</code> トレイトから構成される型は自動的にこれらのトレイトを実装するので、手動で実装する必要はありません。</p>
+<h3 id="fn-enabled-self-metadata-metadata-bool"><code>fn enabled(&amp;self, metadata: &amp;Metadata&lt;'_&gt;) -&gt; bool;</code></h3>
+<p>このメソッドを実行することで、以下の構造体で定義されているメタデータを含むログメッセージを記録するかどうかを判定します。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Metadata</span><span>&lt;</span><span style="color:#8fbfdc;">&#39;a</span><span>&gt; {
+</span><span>    </span><span style="color:#ffb964;">level</span><span>: Level,
+</span><span>    </span><span style="color:#ffb964;">target</span><span>: &amp;</span><span style="color:#8fbfdc;">&#39;a str</span><span>,
+</span><span>}
+</span></code></pre>
+<p><code>level</code> にはそれぞれログ出力時に呼び出したマクロに対するログレベルが設定されており、この値とグローバルに設定されたログレベルなどの比較を行い、ログを出力するのかどうかを判定することが可能です。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">Log </span><span>{
+</span><span>  </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">enabled</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">metadata</span><span>: &amp;log::Metadata) -&gt; </span><span style="color:#8fbfdc;">bool </span><span>{
+</span><span>      </span><span style="color:#888888;">// 必ずInfoレベル以上のログを出力しないように設定している
+</span><span>      </span><span style="color:#888888;">// 基本的にはグローバルで設定したものをキャプチャしてフィルタリングを行う
+</span><span>      metadata.level() &lt;= Level::Info
+</span><span>  }
+</span><span>}
+</span></code></pre>
+<p><code>target</code> にはマクロを呼び出す際にオプションとして設定することが可能であり、例えばライブラリやアプリケーションの名前を設定することで、ログメッセージがどのモジュールから生成されたものを追跡できるようになっています。</p>
+<p>例えば以下のようにエラーメッセージを出力すると、</p>
+<pre data-lang="ts" style="background-color:#151515;color:#e8e8d3;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#ffb964;">log</span><span>::</span><span style="color:#fad07a;">error</span><span>!(</span><span style="color:#ffb964;">target</span><span>: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Global</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">error</span><span style="color:#556633;">&quot;</span><span>);
+</span></code></pre>
+<p>この場合は設定したログレベルとターゲット情報をもとに <code>Metadata</code> が生成されていることがわかります。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span>Metadata { level: Error, target: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Global</span><span style="color:#556633;">&quot; </span><span>}
+</span></code></pre>
+<p>まとめるとこのメソッドは、ログ出力時に呼び出したマクロのログレベルをキャプチャして、条件に基づいてログを出力するかどうかを決めることが可能なメソッドです。</p>
+<p>またこのメソッドを呼び出すことが可能な <code>log_enabled!</code> マクロも用意されており、ログ出力時に重い計算が必要になる箇所ではこのマクロを利用することで出力する必要のない処理は実行しないように制御することが可能です。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">if </span><span>log_enabled!(log::Level::Debug) {
+</span><span>    log::info!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}</span><span style="color:#556633;">&quot;</span><span>, expensive_call());
+</span><span>}
+</span></code></pre>
+<h3 id="fn-log-self-record-log-record"><code>fn log(&amp;self, record: &amp;log::Record)</code></h3>
+<p>このメソッドを実行することでログメッセージのフォーマットなどを制御することが可能であり、 <code>enabled</code> メソッドを呼び出してログの出力可否を細かく制御することも可能です。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">log</span><span>(&amp;</span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">record</span><span>: &amp;log::Record) {
+</span><span>    </span><span style="color:#8fbfdc;">if </span><span style="color:#ffb964;">self</span><span>.enabled(record.metadata()) {
+</span><span>        println!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{}</span><span style="color:#99ad6a;"> - </span><span style="color:#7697d6;">{}</span><span style="color:#556633;">&quot;</span><span>, record.level(), record.args());
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>このメソッドは、各マクロを呼び出した時に以下で定義されている <code>Record</code> を受け取り、ログマクロが実行されたときの情報を抽出します。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Clone, Debug)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Record</span><span>&lt;</span><span style="color:#8fbfdc;">&#39;a</span><span>&gt; {
+</span><span>    </span><span style="color:#ffb964;">metadata</span><span>: Metadata&lt;</span><span style="color:#8fbfdc;">&#39;a</span><span>&gt;,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: fmt::Arguments&lt;</span><span style="color:#8fbfdc;">&#39;a</span><span>&gt;,
+</span><span>    </span><span style="color:#ffb964;">module_path</span><span>: Option&lt;MaybeStaticStr&lt;</span><span style="color:#8fbfdc;">&#39;a</span><span>&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">file</span><span>: Option&lt;MaybeStaticStr&lt;</span><span style="color:#8fbfdc;">&#39;a</span><span>&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">line</span><span>: Option&lt;</span><span style="color:#8fbfdc;">u32</span><span>&gt;,
+</span><span>    #[</span><span style="color:#ffb964;">cfg</span><span>(feature = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">kv_unstable</span><span style="color:#556633;">&quot;</span><span>)]
+</span><span>    </span><span style="color:#ffb964;">key_values</span><span>: KeyValues&lt;</span><span style="color:#8fbfdc;">&#39;a</span><span>&gt;,
+</span><span>}
+</span></code></pre>
+<p>ログマクロを実行したときに内部でこのレコードが生成され、指定したメッセージやマクロを呼び出した行数、実行したときのファイル名などが格納されています。</p>
+<p>例えば以下のようにエラーメッセージを出力すると、</p>
+<pre data-lang="ts" style="background-color:#151515;color:#e8e8d3;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#ffb964;">log</span><span>::</span><span style="color:#fad07a;">error</span><span>!(</span><span style="color:#ffb964;">target</span><span>: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Global</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">error</span><span style="color:#556633;">&quot;</span><span>);
+</span></code></pre>
+<p>このときメタデータが格納されたレコードが生成され、Rust の標準ライブラリから提供されている <code>line!</code> マクロや <code>file!</code> マクロを呼び出した値で初期化を行っています。（今回は検証のために作成したリポジトリ内で <code>examples</code> ディレクトリを作成して処理を実行させています。 ）</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span>Record {
+</span><span>  metadata: Metadata { level: Error, target: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Global</span><span style="color:#556633;">&quot; </span><span>},
+</span><span>  args: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">error</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>  module_path: Some(Static(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">log</span><span style="color:#556633;">&quot;</span><span>)),
+</span><span>  file: Some(Static(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">examples/log/main.rs</span><span style="color:#556633;">&quot;</span><span>)),
+</span><span>  line: Some(</span><span style="color:#cf6a4c;">31</span><span>)
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/macros.rs#L245-L267">macros | log crate</a></p>
+<p>他のクレートではこのメソッドの中でタイムスタンプなどのフォーマットを行なっています。</p>
+<h3 id="fn-flush-self"><code>fn flush(&amp;self);</code></h3>
+<p>標準出力にメッセージを出すだけの場合にはあまり使うことはないかもしれませんが、ログメッセージをファイルに出力したりする場合など利用します。</p>
+<p>例えば <code>std::io::Write</code> トレイトでも <code>flush</code> メソッドは提供されており、以下のようにファイルを生成して書き込む内容を指定した後で、 <code>flush</code> を呼び出すことでバッファに書き込まれた内容をファイルに反映しています。</p>
+<pre data-lang="ts" style="background-color:#151515;color:#e8e8d3;" class="language-ts "><code class="language-ts" data-lang="ts"><span style="color:#ffb964;">fn </span><span style="color:#fad07a;">main</span><span>() -&gt; </span><span style="color:#ffb964;">std</span><span>::</span><span style="color:#ffb964;">io</span><span>::</span><span style="color:#ffb964;">Result</span><span>&lt;()&gt; {
+</span><span>    let mut </span><span style="color:#ffb964;">buffer </span><span>= </span><span style="color:#ffb964;">BufWriter</span><span>::new(</span><span style="color:#ffb964;">File</span><span>::</span><span style="color:#fad07a;">create</span><span>(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">foo.txt</span><span style="color:#556633;">&quot;</span><span>)?);
+</span><span>
+</span><span>    </span><span style="color:#ffb964;">buffer</span><span>.</span><span style="color:#fad07a;">write_all</span><span>(</span><span style="color:#ffb964;">b</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">some bytes</span><span style="color:#556633;">&quot;</span><span>)?;
+</span><span>    </span><span style="color:#ffb964;">buffer</span><span>.</span><span style="color:#fad07a;">flush</span><span>()?;
+</span><span>    </span><span style="color:#fad07a;">Ok</span><span>(())
+</span><span>}
+</span></code></pre>
+<p><code>Log</code> トレイトに限らず、 <code>flush</code> メソッドは上記のように、パフォーマンス向上のためにデータをメモリ上に保存して、一定の条件や任意のタイミングで永続的なストレージに書き出す時などで利用されています。</p>
+<p>他のクレートを例にとると、 <code>fern</code> クレートでは、出力先に応じてそれぞれ対応する <code>flush</code> メソッドを呼び出すことで、ファイルやチャンネルに対してメッセージを書き出す挙動を制御しています。</p>
+<p><a href="https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407">https://github.com/daboross/fern/blob/4f45ef9aac6c4d5929f100f756b5f4fea92794a6/src/log_impl.rs#L378-L407</a></p>
+<h2 id="ge-zhong-guan-shu">各種関数</h2>
+<h3 id="fn-set-logger-logger-static-dyn-log-result-setloggererror"><code>fn set_logger(logger: &amp;'static dyn Log) -&gt; Result&lt;(), SetLoggerError&gt;</code></h3>
+<p>このメソッドを利用することで、アプリケーション内でグローバルに宣言されているロガーを設定することができ、このメソッドを呼び出して初めてログの出力が可能となります。</p>
+<p><a href="https://docs.rs/log/latest/log/fn.set_logger.html">set_logger | log crate</a></p>
+<p>このメソッドを呼び出さない場合には、マクロを実行した時には <code>NopLogger</code> という空の実装が用意されているメソッドが実行されます。</p>
+<p>処理の流れとしてはまず <code>info!</code> マクロを呼び出した時に、内部では <code>__private_api_log</code> 関数を呼び出しており、この中の <code>logger</code> 関数内部でロガーの初期化が実行されたかどうかを判定しています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// 各種ログマクロを実行した時に呼び出されている関数
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">__private_api_log</span><span>(
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: fmt::Arguments,
+</span><span>    </span><span style="color:#ffb964;">level</span><span>: Level,
+</span><span>    &amp;(</span><span style="color:#ffb964;">target</span><span>, </span><span style="color:#ffb964;">module_path</span><span>, </span><span style="color:#ffb964;">file</span><span>, </span><span style="color:#ffb964;">line</span><span>): &amp;(&amp;</span><span style="color:#ffb964;">str</span><span>, &amp;&#39;</span><span style="color:#ffb964;">static str</span><span>, &amp;&#39;</span><span style="color:#ffb964;">static str</span><span>, </span><span style="color:#ffb964;">u32</span><span>),
+</span><span>    </span><span style="color:#ffb964;">kvs</span><span>: Option&lt;&amp;[(&amp;</span><span style="color:#8fbfdc;">str</span><span>, &amp;</span><span style="color:#8fbfdc;">str</span><span>)]&gt;,
+</span><span>) {
+</span><span>    </span><span style="color:#8fbfdc;">if</span><span> kvs.is_some() {
+</span><span>        panic!(
+</span><span>            </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">key-value support is experimental and must be enabled using the `kv_unstable` feature</span><span style="color:#556633;">&quot;
+</span><span>        )
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#888888;">// この logger 関数内部でどのログ実装を使用するのかを判断する
+</span><span>    logger().log(
+</span><span>        </span><span style="color:#888888;">// Record に関しては Builder パターンを使用してオブジェクトの生成を行っている
+</span><span>        &amp;Record::builder()
+</span><span>            .args(args)
+</span><span>            .level(level)
+</span><span>            .target(target)
+</span><span>            .module_path_static(Some(module_path))
+</span><span>            .file_static(Some(file))
+</span><span>            .line(Some(line))
+</span><span>            .build(),
+</span><span>    );
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#L1468-L1490">https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#L1468-L1490</a></p>
+<p>実際に <code>logger</code> 関数の内容を確認すると以下のように <code>AtomicUsize</code> で管理している状態を取得し、初期化されたかどうかを判定させた後に実際に利用するロガーの判断を行なっています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// ロガーの設定状態を管理する変数
+</span><span style="color:#8fbfdc;">static </span><span style="color:#7697d6;">STATE</span><span>: AtomicUsize = AtomicUsize::new(</span><span style="color:#cf6a4c;">0</span><span>); </span><span style="color:#888888;">// 初期値は UNINITIALIZED
+</span><span style="color:#8fbfdc;">const </span><span style="color:#7697d6;">UNINITIALIZED</span><span>: </span><span style="color:#8fbfdc;">usize </span><span>= </span><span style="color:#cf6a4c;">0</span><span>;
+</span><span style="color:#8fbfdc;">const </span><span style="color:#7697d6;">INITIALIZING</span><span>: </span><span style="color:#8fbfdc;">usize </span><span>= </span><span style="color:#cf6a4c;">1</span><span>;
+</span><span style="color:#8fbfdc;">const </span><span style="color:#7697d6;">INITIALIZED</span><span>: </span><span style="color:#8fbfdc;">usize </span><span>= </span><span style="color:#cf6a4c;">2</span><span>;
+</span><span>
+</span><span style="color:#888888;">// グローバルに宣言されたロガーへのポイントを保持する
+</span><span style="color:#888888;">// AtomicUsizeで宣言された STATE により初期化されたかどうかを判定している
+</span><span style="color:#888888;">// NopLoggerは何もプロパティが設定されていないため、そのまま型を指定してグローバルに宣言することが可能である
+</span><span style="color:#8fbfdc;">static mut </span><span style="color:#7697d6;">LOGGER</span><span>: &amp;dyn Log = &amp;NopLogger;
+</span><span>
+</span><span style="color:#888888;">// ...
+</span><span>
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">logger</span><span>() -&gt; &amp;</span><span style="color:#8fbfdc;">&#39;static</span><span> dyn Log {
+</span><span>    </span><span style="color:#888888;">// ロガーを初期化していない場合はデフォルトの実装として NopLogger が採用される
+</span><span>    </span><span style="color:#8fbfdc;">if </span><span style="color:#7697d6;">STATE</span><span>.load(Ordering::SeqCst) != </span><span style="color:#7697d6;">INITIALIZED </span><span>{
+</span><span>        </span><span style="color:#8fbfdc;">static </span><span style="color:#7697d6;">NOP</span><span>: NopLogger = NopLogger;
+</span><span>        &amp;</span><span style="color:#7697d6;">NOP
+</span><span>    } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>        </span><span style="color:#8fbfdc;">unsafe </span><span>{ </span><span style="color:#7697d6;">LOGGER </span><span>}
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#LL1348C1-L1350C2">https://github.com/rust-lang/log/blob/f4c21c1b2dc958799eb6b3e8e713d1133862238a/src/lib.rs#LL1348C1-L1350C2</a></p>
+<p><code>AtomicUsize</code> はマルチスレッド環境でのデータ一貫性を担保するために設計された型であり、複数のスレッドからでも値を安全に操作することが可能です。</p>
+<p><a href="https://doc.rust-lang.org/std/sync/atomic/struct.AtomicUsize.html">AtomicUsize | std crate</a></p>
+<p>ログ出力を行う際はマルチスレッド環境からでもロガーを呼び出す可能性はあるため、アトミックな操作でロガーが初期化されたかどうかを判定することで、どのログを利用するかの判断を安全に行っています。</p>
+<p>（ただ、正直なところアトミック操作やメモリ順序への理解度は怪しいので「Rust Atomics and Locks」を読みたい。）</p>
+<p>ここで <code>AtomicUsize</code> を初期化状態の管理で使用しているのは、ロガーの定義が <code>static</code> なライフタイムを有している可変参照として定義されているからです。</p>
+<p>可変参照であるためそのまま利用してしまうと、複数のスレッドからロガーの初期化が呼び出されてしまった場合、 <code>LOGGER</code> に対して同時アクセスを行いデータ競合が発生してしまう可能性があります。そのため <code>AtomicUsize</code> を利用して初期化が一度だけ安全に行われることを保証するためにこのような設計になっているのだと推察しています。</p>
+<p>次に <code>set_logger</code> メソッドが内部でどのように初期化を行っているのかを確認します。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// この関数でグローバルに宣言されたロガーを受け取って、static mutな変数を変更する
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">set_logger</span><span>(</span><span style="color:#ffb964;">logger</span><span>: &amp;</span><span style="color:#8fbfdc;">&#39;static</span><span> dyn Log) -&gt; Result&lt;(), SetLoggerError&gt; {
+</span><span>    set_logger_inner(|| logger)
+</span><span>}
+</span><span>
+</span><span style="color:#888888;">// この内部でロガーを変更するが、AtomicUsizeを利用することで安全に上書きするようにしている
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">set_logger_inner</span><span>&lt;F&gt;(</span><span style="color:#ffb964;">make_logger</span><span>: F) -&gt; Result&lt;(), SetLoggerError&gt;
+</span><span>where
+</span><span>    F: FnOnce() -&gt; &amp;</span><span style="color:#8fbfdc;">&#39;static</span><span> dyn Log,
+</span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> old_state = </span><span style="color:#8fbfdc;">match </span><span style="color:#7697d6;">STATE</span><span>.compare_exchange(
+</span><span>        </span><span style="color:#7697d6;">UNINITIALIZED</span><span>, </span><span style="color:#888888;">// 現在の値が第１引数と等しい場合に
+</span><span>        </span><span style="color:#7697d6;">INITIALIZING</span><span>,  </span><span style="color:#888888;">// 現在の値を第２引数で指定した値に交換する
+</span><span>        Ordering::SeqCst,
+</span><span>        Ordering::SeqCst,
+</span><span>    ) {
+</span><span>        Ok(s) | Err(s) =&gt; s,
+</span><span>    };
+</span><span>    </span><span style="color:#8fbfdc;">match</span><span> old_state {
+</span><span>        </span><span style="color:#7697d6;">UNINITIALIZED </span><span>=&gt; {
+</span><span>            </span><span style="color:#8fbfdc;">unsafe </span><span>{
+</span><span>                </span><span style="color:#7697d6;">LOGGER </span><span>= make_logger();
+</span><span>            }
+</span><span>            </span><span style="color:#7697d6;">STATE</span><span>.store(</span><span style="color:#7697d6;">INITIALIZED</span><span>, Ordering::SeqCst);
+</span><span>            Ok(())
+</span><span>        }
+</span><span>        </span><span style="color:#7697d6;">INITIALIZING </span><span>=&gt; {
+</span><span>            </span><span style="color:#8fbfdc;">while </span><span style="color:#7697d6;">STATE</span><span>.load(Ordering::SeqCst) == </span><span style="color:#7697d6;">INITIALIZING </span><span>{
+</span><span>                </span><span style="color:#888888;">// TODO: replace with `hint::spin_loop` once MSRV is 1.49.0.
+</span><span>                #[</span><span style="color:#ffb964;">allow</span><span>(deprecated)]
+</span><span>                std::sync::atomic::spin_loop_hint();
+</span><span>            }
+</span><span>            Err(SetLoggerError(()))
+</span><span>        }
+</span><span>        _ =&gt; Err(SetLoggerError(())),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1352-L1382">https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1352-L1382</a></p>
+<p><code>AtomicUsize</code> が提供する <code>compare_exchange</code> は、現在の値と第 1 引数で指定された値と比較して、同じ値の場合には第 2 引数で指定した値に置き換えます。そして、関数の返り値に置き換え前の現在の値を返却します。</p>
+<p>この状態の変更に関しては <code>Ordering::SeqCst</code> が指定されているため、必ず 1 度に 1 つのスレッドのみがアトミックに状態を <code>INITIALIZING</code> という初期化中であることを示す状態に変更することになります。</p>
+<p>もしもあるスレッドがログ設定を行なっている間に、他のスレッドがログ設定の関数を呼び出した場合には <code>old_state</code> に <code>INITIALIZING</code> が返却され、後続の処理でスピンループを行うことでそのスレッドでの初期化設定が完了するまで待機し、そのあとでエラーを返却しています。</p>
+<p>このような初期化処理を実現することで、グローバルにロガー設定が 1 度のみしか呼出されないことを保証しています。</p>
+<h3 id="fn-set-max-level-level-levelfilter"><code>fn set_max_level(level: LevelFilter)</code></h3>
+<p><code>info!</code> マクロを呼び出せば、自動的にログレベル <code>Info</code> が設定された <code>Metadata</code> がログレコードに付与された状態になりますが、これだけだと全てのログメッセージが表示されてしまいます。</p>
+<p>そこで <code>log</code> クレートは <code>set_max_level</code> というログの出力を調整するための関数を用意しています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// ログレベルに関してもグローバルなアトミックの設定を有している
+</span><span style="color:#8fbfdc;">static </span><span style="color:#7697d6;">MAX_LOG_LEVEL_FILTER</span><span>: AtomicUsize = AtomicUsize::new(</span><span style="color:#cf6a4c;">0</span><span>);
+</span><span>
+</span><span style="color:#888888;">// ...
+</span><span>
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">set_max_level</span><span>(</span><span style="color:#ffb964;">level</span><span>: LevelFilter) {
+</span><span>    </span><span style="color:#7697d6;">MAX_LOG_LEVEL_FILTER</span><span>.store(level as </span><span style="color:#8fbfdc;">usize</span><span>, Ordering::Relaxed);
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2">https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2</a></p>
+<p>ここで <code>Ordering::Relaxed</code> を設定して制約を緩めている背景は以下の ISSUE で言及されている通り、現在設定されている最大のログレベルを取得する箇所が <code>Ordering::Relaxed</code> を設定しているためです。</p>
+<p><a href="https://github.com/rust-lang/log/issues/453">Confusing memory orderings for MAX_LOG_LEVEL_FILTER</a></p>
+<p>他のライブラリでは、このメソッドは <code>Log</code> トレイトの実装を行なったロガーの初期化を行うメソッドの内部で利用されていることが多い印象です。</p>
+<p>例えば <code>simple_logger</code> の場合であれば、以下のようなロガーを生成する処理の中でログレベルを設定し、そのメソッド内部で <code>set_max_level</code> を呼び出すようにしており、 <code>log</code> クレートが提供するAPIの抽象化を行なっています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span>simple_logger::init_with_level(log::Level::Warn).unwrap();
+</span></code></pre>
+<p>ここで設定したログレベルを、どのように管理して、ログの出力判断を行う <code>enabled</code> でどのように使用しているのかは、それぞれライブラリの実装によって異なっています。</p>
+<h3 id="fn-set-boxed-logger-logger-box-dyn-log-result-setloggererror"><code>fn set_boxed_logger(logger: Box&lt;dyn Log&gt;) -&gt; Result&lt;(), SetLoggerError&gt;</code></h3>
+<p><code>set_logger</code> 関数では <code>&amp;'static dyn Log</code> 型を引数に取る都合上、 <code>Log</code> トレイトを実装したロガーは、プログラムの実行全体にわたって有効なものでないといけません。</p>
+<p>そのため公式ドキュメントのサンプルでは、初期化を行う際に <code>static</code> でロガーを宣言するようにしていました。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">SimpleLogger</span><span>;
+</span><span style="color:#8fbfdc;">impl </span><span>log::Log for </span><span style="color:#ffb964;">SimpleLogger </span><span>{
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">static </span><span style="color:#7697d6;">LOGGER</span><span>: SimpleLogger = SimpleLogger;
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    log::set_logger(&amp;</span><span style="color:#7697d6;">LOGGER</span><span>).unwrap();
+</span><span>}
+</span></code></pre>
+<p>このように記述できるのは <code>SimpleLogger</code> がフィールドを持たないユニット構造体であり、その型の名前自体が唯一の値となるため <code>SimpleLogger</code> とだけ定義すればインスタンスを作成できるからです。</p>
+<p>しかし、他のライブラリのようにロガーに対して各種設定を制御するためにフィールドを追加すると、他の方法でロガーを初期化して <code>static</code> な参照を取得する必要があります。</p>
+<p>そのような場合に利用できるのは <code>set_boxed_logger</code> 関数です。</p>
+<p><a href="https://docs.rs/log/latest/log/fn.set_boxed_logger.html">set_boxed_logger | log crate</a></p>
+<p>これは内部的には <code>set_logger</code> 関数と同様に  <code>set_logger_inner</code> 関数を呼び出しているだけですが、関数の引数と指定しているクロージャーの処理が異なっています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">set_boxed_logger</span><span>(</span><span style="color:#ffb964;">logger</span><span>: Box&lt;dyn Log&gt;) -&gt; Result&lt;(), SetLoggerError&gt; {
+</span><span>    set_logger_inner(|| Box::leak(logger))
+</span><span>}
+</span></code></pre>
+<p>ここで使用している <code>Box::leak</code> メソッドは、<code>Box</code> を使用してヒープ上に確保されたメモリを、明示的にリークさせることでそのメモリをプログラム終了時まで保持させることのできるメソッドです。</p>
+<p><a href="https://doc.rust-lang.org/std/boxed/struct.Box.html#method.leak">Box::leak</a></p>
+<p>このメソッドを実行することで <code>logger</code> をプログラム終了までヒープ上に保持させるようにし、その結果このメソッドから返却されるものは <code>&amp;'static mut Log</code> の参照となり、エラーが発生することなくコンパイルすることが可能です。</p>
+<p>この <code>set_boxed_logger</code> を利用することで、 <code>static</code> な値で初期化することなく、以下のように特定のスコープ内で生成されたロガーをグローバルな変数として登録することができます。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// simple_loggerの例
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#888888;">// Box::leakを活用することで関数内で生成したロガーを static に登録できる
+</span><span>    SimpleLogger::new().init().unwrap();
+</span><span>
+</span><span>    log::warn!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">This is an example message.</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<h3 id="fn-set-max-level-level-levelfilter-1"><code>fn set_max_level(level: LevelFilter)</code></h3>
+<p><code>log</code> クレートではグローバルに最大のログレベルを設定することのできる関数 <code>set_max_logger</code> が提供されている。</p>
+<p><a href="https://docs.rs/log/latest/log/fn.set_max_level.html">set_max_logger | log crate</a></p>
+<p>この関数を通して設定されたログレベルを <code>info!</code> などの各種マクロを実行した際に参照し、ログ出力を行うかどうかを判断しています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// log!(target: &quot;my_target&quot;, Level::Info, &quot;a {} event&quot;, &quot;log&quot;);
+</span><span>(target: </span><span style="color:#ffb964;">$target</span><span>:expr, </span><span style="color:#ffb964;">$lvl</span><span>:expr, $(</span><span style="color:#ffb964;">$arg</span><span>:tt)+) =&gt; ({
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> lvl = </span><span style="color:#ffb964;">$lvl</span><span>;
+</span><span>    </span><span style="color:#888888;">// ここでコンパイル時に設定したログレベルと、関数を通して設定したログレベルを参照し
+</span><span>    </span><span style="color:#888888;">// 対象するログメッセージのログレベルとの比較を行い出力判断を行なっている
+</span><span>    </span><span style="color:#8fbfdc;">if</span><span> lvl &lt;= </span><span style="color:#ffb964;">$crate</span><span>::</span><span style="color:#7697d6;">STATIC_MAX_LEVEL </span><span>&amp;&amp; lvl &lt;= </span><span style="color:#ffb964;">$crate</span><span>::max_level() {
+</span><span>        </span><span style="color:#ffb964;">$crate</span><span>::__private_api_log(
+</span><span>            __log_format_args!($(</span><span style="color:#ffb964;">$arg</span><span>)+),
+</span><span>            lvl,
+</span><span>            &amp;(</span><span style="color:#ffb964;">$target</span><span>, __log_module_path!(), __log_file!(), __log_line!()),
+</span><span>            </span><span style="color:#ffb964;">$crate</span><span>::__private_api::Option::None,
+</span><span>        );
+</span><span>    }
+</span><span>});
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/macros.rs#L45-L56">https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/macros.rs#L45-L56</a></p>
+<p>この処理の中では以下の 2 つのログレベルを参照している。</p>
+<ul>
+<li><code>STATIC_MAX_LEVEL</code>
+<ul>
+<li>コンパイル時に指定したフラグで制御された最大のログレベル</li>
+<li>リリースビルド時に出力したいログを制御するときに利用する</li>
+<li>デフォルトでは <code>LevelFilter::Trace</code> が設定されている</li>
+<li><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1586">https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L1586</a></li>
+</ul>
+</li>
+<li><code>max_level()</code>
+<ul>
+<li>プログラム側で設定する最大のログレベル</li>
+<li><code>set_max_level</code> 関数を通して制御する</li>
+<li>デフォルトでは <code>LevelFilter::Off</code> が設定されている（つまり、何もログ出力しない）</li>
+<li><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L408">https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#L408</a></li>
+</ul>
+</li>
+</ul>
+<p><code>log</code> クレートでは、ログレベルとして以下の <code>Enum</code> を定義しており、各マクロに対応するログレベルと、全てのログを出力しないレベルに設定された <code>Off</code> のログレベルが定義されており、この <code>Off</code> ログレベルが初期値として設定されています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">static </span><span style="color:#7697d6;">MAX_LOG_LEVEL_FILTER</span><span>: AtomicUsize = AtomicUsize::new(</span><span style="color:#cf6a4c;">0</span><span>);
+</span><span>
+</span><span style="color:#8fbfdc;">pub enum </span><span style="color:#ffb964;">LevelFilter </span><span>{
+</span><span>    </span><span style="color:#888888;">/// A level lower than all log levels.
+</span><span>    Off,
+</span><span>    </span><span style="color:#888888;">/// Corresponds to the `Error` log level.
+</span><span>    Error,
+</span><span>    </span><span style="color:#888888;">/// Corresponds to the `Warn` log level.
+</span><span>    Warn,
+</span><span>    </span><span style="color:#888888;">/// Corresponds to the `Info` log level.
+</span><span>    Info,
+</span><span>    </span><span style="color:#888888;">/// Corresponds to the `Debug` log level.
+</span><span>    Debug,
+</span><span>    </span><span style="color:#888888;">/// Corresponds to the `Trace` log level.
+</span><span>    Trace,
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL552C1-L567C2">LevelFilter | log crate</a></p>
+<p>つまり関数を使用してこのログレベルを変更しなければ、デフォルトでは全てのログ出力は抑制されてしまいます。</p>
+<p>最大のログレベルを調整するための関数は以下のように定義されています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#888888;">// https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1265C1-L1273C2
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">max_level</span><span>() -&gt; LevelFilter {
+</span><span>    </span><span style="color:#8fbfdc;">unsafe </span><span>{ mem::transmute(</span><span style="color:#7697d6;">MAX_LOG_LEVEL_FILTER</span><span>.load(Ordering::Relaxed)) }
+</span><span>}
+</span><span>
+</span><span style="color:#888888;">// https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL1220C1-L1222C2
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">set_max_level</span><span>(</span><span style="color:#ffb964;">level</span><span>: LevelFilter) {
+</span><span>    </span><span style="color:#7697d6;">MAX_LOG_LEVEL_FILTER</span><span>.store(level as </span><span style="color:#8fbfdc;">usize</span><span>, Ordering::Relaxed);
+</span><span>}
+</span></code></pre>
+<p><code>std::mem::transmute</code> は非常に危険な関数ではあるが、ある型から別の型へのビット単位の移動行うため、引数で指定した値から返り値で指定した型に対してビットをコピーします。</p>
+<p><code>log</code> クレートの場合ではマルチスレッドでログレベルの変更を管理するために <code>AtomicUsize</code> を利用しているため、ログレベルを定義している <code>LevelFilter</code> と <code>usize</code> で型が異なっています。関数のインターフェースレベルでは <code>LevelFilter</code> を表に出しているため、 <code>LevelFilter</code> をアトミックに更新するための裏技的なやり方です。</p>
+<p><code>match</code> 式などを利用してより安全に型変換を行う方法もありますが、どの値にも該当しない <code>exhaustive patterns</code> をどのように取り扱うのか、であったり単純なビット移動である <code>transmute</code> の方がパフォーマンスが良い、という理由で現状のコードになっている可能性はあります。</p>
+<p><a href="https://doc.rust-jp.rs/rust-nomicon-ja/transmutes.html">トランスミュート transmute</a></p>
+<h2 id="log-toreitonoshi-zhuang-woti-gong-siteirukureto">log トレイトの実装を提供しているクレート</h2>
+<p>ここからはクレートがどのように <code>Log</code> トレイを実装しているのかを見ていきます。</p>
+<p>よく利用されているであろうクレートは、例えば以下のようなものだと思いますが、今回は <code>simple_logger</code> を対象にします。</p>
+<ul>
+<li><a href="https://docs.rs/simple_logger">simple_logger</a></li>
+<li><a href="https://docs.rs/env_logger/">env_logger</a></li>
+<li><a href="https://docs.rs/fern">fern</a></li>
+</ul>
+<h2 id="simple-logger">simple_logger</h2>
+<h3 id="chu-qi-hua-yong-noguan-shu">初期化用の関数</h3>
+<p><a href="https://docs.rs/simple_logger"><code>simple_logger</code></a> はロガーの設定や出力メッセージがとてもシンプルで使いやすいクレートであり、本体のコードも <code>lib.rs</code> のみで構成されているため <code>Log</code> トレイトの実装例確認の最初の一歩に適しています。</p>
+<p>公式から提供されている Getting Started なコードを確認すると、提供されているメソッドの中で、今まで説明してきた <code>set_boxed_logger</code> によるグローバルなロガーの宣言や <code>set_max_level</code> での最大ログレベルの設定を行なっていることが想像できます。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span>use simple_logger::SimpleLogger;
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    SimpleLogger::new().init().unwrap();
+</span><span>
+</span><span>    log::warn!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">This is an example message.</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<p>これで以下のようにログメッセージが表示されます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">2023-05-30T11:49:38.789Z</span><span> WARN  </span><span style="color:#8fbfdc;">[</span><span>simple</span><span style="color:#8fbfdc;">]</span><span> This is an example message.
+</span></code></pre>
+<p>このクレートでは関連関数を使用していることからわかるように <code>SimpleLogger</code> のインスタンス生成と設定適用の関数をそれぞれ役割に分けて分離させています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">SimpleLogger </span><span>{
+</span><span>    #[</span><span style="color:#ffb964;">must_use </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">You must call init() to begin logging</span><span style="color:#556633;">&quot;</span><span>]
+</span><span>    </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">new</span><span>() -&gt; SimpleLogger {
+</span><span>        SimpleLogger {
+</span><span>            default_level: LevelFilter::Trace,
+</span><span>            module_levels: Vec::new(),
+</span><span>
+</span><span>            </span><span style="color:#888888;">// 各フィーチャーフラグで有効化させるプロパティ
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL105C1-L123C6">https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL105C1-L123C6</a></p>
+<p>ここでは <code>#[must_use]</code> 属性を利用することで以下のようにロガー設定を行うための <code>init</code> 関数を呼び出していない場合には警告を発するようになっています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#888888;">// warningが発生する
+</span><span>    SimpleLogger::new();
+</span><span>}
+</span></code></pre>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">init</span><span>(</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>) -&gt; Result&lt;(), SetLoggerError&gt; {
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>
+</span><span>    </span><span style="color:#ffb964;">self</span><span>.module_levels
+</span><span>        .sort_by_key(|(</span><span style="color:#ffb964;">name</span><span>, </span><span style="color:#ffb964;">_level</span><span>)| name.len().wrapping_neg());
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> max_level = </span><span style="color:#ffb964;">self</span><span>.module_levels.iter().map(|(</span><span style="color:#ffb964;">_name</span><span>, </span><span style="color:#ffb964;">level</span><span>)| level).copied().max();
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> max_level = max_level
+</span><span>        .map(|</span><span style="color:#ffb964;">lvl</span><span>| lvl.max(</span><span style="color:#ffb964;">self</span><span>.default_level))
+</span><span>        .unwrap_or(</span><span style="color:#ffb964;">self</span><span>.default_level);
+</span><span>    log::set_max_level(max_level);
+</span><span>    log::set_boxed_logger(Box::new(</span><span style="color:#ffb964;">self</span><span>))?;
+</span><span>    Ok(())
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL347C1-L363C6">https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL347C1-L363C6</a></p>
+<p>この <code>init</code> 関数で最大のログレベルの設定やロガーのグローバルな値として登録を行なっていマス。また最大のログレベルは <code>module_levels</code> を調整するか <code>default_level</code> を調整する 2 つの方法があることがわかり、それぞれ <code>SimpleLogger</code> が提供している <code>with_module_level</code> 関数や <code>with_level</code> 関数を通して制御することが可能です。</p>
+<p><code>SimpleLogger</code> では <code>env_logger</code> の挙動を模倣させ環境変数からも最大のログレベルを設定することが可能です。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span>#[</span><span style="color:#ffb964;">must_use </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">You must call init() to begin logging</span><span style="color:#556633;">&quot;</span><span>]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">env</span><span>(</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>) -&gt; SimpleLogger {
+</span><span>    </span><span style="color:#ffb964;">self</span><span>.default_level = std::env::var(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">RUST_LOG</span><span style="color:#556633;">&quot;</span><span>)
+</span><span>        .ok()
+</span><span>        .as_deref()
+</span><span>        .map(log::LevelFilter::from_str)
+</span><span>        .and_then(Result::ok)
+</span><span>        .unwrap_or(</span><span style="color:#ffb964;">self</span><span>.default_level);
+</span><span>
+</span><span>    </span><span style="color:#ffb964;">self
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL157C1-L167C6">https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL157C1-L167C6</a></p>
+<p>こうした環境変数からの読み取りを行うメソッドが提供されているため、このメソッドを初期化の際に利用すれば、 <code>RUST_LOG=info cargo run</code> という形式で最大のログレベルを設定することができます。 <code>dotenvy</code> などと組み合わせれば、アプリケーションを動作させる環境ごとに異なるログレベルを設定することも容易です。</p>
+<p><code>log</code> クレートが提供している <code>LevelFilter</code> は <code>FromStr</code> トレイトを実装しているため、環境変数から取得した文字列と事前に定義されたログレベルの文字列との比較を行うことで、対象の型への変換を行なっている。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">static </span><span style="color:#7697d6;">LOG_LEVEL_NAMES</span><span>: [&amp;</span><span style="color:#8fbfdc;">str</span><span>; </span><span style="color:#cf6a4c;">6</span><span>] = [</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">OFF</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">ERROR</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">WARN</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">INFO</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">DEBUG</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">TRACE</span><span style="color:#556633;">&quot;</span><span>];
+</span><span>
+</span><span style="color:#8fbfdc;">impl </span><span>FromStr for </span><span style="color:#ffb964;">LevelFilter </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">type </span><span style="color:#ffb964;">Err </span><span>= ParseLevelError;
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">from_str</span><span>(</span><span style="color:#ffb964;">level</span><span>: &amp;</span><span style="color:#8fbfdc;">str</span><span>) -&gt; Result&lt;LevelFilter, </span><span style="color:#8fbfdc;">Self::</span><span>Err&gt; {
+</span><span>        ok_or(
+</span><span>            </span><span style="color:#7697d6;">LOG_LEVEL_NAMES
+</span><span>                .iter()
+</span><span>                .position(|&amp;</span><span style="color:#ffb964;">name</span><span>| name.eq_ignore_ascii_case(level))
+</span><span>                .map(|</span><span style="color:#ffb964;">p</span><span>| LevelFilter::from_usize(p).unwrap()),
+</span><span>            ParseLevelError(()),
+</span><span>        )
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2">https://github.com/rust-lang/log/blob/304eef7d30526575155efbdf1056f92c5920238c/src/lib.rs#LL583C1-L594C2</a></p>
+<p>なお、これらの設定を簡易的に行うための専用の関数も用意されています。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">init_with_env</span><span>() -&gt; Result&lt;(), SetLoggerError&gt; {
+</span><span>    SimpleLogger::new().env().init()
+</span><span>}
+</span></code></pre>
+<p><a href="https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL542C1-L544C2">https://github.com/borntyping/rust-simple_logger/blob/3a78bcf7ab4f4b594c0b55290afe42a50b6a295f/src/lib.rs#LL542C1-L544C2</a></p>
+<h2 id="matome">まとめ</h2>
+<p><code>log</code> クレートの調査をしていく中で <code>Box::leak</code> を利用した <code>static</code> なライフタイムを有する参照の作成方法であったり、 <code>AtomicUsize</code> を利用したマルチスレッド環境を考慮した状態遷移がどのように実装されているのかを把握することができました。</p>
+<p>今までは以下のコードを見ても、マクロを実行したときにどのようにロガーを参照しているのか理解できていませんでしたが、コードリーディングを通してどのような機能を利用しているのか想像できるようになりました。</p>
+<pre data-lang="rs" style="background-color:#151515;color:#e8e8d3;" class="language-rs "><code class="language-rs" data-lang="rs"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    SimpleLogger::new().init().unwrap();
+</span><span>
+</span><span>    log::warn!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">This is an example message.</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<p><code>Log</code> トレイトの実装を提供している他のクレートも同じことを行なっているはずなので、 <code>env_logger</code> や <code>fern</code> などのコードリーディングを行うときも、 <code>log</code> クレートが裏側でどのような処理を行なっているのか想像できる状態になっているため、そこまで苦労しなさそうです、</p>
+
+<!--  -->
+
+      </main>
+
+      <footer>
+        <span>© 2023 shimopino. All rights reserved.</span>
+        ::
+        <span>Made by <a href="https://www.getzola.org/">Zola</a></span>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="alternate" type="application/rss+xml"
+    title="RSS" href="https://shimopino.github.io/rss.xml">
+    <meta name="generator" content="Zola v0.16.1">
+
+    <link rel="stylesheet" href="https://shimopino.github.io/main.css">
+
+
+
+
+    <link rel="icon" href="https://shimopino.github.io/favicon.ico" sizes="any">
+<link rel="icon" href="https://shimopino.github.io/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://shimopino.github.io/apple-touch-icon.png">
+<link rel="manifest" href=https://shimopino.github.io/manifest.webmanifest>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<title>proc-macro-workshop を通して Rust の手続き的マクロを理解する</title>
+<meta name="author" content="shimopino">
+<meta name="description" content="proc-macro-workshop を通して Rust の手続き的マクロを理解する">
+
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://shimopino.github.io/blog/proc-macro-workshop-builder/">
+<meta property="og:site_name" content="shimopino&#x27;s blog">
+<meta property="og:title" content="proc-macro-workshop を通して Rust の手続き的マクロを理解する">
+<meta property="og:description" content="proc-macro-workshop を通して Rust の手続き的マクロを理解する">
+<meta property="og:image" content="https:&#x2F;&#x2F;shimopino.github.io&#x2F;images&#x2F;logo.png">
+
+
+
+
+<meta property="twitter:card" content="summary">
+<meta property="twitter:url" content="https://shimopino.github.io/blog/proc-macro-workshop-builder/">
+<meta property="twitter:title" content="proc-macro-workshop を通して Rust の手続き的マクロを理解する">
+<meta property="twitter:description" content="proc-macro-workshop を通して Rust の手続き的マクロを理解する">
+<meta property="twitter:image" content="https:&#x2F;&#x2F;shimopino.github.io&#x2F;images&#x2F;logo.png">
+
+
+
+
+<link rel="canonical" href="https://shimopino.github.io/blog/proc-macro-workshop-builder/">
+
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-VEDHV3HEDG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-VEDHV3HEDG');
+</script>
+
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo">
+          <a href="https:&#x2F;&#x2F;shimopino.github.io/blog">shimopino's blog</a>
+          <span class="cursor"></span>
+        </div>
+        <nav>
+          <a href="/blog" target="_blank" rel="noreferrer noopener">Posts</a>
+          <a href="/tags" target="_blank" rel="noreferrer noopener">Tags</a>
+          <a href="https://github.com/shimopino" target="_blank" rel="noreferrer noopener">Github</a>
+          <a href="https://shimopino.github.io/rss.xml" target="_blank" rel="noreferrer noopener">Feed</a>
+        </nav>
+      </header>
+
+      <main>
+        
+<h1>proc-macro-workshop を通して Rust の手続き的マクロを理解する</h1>
+<span>2023-08-15</span>
+
+
+  
+    <span>::</span>
+    
+        
+        <a href="https:&#x2F;&#x2F;shimopino.github.io&#x2F;tags&#x2F;rust&#x2F;">#Rust</a>&nbsp;
+    
+        
+        <a href="https:&#x2F;&#x2F;shimopino.github.io&#x2F;tags&#x2F;macro&#x2F;">#macro</a>&nbsp;
+    
+  
+
+
+  
+    <details class="toc" open>
+      <summary>> 目次</summary>
+      <ul>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#hazimeni">はじめに</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#rust-nomakuronituite">Rust のマクロについて</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#jin-mefang">進め方</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#01-parse">01-parse</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#02-create-builder">02-create-builder</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#quote-kureto">quote クレート</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#builder-gou-zao-ti-noming-qian-noqu-de">Builder 構造体の名前の取得</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#builder-gou-zao-ti-nohuirudonoqu-de">Builder 構造体のフィールドの取得</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#03-call-setters">03-call-setters</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#04-call-build">04-call-build</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#05-method-chaining">05-method-chaining</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#06-optional-field">06-optional-field</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#07-repeated-field">07-repeated-field</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#huirudonoxing-nojian-zheng-woxing-uguan-shu-wokuo-zhang-suru">フィールドの型の検証を行う関数を拡張する</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#tokenstream-nopasu">TokenStream のパース</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#sheng-cheng-surushi-zhuang-kodonobian-geng">生成する実装コードの変更</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#08-unrecognized-attribute">08-unrecognized-attribute</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#09-redefined-prelude-type">09-redefined-prelude-type</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#wan-cheng-sitakodo">完成したコード</a>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#zhui-jia-ke-ti-tracing-attributes-kuretonoyounafu-za-nashu-xing-nopasu">追加課題: tracing-attributes クレートのような複雑な属性のパース</a>
+            
+              <ul>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#she-ji-fang-zhen">設計方針</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#parse-toreitonoshi-zhuang-shu-xing-zhi-nopasu">Parse トレイトの実装 - 属性値のパース</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#parse-toreitonoshi-zhuang-name-nopasu">Parse トレイトの実装 - name のパース</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#parse-toreitonoshi-zhuang-skip-nopasu">Parse トレイトの実装 - skip のパース</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#parse-toreitonoshi-zhuang-fields-nopasu">Parse トレイトの実装 - fields のパース</a>
+                  </li>
+                
+                  <li>
+                    <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#parse-toreitonoshi-zhuang-args-nopasu">Parse トレイトの実装 - Args のパース</a>
+                  </li>
+                
+              </ul>
+            
+          </li>
+        
+          <li>
+            <a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#gan-xiang">感想</a>
+            
+          </li>
+        
+      </ul>
+    </details>
+  
+
+<h2 id="hazimeni">はじめに</h2>
+<p>Rust でプログラミングをしていると、 <code>vec!</code> や <code>println!</code> のような、 <code>!</code> で終わる特別な関数を目にすることがあります。これらは、Rust の「マクロ」と呼ばれる機能です。</p>
+<p>マクロは、簡単に言うと「コードを生成するコード」であり、繰り返しや特定のパターンのコードを簡単に、効率的に記述することができます。この記事では以下のような 手続き的マクロ と呼ばれる機能を深掘りしていきます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>[#derive(Debug)] </span><span style="color:#888888;">// Derive macros
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>}
+</span></code></pre>
+<h2 id="rust-nomakuronituite">Rust のマクロについて</h2>
+<p>Rust のマクロには、宣言的マクロと手続き的マクロの 2 つの種類が存在します。</p>
+<ul>
+<li>宣言的マクロ: <code>macro_rules!</code> 構文で定義され、 <code>vec!</code> や <code>println!</code> が該当します</li>
+<li>手続き的マクロ: このマクロは以下の 3 つの種類が存在します
+<ul>
+<li><a href="https://doc.rust-lang.org/reference/procedural-macros.html#derive-macros">Derive macros</a>: <code>#[derive]</code> を使用して構造体や enum に追加の処理を実装できる</li>
+<li><a href="https://doc.rust-lang.org/reference/procedural-macros.html#attribute-macros">Attribute macros</a>: 構造体や enum だけではなく、関数に対しても追加の処理を実装できる</li>
+<li><a href="https://doc.rust-lang.org/reference/procedural-macros.html#function-like-procedural-macros">Function-like macros</a>: 宣言的マクロと似たような呼び出し形で、より複雑な処理が記述できる</li>
+</ul>
+</li>
+</ul>
+<p>本記事では <a href="https://github.com/dtolnay/proc-macro-workshop">proc-macro-workshop</a> を通じて、手続き的マクロの各種類とその記述方法について理解度を深めていきます。</p>
+<p>本記事で実装した内容は下記リポジトリに配置しています。</p>
+<ul>
+<li><a href="https://github.com/shimopino/proc-macro-playground">https://github.com/shimopino/proc-macro-playground</a></li>
+</ul>
+<h2 id="jin-mefang">進め方</h2>
+<p>まずは本記事では <code>#[derive]</code> マクロを使って Builder パターンの実装を進めていき、最終的には以下のような処理を実現できるようにしていきます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>use derive_builder::Builder;
+</span><span>
+</span><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    #[</span><span style="color:#ffb964;">builder</span><span>(each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">arg</span><span style="color:#556633;">&quot;</span><span>)]
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> command = Command::builder()
+</span><span>        .executable(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .arg(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .arg(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .build()
+</span><span>        .unwrap();
+</span><span>
+</span><span>    assert_eq!(command.executable, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<ul>
+<li><a href="https://github.com/dtolnay/proc-macro-workshop/tree/master#derive-macro-derivebuilder">Derive macro: derive(Builder)</a></li>
+</ul>
+<p>課題を進めていく上で、以下のクレートを利用します。それぞれの細かい説明は課題を進めていく中で紹介します。</p>
+<pre data-lang="toml" style="background-color:#151515;color:#e8e8d3;" class="language-toml "><code class="language-toml" data-lang="toml"><span>[</span><span style="color:#ffb964;">dependencies</span><span>]
+</span><span style="color:#ffb964;">proc-macro2 </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">1.0.66</span><span style="color:#556633;">&quot;
+</span><span style="color:#ffb964;">quote </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">1.0.32</span><span style="color:#556633;">&quot;
+</span><span style="color:#ffb964;">syn </span><span>= { </span><span style="color:#ffb964;">version </span><span>= </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">2.0.28</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#ffb964;">features </span><span>= [</span><span style="color:#556633;">&#39;</span><span style="color:#99ad6a;">extra-traits</span><span style="color:#556633;">&#39;</span><span>] }
+</span></code></pre>
+<h2 id="01-parse">01-parse</h2>
+<p>まずは一番最初の課題である <code>01-parse</code> のテストコードでは、以下の <code>derive</code> マクロを利用したときにコンパイルエラーが発生しないようにしていきます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: String,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {}
+</span></code></pre>
+<p>初期実装は以下のように <code>unimplemented!()</code> が利用されているため、まずは関数の型シグネチャに合うように実装を追加していきます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>use proc_macro::TokenStream;
+</span><span>
+</span><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#8fbfdc;">let </span><span>_ = input;
+</span><span>
+</span><span>    unimplemented!()
+</span><span>}
+</span></code></pre>
+<p>コンパイルを通すだけであれば、以下のように空の <code>TokenStream</code> を返却すれば OK です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>use proc_macro::TokenStream;
+</span><span>
+</span><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#8fbfdc;">let </span><span>_ = input;
+</span><span>
+</span><span>    TokenStream::new()
+</span><span>}
+</span></code></pre>
+<ul>
+<li><a href="https://doc.rust-lang.org/beta/proc_macro/struct.TokenStream.html">proc_macro::TokenStream</a></li>
+</ul>
+<p><code>TokenStream</code> はマクロを適用した先の Rust コードのトークンが含まれており、 <code>Command</code> 構造体の場合には以下のようなトークンが入力として渡されます。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">TokenStream</span><span> [
+</span><span>    </span><span style="color:#ffb964;">Ident </span><span>{
+</span><span>        ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">struct</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>        span: </span><span style="color:#888888;">#0 bytes(39..45),
+</span><span>    },
+</span><span>    </span><span style="color:#ffb964;">Ident </span><span>{
+</span><span>        ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Command</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>        span: </span><span style="color:#888888;">#0 bytes(46..53),
+</span><span>    },
+</span><span>    </span><span style="color:#ffb964;">Group </span><span>{
+</span><span>        delimiter: Brace,
+</span><span>        stream: TokenStream [
+</span><span>            Ident {
+</span><span>                ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">executable</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>                span: </span><span style="color:#888888;">#0 bytes(60..70),
+</span><span>            },
+</span><span>            Punct {
+</span><span>                ch: </span><span style="color:#556633;">&#39;</span><span style="color:#99ad6a;">:</span><span style="color:#556633;">&#39;</span><span>,
+</span><span>                spacing: Alone,
+</span><span>                span: </span><span style="color:#888888;">#0 bytes(70..71),
+</span><span>            },
+</span><span>            Ident {
+</span><span>                ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">String</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>                span: </span><span style="color:#888888;">#0 bytes(72..78),
+</span><span>            },
+</span><span>            </span><span style="color:#888888;"># ... 残りの定義が続いていく
+</span><span>        ],
+</span><span>        span: </span><span style="color:#888888;">#0 bytes(54..151),
+</span><span>    },
+</span><span style="color:#ffb964;">]
+</span></code></pre>
+<ul>
+<li><a href="https://gist.github.com/shimopino/e896b706c71949203d253ca7edd95b6e">Command 構造体の TokenStream の全文</a></li>
+</ul>
+<p>これはただのトークンのストリームでしかないため、Rust のソースコードを表現する構文木にパースして取り扱いしやすい形式に変換するための <code>syn</code> クレートが用意されています。</p>
+<p>今回作成しているものは <code>derive</code> マクロであるため <code>syn::DeriveInput</code> という <code>struct</code> を前提とした構造としてパースすることが可能です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#888888;">// proc_macro::TokenStream -&gt; proc_macro2::TokenStream への変換を含んでいる
+</span><span>    </span><span style="color:#888888;">// proc_macro::TokenStream は Rust のコンパイラでしか取り扱えない特殊な値
+</span><span>    </span><span style="color:#888888;">// proc_macro2::TokenStream に変換することでソースコードで取り扱える形式に変換している
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> parsed = parse_macro_input!(input as DeriveInput);
+</span><span>
+</span><span>    TokenStream::new()
+</span><span>}
+</span></code></pre>
+<p>実際に構文木にパースした結果は以下のようになっており、Rust コードのトークンがツリー構造として変換されており、 <code>TokenStream</code> よりも取り扱いしやすい形式になっていることがわかります。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">DeriveInput </span><span>{
+</span><span>    attrs: </span><span style="color:#8fbfdc;">[]</span><span>,
+</span><span>    vis: Visibility::Inherited,
+</span><span>    ident: Ident {
+</span><span>        ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Command</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>        span: </span><span style="color:#888888;">#0 bytes(46..53),
+</span><span>    },
+</span><span>    generics: Generics {
+</span><span>        lt_token: None,
+</span><span>        params: </span><span style="color:#8fbfdc;">[]</span><span>,
+</span><span>        gt_token: None,
+</span><span>        where_clause: None,
+</span><span>    },
+</span><span>    data: Data::Struct {
+</span><span>        struct_token: Struct,
+</span><span>        fields: Fields::Named {
+</span><span>            brace_token: Brace,
+</span><span>            named: [
+</span><span>                Field {
+</span><span>                    attrs: </span><span style="color:#8fbfdc;">[]</span><span>,
+</span><span>                    vis: Visibility::Inherited,
+</span><span>                    mutability: FieldMutability::None,
+</span><span>                    ident: Some(
+</span><span>                        Ident {
+</span><span>                            ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">executable</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>                            span: </span><span style="color:#888888;">#0 bytes(60..70),
+</span><span>                        },
+</span><span>                    ),
+</span><span>                    colon_token: Some(
+</span><span>                        Colon,
+</span><span>                    ),
+</span><span>                    ty: Type::Path {
+</span><span>                        qself: None,
+</span><span>                        path: Path {
+</span><span>                            leading_colon: None,
+</span><span>                            segments: [
+</span><span>                                PathSegment {
+</span><span>                                    ident: Ident {
+</span><span>                                        ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">String</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>                                        span: </span><span style="color:#888888;">#0 bytes(72..78),
+</span><span>                                    },
+</span><span>                                    arguments: PathArguments::None,
+</span><span>                                },
+</span><span>                            ],
+</span><span>                        },
+</span><span>                    },
+</span><span>                },
+</span><span>                </span><span style="color:#888888;"># ...
+</span><span>            ],
+</span><span>        },
+</span><span>        semi_token: None,
+</span><span>    },
+</span><span>}
+</span></code></pre>
+<p>これでパターンマッチなどの機能を利用して細かい制御を行うことが可能になりました。</p>
+<ul>
+<li><a href="https://docs.rs/syn/latest/syn/struct.DeriveInput.html">syn::DeriveInput</a></li>
+<li><a href="https://gist.github.com/shimopino/a5cf6c3810b3131b31ba99cc55074d5d">Command 構造体の DeriveInput の全文</a></li>
+</ul>
+<p>他にもどのように構文木にパースされるのかが気になる場合は <a href="https://astexplorer.net/">AST Explorer</a> を実際に触って様々なパターンを見てみるとよいと思います。</p>
+<h2 id="02-create-builder">02-create-builder</h2>
+<p>次の課題は Builder の <code>derive</code> マクロを適用した構造体に対して、 <code>builder</code> メソッドを実装し、Builder パターンを実装するための準備を行います。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: String,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder = Command::builder(); </span><span style="color:#888888;">// メソッドを生成するだけ
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let </span><span>_ = builder;
+</span><span>}
+</span></code></pre>
+<p>手続きマクロの実装に移る前に、どのようなコードを生成できればよいのかを確認します。</p>
+<p>以下のように適用した構造体に合わせた専用の Builder 構造体と、その構造体を生成するためのメソッドを作成することを目指します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: Option&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">builder</span><span>() -&gt; CommandBuilder {
+</span><span>        CommandBuilder {
+</span><span>            executable: None,
+</span><span>            args: None,
+</span><span>            env: None,
+</span><span>            current_dir: None,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>まずは汎用性などは無視してコンパイルエラーが発生しないようにするために、いくつかのフィールドはハードコードでそのまま生成する形式で進めます。</p>
+<p>手続きマクロの内部で Rust のコードを生成するときには <code>quote</code> クレートを利用すると簡易的に生成するコードを指定することが可能です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> parsed = parse_macro_input!(input as DeriveInput);
+</span><span>
+</span><span>    </span><span style="color:#888888;">// quote! 内部で生成する実装を指定します
+</span><span>    </span><span style="color:#888888;">// このマクロの内部では、型補完は有効にならないので注意が必要です
+</span><span>    </span><span style="color:#888888;">// 結果は proc_macro2::TokenStream として返却されます
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>        </span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>            </span><span style="color:#ffb964;">executable</span><span>: Option&lt;String&gt;,
+</span><span>            </span><span style="color:#ffb964;">args</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>            </span><span style="color:#ffb964;">env</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>            </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>            </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">builder</span><span>() -&gt; CommandBuilder {
+</span><span>                CommandBuilder {
+</span><span>                    executable: None,
+</span><span>                    args: None,
+</span><span>                    env: None,
+</span><span>                    current_dir: None,
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="color:#888888;">// ここで proc_macro::TokenStream に型変換します
+</span><span>    expanded.into()
+</span><span>}
+</span></code></pre>
+<ul>
+<li><a href="https://docs.rs/quote/1.0.32/quote/macro.quote.html">quote::quote</a></li>
+</ul>
+<p>動作確認のために <code>cargo expand</code> を利用すれば、以下のようにマクロがどのように展開されているのかがわかり、今回ハードコードで指定した通りにソースコードが生成されていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#![</span><span style="color:#ffb964;">feature</span><span>(prelude_import)]
+</span><span>#[</span><span style="color:#ffb964;">prelude_import</span><span>]
+</span><span>use std::prelude::rust_2021::*;
+</span><span>#[</span><span style="color:#ffb964;">macro_use</span><span>]
+</span><span>extern crate std;
+</span><span>use demo::Builder;
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: String,
+</span><span>}
+</span><span style="color:#888888;">// ↓ ここからコードが展開されている
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: Option&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">builder</span><span>() -&gt; CommandBuilder {
+</span><span>        CommandBuilder {
+</span><span>            executable: None,
+</span><span>            args: None,
+</span><span>            env: None,
+</span><span>            current_dir: None,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder = Command::builder();
+</span><span>    </span><span style="color:#8fbfdc;">let </span><span>_ = builder;
+</span><span>}
+</span></code></pre>
+<p>これでコンパイルエラーは発生せず、テストも PASS することができました。</p>
+<p>しかしながら、急に出てきた <code>quote</code> クレートの役割や、他の構造体でも適用できるようにするための汎用化の処理が不足しています。</p>
+<h3 id="quote-kureto"><code>quote</code> クレート</h3>
+<p>最初の例で見たように、 入力となる <code>TokenStream</code> を実際に <a href="https://gist.github.com/shimopino/e896b706c71949203d253ca7edd95b6e">ログに出力してみた結果</a> を確認すると、Rust のコードを表すトークンの配列となっていたことがわかります。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#ffb964;">TokenStream</span><span> [
+</span><span>    </span><span style="color:#ffb964;">Ident </span><span>{
+</span><span>        ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">pub</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>        span: </span><span style="color:#888888;">#5 bytes(29..36),
+</span><span>    },
+</span><span>    </span><span style="color:#ffb964;">Ident </span><span>{
+</span><span>        ident: </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">struct</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>        span: </span><span style="color:#888888;">#5 bytes(29..36),
+</span><span>    },
+</span><span>    </span><span style="color:#888888;"># ...
+</span><span style="color:#ffb964;">]
+</span></code></pre>
+<p>これは構文木を構成するトークンである <code>proc_macro::TokenTree</code> から構成されています。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">pub enum </span><span style="color:#ffb964;">TokenTree </span><span>{
+</span><span>    Group(Group),
+</span><span>    Ident(Ident),
+</span><span>    Punct(Punct),
+</span><span>    Literal(Literal),
+</span><span>}
+</span></code></pre>
+<ul>
+<li><a href="https://doc.rust-lang.org/beta/proc_macro/enum.TokenTree.html">proc_macro::TokenTree</a></li>
+</ul>
+<p>例えば以下のような単純な <code>CommandBuilder</code> 構造体を例に考えます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>}
+</span></code></pre>
+<p>この構造体は <code>TokenTree</code> の各種トークンに対して以下のようにマッピングされます。</p>
+<p><img src="https://shimopino.github.io/blog/proc-macro-workshop-builder/assets/token-tree.drawio.png" alt="" /></p>
+<p>この構造体を例に関数から返却する <code>proc_macro::TokenStream</code> を、 <code>proc_macro::TokenTree</code> をそのまま利用して返却値を構築しようとすると以下のように定義する必要があります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>use proc_macro::{Group, Ident, Punct, Spacing, Span, TokenStream, TokenTree};
+</span><span>
+</span><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>
+</span><span>    </span><span style="color:#888888;">// IteratorTokenStream に変換するために配列で指定します
+</span><span>    [
+</span><span>        TokenTree::Ident(Ident::new(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">struct</span><span style="color:#556633;">&quot;</span><span>, Span::call_site())),
+</span><span>        TokenTree::Ident(Ident::new(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">CommandBuilder</span><span style="color:#556633;">&quot;</span><span>, Span::call_site())),
+</span><span>        TokenTree::Group(Group::new(
+</span><span>            proc_macro::Delimiter::Brace,
+</span><span>            [
+</span><span>                TokenTree::Ident(Ident::new(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">executable</span><span style="color:#556633;">&quot;</span><span>, Span::call_site())),
+</span><span>                TokenTree::Punct(Punct::new(</span><span style="color:#556633;">&#39;</span><span style="color:#99ad6a;">:</span><span style="color:#556633;">&#39;</span><span>, Spacing::Alone)),
+</span><span>                TokenTree::Ident(Ident::new(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">String</span><span style="color:#556633;">&quot;</span><span>, Span::call_site())),
+</span><span>                TokenTree::Punct(Punct::new(</span><span style="color:#556633;">&#39;</span><span style="color:#99ad6a;">,</span><span style="color:#556633;">&#39;</span><span>, Spacing::Alone)),
+</span><span>            ]
+</span><span>            .into_iter()
+</span><span>            .collect::&lt;TokenStream&gt;(),
+</span><span>        )),
+</span><span>    ]
+</span><span>    .into_iter()
+</span><span>    .collect()
+</span><span>}
+</span></code></pre>
+<p>これで <code>cargo expand</code> を実行すれば、以下のように設定したトークンに従って、Rust コードが生成されていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>}
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {}
+</span></code></pre>
+<p>実は <code>quote!</code> はこれと似たようなことをより簡単に実行できるように用意されているマクロであり、実際に Rust のコードを記述すれば、それを <code>TokenStream</code> の形式に変換してくれます。</p>
+<p>先ほどと同じことを <code>quote!</code> で実現したい場合には、以下のように生成したい Rust コードをそのまま記述するだけで構いません。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#888888;">// TokenTree を直接利用するよりも、はるかに簡易的に記述することができます
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>        </span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>            </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#888888;">// quote! が生成するのはライブラリ用に用意された proc_macto2::TokenStream なのでここで変換しています
+</span><span>    expanded.into()
+</span><span>}
+</span></code></pre>
+<p>これが <code>quote</code> クレートが提供している機能です。</p>
+<h3 id="builder-gou-zao-ti-noming-qian-noqu-de">Builder 構造体の名前の取得</h3>
+<p>今回の実装は <code>Command</code> 構造体に特化した実装になっていましたが、他の構造体やフィールドでも利用できるように汎用化させる必要があります。</p>
+<p>具体的には Builder パターンの実装に関しては、以下のような構造体の名前とフィールドの定義のパターンが存在していることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">// 生成する構造体の名前のパターン　-&gt; [元の構造体の名前]Builder
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#888888;">// フィールドの型の定義のパターン -&gt; [フィールド名]: Option&lt;元の型&gt;,
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: Option&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span></code></pre>
+<p>つまり <code>syn</code> クレートを使用して <code>DeriveInput</code> にパースした後で、元の構造体の名前・構造体で定義されている各フィールドの名前と型さえ取得することができれば、汎用的な実装することが可能です。</p>
+<p>今回は以下のように出力された <code>DeriveInput</code> の内容を確認しながら、必要な情報がどこに格納されているのかを確認します。</p>
+<p><img src="https://shimopino.github.io/blog/proc-macro-workshop-builder/assets/derive-input.drawio.png" alt="" /></p>
+<ul>
+<li><a href="https://gist.github.com/shimopino/a5cf6c3810b3131b31ba99cc55074d5d">全体像</a></li>
+</ul>
+<p>まずは構造体の名前を抽出し <code>[構造体の名前]Builder</code> という名前の Builder 用の構造体を作成していきます。</p>
+<p><code>quote!</code> 内部では識別子を単純に結合することはできないので、新しく <code>Ident</code> を作成して変数として利用する必要があり、以下のように 2 つのやり方が存在しています。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">// 方法① quote::format_ident! を利用する方法
+</span><span style="color:#8fbfdc;">let</span><span> original_ident = parsed.ident;
+</span><span style="color:#8fbfdc;">let</span><span> builder_ident = format_ident!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}Builder</span><span style="color:#556633;">&quot;</span><span>, ident);
+</span><span>
+</span><span style="color:#888888;">// 方法② syn::Ident::new で直接生成する方法
+</span><span style="color:#8fbfdc;">let</span><span> original_ident = parsed.ident;
+</span><span style="color:#8fbfdc;">let</span><span> builder_name = format!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{}</span><span style="color:#99ad6a;">Builder</span><span style="color:#556633;">&quot;</span><span>, ident);
+</span><span style="color:#8fbfdc;">let</span><span> builder_ident = syn::Ident::new(&amp;builder_name, ident.span());
+</span><span>
+</span><span style="color:#888888;">// どちらの場合でも quote! 内で利用できます
+</span><span>quote! {
+</span><span>    </span><span style="color:#8fbfdc;">struct </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>        </span><span style="color:#888888;">// ...
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">impl </span><span>#</span><span style="color:#ffb964;">original_ident </span><span>{
+</span><span>        </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">builder</span><span>() -&gt; #builder_ident {
+</span><span>            #builder_ident {
+</span><span>                </span><span style="color:#888888;">// ...
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>これでどのような構造体に対しても、対応する Builder 構造体の名前を定義することができました。</p>
+<ul>
+<li><a href="https://docs.rs/quote/1.0.32/quote/macro.quote.html#constructing-identifiers">constructing identifiers</a></li>
+</ul>
+<h3 id="builder-gou-zao-ti-nohuirudonoqu-de">Builder 構造体のフィールドの取得</h3>
+<p>これまで <code>quote!</code> を使って <code>TokenStream</code> を定義する際には個別に変数を指定したり、フィールドを指定していましたが、このマクロはイテレータを展開してトークンツリーを組み立てることも可能です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#888888;">// Iterator の検証のために動的にフィールドを作成するための元データを用意する
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> vars = vec![</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">a</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">b</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">c</span><span style="color:#556633;">&quot;</span><span>];
+</span><span>
+</span><span>    </span><span style="color:#888888;">// 内部で quote! を使用して TokenStream の Iterator を用意する
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> delarations: Vec&lt;proc_macro2::TokenStream&gt; = vars
+</span><span>        .into_iter()
+</span><span>        .map(|</span><span style="color:#ffb964;">var_name</span><span>| {
+</span><span>            </span><span style="color:#8fbfdc;">let</span><span> ident = format_ident!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}</span><span style="color:#556633;">&quot;</span><span>, var_name);
+</span><span>            </span><span style="color:#888888;">// TokenStream を生成
+</span><span>            quote! {
+</span><span>                #ident: String,
+</span><span>            }
+</span><span>        })
+</span><span>        .collect();
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>        </span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Sample </span><span>{
+</span><span>            </span><span style="color:#888888;">// 以下のようにマクロ内で変数を展開するように指定することが可能です
+</span><span>            #(#delarations)*
+</span><span>        }
+</span><span>    };
+</span><span>
+</span><span>    expanded.into()
+</span><span>}
+</span></code></pre>
+<p>ここで作成した内容を <code>cargo expand</code> で確認すると、イテレータとして用意した変数を展開して全てのフィールドの定義を動的に展開できていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Sample </span><span>{
+</span><span>    </span><span style="color:#ffb964;">a</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">b</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">c</span><span>: String,
+</span><span>}
+</span></code></pre>
+<p>イテレータを展開する時に方法は、 quote クレートで実行しているテストを参考にするとイメージがつきやすいと思います。</p>
+<ul>
+<li><a href="https://github.com/dtolnay/quote/blob/d8cb63f7d7f45c503ac580bd8f3cb2d8bb28b160/tests/test.rs#L79-L87">quote! での Iterator 展開のテスト</a></li>
+</ul>
+<p><code>CommandBuilder</code> の定義と <code>builder</code> メソッドの実装を作成する上で、同じように各フィールドや初期値を作成するためのイテレータを用意することを目指します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> parsed: DeriveInput = parse_macro_input!(input as DeriveInput);
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> original_ident = parsed.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder_ident = format_ident!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}Builder</span><span style="color:#556633;">&quot;</span><span>, original_ident);
+</span><span>
+</span><span>    </span><span style="color:#888888;">// 元が構造体であることと、タプルやUnit型を想定していないため、let else で対象データを抽出する
+</span><span>    </span><span style="color:#8fbfdc;">let </span><span>syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { </span><span style="color:#8fbfdc;">ref</span><span> named, .. }), .. }) = parsed.data </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>        panic!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">This macro can only be applied to struct using named field only, not tuple or unit.</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="color:#888888;">// 構造体を構成する各フィールドの定義には Field からアクセスすることが可能
+</span><span>    </span><span style="color:#888888;">// Builder の定義と builder メソッドのそれぞれで必要なトークンの形に抽出する
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder_fields = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>        quote! {
+</span><span>            #ident: Option&lt;#ty&gt;
+</span><span>        }
+</span><span>    });
+</span><span>
+</span><span>    </span><span style="color:#888888;">// Builder の初期化
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder_init = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>        quote! {
+</span><span>            #ident: None
+</span><span>        }
+</span><span>    });
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>        </span><span style="color:#8fbfdc;">pub struct </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>            #(#builder_fields,)*
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#8fbfdc;">impl </span><span>#</span><span style="color:#ffb964;">original_ident </span><span>{
+</span><span>            </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">builder</span><span>() -&gt; #builder_ident {
+</span><span>                #builder_ident {
+</span><span>                    #(#builder_init,)*
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    };
+</span><span>
+</span><span>    expanded.into()
+</span><span>}
+</span></code></pre>
+<p>これを展開すれば、以下のように <code>TokenStream</code> のイテレーターが展開されてそれぞれの定義が作成されていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: Option&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">builder</span><span>() -&gt; CommandBuilder {
+</span><span>        CommandBuilder {
+</span><span>            executable: None,
+</span><span>            args: None,
+</span><span>            env: None,
+</span><span>            current_dir: None,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>これで他の構造体に対しても適用することが可能な汎用的なマクロにすることができました。</p>
+<h2 id="03-call-setters">03-call-setters</h2>
+<p>次の課題では、以下のように <code>Command</code> で定義されている各フィールドに対して値を設定するための <code>setter</code> を準備します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: String,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let mut</span><span> builder = Command::builder();
+</span><span>    </span><span style="color:#888888;">// フィールドと同じ名称で同じ型を引数に受け取るメソッドを用意する
+</span><span>    builder.executable(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>.to_owned());
+</span><span>    builder.args(vec![</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>.to_owned(), </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>.to_owned()]);
+</span><span>    builder.env(vec![]);
+</span><span>    builder.current_dir(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">..</span><span style="color:#556633;">&quot;</span><span>.to_owned());
+</span><span>}
+</span></code></pre>
+<p>これは構造としては以下のパターンに従うメソッドを作成することと同義です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">fn </span><span>[フィールド名](&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, [フィールド名]: [フィールドの型]) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>    </span><span style="color:#ffb964;">self</span><span>.[フィールド名] = Some([フィールド名])
+</span><span>    </span><span style="color:#ffb964;">self
+</span><span>}
+</span></code></pre>
+<p>必要な情報は各フィールドの名前と型しかないので、前回の課題で汎用化を行なった際の実装の大部分を流用するだけで実現することができます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> builder_setters = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>    quote! {
+</span><span>        </span><span style="color:#8fbfdc;">fn </span><span>#ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #ident: #ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>            </span><span style="color:#ffb964;">self</span><span>.#ident = Some(#ident);
+</span><span>            </span><span style="color:#ffb964;">self
+</span><span>        }
+</span><span>    }
+</span><span>});
+</span><span>
+</span><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>    </span><span style="color:#8fbfdc;">pub struct </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>        #(#builder_fields,)*
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#888888;">// 各種 setter を追加する
+</span><span>    </span><span style="color:#8fbfdc;">impl </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>        #(#builder_setters)*
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>};
+</span></code></pre>
+<p>これで <code>cargo expand</code> で展開すれば、以下のように指定した通りに各種メソッドが生成されていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">executable</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">executable</span><span>: String) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>        </span><span style="color:#ffb964;">self</span><span>.executable = Some(executable);
+</span><span>        </span><span style="color:#ffb964;">self
+</span><span>    }
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">args</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>        </span><span style="color:#ffb964;">self</span><span>.args = Some(args);
+</span><span>        </span><span style="color:#ffb964;">self
+</span><span>    }
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">env</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>        </span><span style="color:#ffb964;">self</span><span>.env = Some(env);
+</span><span>        </span><span style="color:#ffb964;">self
+</span><span>    }
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">current_dir</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">current_dir</span><span>: String) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>        </span><span style="color:#ffb964;">self</span><span>.current_dir = Some(current_dir);
+</span><span>        </span><span style="color:#ffb964;">self
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h2 id="04-call-build">04-call-build</h2>
+<p>次の課題では以下のように <code>build</code> メソッドを作成し、全てのフィールドに値が設定されている場合には <code>Ok(Command)</code> を返却し、設定されていないフィールドがあれば <code>Err</code> を返却するようにします。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let mut</span><span> builder = Command::builder();
+</span><span>    builder.executable(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>.to_owned());
+</span><span>    builder.args(vec![</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>.to_owned(), </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>.to_owned()]);
+</span><span>    builder.env(vec![]);
+</span><span>    builder.current_dir(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">..</span><span style="color:#556633;">&quot;</span><span>.to_owned());
+</span><span>
+</span><span>    </span><span style="color:#888888;">// build() メソッドから Result を返却する
+</span><span>    </span><span style="color:#888888;">// 設定されていないフィールドがある場合には Err を返却する
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> command = builder.build().unwrap();
+</span><span>    assert_eq!(command.executable, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<p>課題メモに従い <code>Command</code> のフィールドの場合には、以下のように実装すれば良さそうです。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">build</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>) -&gt; Result&lt;Command, Box&lt;dyn std::error::Error&gt;&gt; {
+</span><span>        Ok(Command {
+</span><span>            executable: </span><span style="color:#ffb964;">self</span><span>.executable.take().ok_or(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">executable is not set</span><span style="color:#556633;">&quot;</span><span>)?,
+</span><span>            </span><span style="color:#888888;">// ...
+</span><span>        })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>ただしこれはあくまで一例であり、以下のような実装パターンもあると思います。</p>
+<ol>
+<li><code>&amp;mut self</code> で参照として受け取り、データを <code>take</code> する
+<ul>
+<li>データを <code>Command</code> に移動させながら、ビルダー自体は再利用することができる</li>
+<li>ビルダー側の値は <code>None</code> にリセットされるため、注意して利用する必要がある</li>
+</ul>
+</li>
+<li><code>&amp;self</code> で参照として受け取り、データを <code>clone</code> する
+<ul>
+<li>ビルダーの値は変更されないのでそのまま再利用できる</li>
+<li>データのコピーが必要であり、パフォーマンスに影響を与える可能性がある</li>
+</ul>
+</li>
+</ol>
+<p>今回は Builder の再利用などは考えないのでパターン 1 で実装します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> build_fields = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    quote! {
+</span><span>        #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take().ok_or(format!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{}</span><span style="color:#99ad6a;"> is not set</span><span style="color:#556633;">&quot;</span><span>, stringify!(#ident)))?
+</span><span>    }
+</span><span>});
+</span><span>
+</span><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>    </span><span style="color:#8fbfdc;">pub struct </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>        </span><span style="color:#888888;">// ...
+</span><span>    }
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">impl </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>        </span><span style="color:#888888;">// ...
+</span><span>        </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">build</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>) -&gt; Result&lt;#original_ident, Box&lt;dyn std::error::Error&gt;&gt; {
+</span><span>            Ok(#original_ident {
+</span><span>                #(#build_fields,)*
+</span><span>            })
+</span><span>        }
+</span><span>    }
+</span><span>};
+</span></code></pre>
+<p>これでコンパイルエラーが発生することなくメソッドを追加できました。</p>
+<h2 id="05-method-chaining">05-method-chaining</h2>
+<p>次の課題では、メソッドチェーン形式で Builder を利用することを目指しますが、各種 <code>setter</code> からの返却値を <code>&amp;mut Self</code> として定義しているため、すでにこれまでの課題が完了していれば問題なくコンパイル可能です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> command = Command::builder()
+</span><span>        .executable(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .args(vec![</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>.to_owned(), </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>.to_owned()])
+</span><span>        .env(vec![])
+</span><span>        .current_dir(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">..</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .build()
+</span><span>        .unwrap();
+</span><span>
+</span><span>    assert_eq!(command.executable, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>}
+</span></code></pre>
+<h2 id="06-optional-field">06-optional-field</h2>
+<p>次の課題では、構造体に <code>Option</code> なフィールドが含まれる場合を想定しており、対象のフィールドに対しては <code>setter</code> の呼び出しは必須ではなく、呼び出されていない場合には初期値として <code>None</code> をそのまま代入します。</p>
+<p>これを実現するには、構造体のフィールドの型が <code>Option</code> であることを確認する必要があるため、これまでよりも複雑な処理が必要になります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;, </span><span style="color:#888888;">// Optionを含むフィールド定義
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> command = Command::builder()
+</span><span>        .executable(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .args(vec![</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>.to_owned(), </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>.to_owned()])
+</span><span>        .env(vec![])
+</span><span>        </span><span style="color:#888888;">// current_dir は設定しない場合には None が設定される
+</span><span>        .build()
+</span><span>        .unwrap();
+</span><span>    assert!(command.current_dir.is_none());
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> command = Command::builder()
+</span><span>        .executable(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .args(vec![</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>.to_owned(), </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>.to_owned()])
+</span><span>        .env(vec![])
+</span><span>        </span><span style="color:#888888;">// 呼び出した場合には Some(..) が設定される
+</span><span>        </span><span style="color:#888888;">// current_dir() は引数として String の値を受け取る
+</span><span>        .current_dir(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">..</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .build()
+</span><span>        .unwrap();
+</span><span>    assert!(command.current_dir.is_some());
+</span><span>}
+</span></code></pre>
+<p>今の実装では、以下のように <code>Option</code> が二重に付与されてしまったり <code>setter</code> の引数にも <code>Option</code> が付与されてしまいます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: Option&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;Option&lt;String&gt;&gt;, </span><span style="color:#888888;">// Option&lt;Option&lt;_&gt;&gt; と二重に適用されてしまう
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">impl </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#888888;">// 引数が String ではなく Option&lt;String&gt; になってしまう
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">current_dir</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>        </span><span style="color:#ffb964;">self</span><span>.current_dir = Some(current_dir);
+</span><span>        </span><span style="color:#ffb964;">self
+</span><span>    }
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>}
+</span></code></pre>
+<p>そこでこの課題では <code>derive</code> マクロが適用された構造体に対して、 <code>Option</code> が定義されているフィールドの特定と、ラップされている中身の型を抽出して条件分岐的に <code>TokenStream</code> を構築していくことを目指します。</p>
+<p>方針としては <code>Field</code> 内の <code>syn::Type::Path</code> からトップレベルの型を抽出し、その型が <code>Option</code> であった場合にはさらにラップされている型も同じく <code>syn::Type::Path</code> として抽出していきます。</p>
+<p><img src="https://shimopino.github.io/blog/proc-macro-workshop-builder/assets/derive-input-optional.drawio.png" alt="" /></p>
+<p>今回は対象が <code>Option</code> であった場合には内部の型を取り出して <code>Some</code> として返却する関数を用意し、この関数を対象のフィールドが <code>Option</code> であるかどうかの判定でも利用します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">/// Returns unwrapped Type in Option as Option&lt;&amp;Type&gt;
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_option</span><span>(</span><span style="color:#ffb964;">ty</span><span>: &amp;Type) -&gt; Option&lt;&amp;Type&gt; {
+</span><span>    </span><span style="color:#8fbfdc;">if let </span><span>syn::Type::Path(syn::TypePath {
+</span><span>        path: syn::Path { segments, .. },
+</span><span>        ..
+</span><span>    }) = ty
+</span><span>    {
+</span><span>        </span><span style="color:#8fbfdc;">if</span><span> segments.len() == </span><span style="color:#cf6a4c;">1 </span><span>{
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Some(syn::PathSegment {
+</span><span>                ident,
+</span><span>                arguments:
+</span><span>                    syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
+</span><span>                        args, ..
+</span><span>                    }),
+</span><span>            }) = segments.first()
+</span><span>            {
+</span><span>                </span><span style="color:#8fbfdc;">if</span><span> ident == </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Option</span><span style="color:#556633;">&quot; </span><span>&amp;&amp; args.len() == </span><span style="color:#cf6a4c;">1 </span><span>{
+</span><span>                    </span><span style="color:#8fbfdc;">if let </span><span>Some(syn::GenericArgument::Type(inner_ty)) = args.first() {
+</span><span>                        </span><span style="color:#8fbfdc;">return </span><span>Some(inner_ty);
+</span><span>                    }
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    None
+</span><span>}
+</span></code></pre>
+<p>型構造を順番にアンラップしているので複雑そうに見えますが、 <code>Option</code> の場合には中身の型を <code>Option&lt;&amp;Type&gt;</code> で返却しているだけであり、最初の <code>DeriveInput</code> の全体像から自然と割り出される処理なのでやっていること自体は割とシンプルです。</p>
+<p>後はこの関数を利用して各種 Builder の型定義やメソッドのシグネチャを変更していきます。</p>
+<p>まずは Builder の型定義を変更し、対象のフィールドが <code>Option</code> の場合は追加の <code>Option</code> でラップすることなく、元々の型をそのまま利用します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> builder_fields = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">if </span><span>unwrap_option(ty).is_some() {
+</span><span>        quote! {
+</span><span>            #ident: #ty
+</span><span>        }
+</span><span>    } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>        quote! {
+</span><span>            #ident: Option&lt;#ty&gt;
+</span><span>        }
+</span><span>    }
+</span><span>});
+</span></code></pre>
+<p>これで以下のように元々の構造体のフィールドが <code>Option</code> の場合にはそのまま型を利用するようになったことがわかります</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">CommandBuilder </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: Option&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Option&lt;Vec&lt;String&gt;&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;, </span><span style="color:#888888;">// 二重に Option でラップしていない
+</span><span>}
+</span></code></pre>
+<p>同じように各メソッドや、Command の生成部分も条件分岐をさせていきます。</p>
+<p>以下は Command を生成する時に代入先のフィールドが <code>Option</code> かどうかによって内部の値をアンラップするかどうかを分岐させています。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> build_fields = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">if </span><span>unwrap_option(ty).is_some() {
+</span><span>        </span><span style="color:#888888;">// 代入先も Option なので ? でアンラップする必要がない
+</span><span>        quote! {
+</span><span>            #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take()
+</span><span>        }
+</span><span>    } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>        quote! {
+</span><span>            #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take().ok_or(format!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{}</span><span style="color:#99ad6a;"> is not set</span><span style="color:#556633;">&quot;</span><span>, stringify!(#ident)))?
+</span><span>        }
+</span><span>    }
+</span><span>});
+</span></code></pre>
+<p>各 <code>setter</code> メソッドの型シグネチャでは、対象のフィールドが <code>Option</code> である場合には内部の型を取り出して、その型をメソッドの引数に指定するだけです。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> builder_setters = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>    </span><span style="color:#888888;">// Option である場合には内部の型を取り出してその型を引数に利用する
+</span><span>    </span><span style="color:#8fbfdc;">if let </span><span>Some(inner_ty) = unwrap_option(ty) {
+</span><span>        quote! {
+</span><span>            </span><span style="color:#8fbfdc;">fn </span><span>#ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #ident: #inner_ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>                </span><span style="color:#ffb964;">self</span><span>.#ident = Some(#ident);
+</span><span>                </span><span style="color:#ffb964;">self
+</span><span>            }
+</span><span>        }
+</span><span>    } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>        quote! {
+</span><span>            </span><span style="color:#8fbfdc;">fn </span><span>#ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #ident: #ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>                </span><span style="color:#ffb964;">self</span><span>.#ident = Some(#ident);
+</span><span>                </span><span style="color:#ffb964;">self
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>});
+</span></code></pre>
+<p>ここまでできればコンパイルエラーなくテストを PASS させることが可能です。</p>
+<h2 id="07-repeated-field">07-repeated-field</h2>
+<p>次の課題では、さらにマクロの機能を深掘りしていき、特定のフィールドに対して属性を付与すると、付与した値を基準に生成されるコードを動的に変更していきます。</p>
+<p>また、以下のように <code>each</code> で指定した名称がフィールド名と重複している場合には、要素を 1 つ 1 つ登録するメソッドの生成を優先し、 <code>Option</code> 型ではないフィールドに対するメソッドを呼び出さなかった場合でもデフォルト値を登録するように機能を変更します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    </span><span style="color:#888888;">// フィールドに対して追加の属性を割り当てる
+</span><span>    #[</span><span style="color:#ffb964;">builder</span><span>(each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">arg</span><span style="color:#556633;">&quot;</span><span>)]
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#888888;">// フィールドに対して追加の属性を割り当てる
+</span><span>    #[</span><span style="color:#ffb964;">builder</span><span>(each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">env</span><span style="color:#556633;">&quot;</span><span>)]
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> command = Command::builder()
+</span><span>        .executable(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        </span><span style="color:#888888;">// 追加した属性に基づいて、Vecを構成する1つ1つの要素を追加していくメソッドを生成する
+</span><span>        </span><span style="color:#888888;">// また、生成されるメソッドも属性で指定した名前で生成される
+</span><span>        .arg(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .arg(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>.to_owned())
+</span><span>        .build()
+</span><span>        .unwrap();
+</span><span>
+</span><span>    assert_eq!(command.executable, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">cargo</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>    assert_eq!(command.args, vec![</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">build</span><span style="color:#556633;">&quot;</span><span>, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">--release</span><span style="color:#556633;">&quot;</span><span>]);
+</span><span>}
+</span></code></pre>
+<p>このような属性は、公式ドキュメント上では <code>derive macro helper attributes</code> と呼ばれており、それ自体はなんらかの処理を行うようなものではなく、マクロに対して追加の情報を送ることでより複雑な処理ができるようにするものです。</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes">Derive macro helper attributes</a></li>
+</ul>
+<p>実際にこの属性を付与した状態でマクロを実行すると、構造体の1 つ 1 つのフィールドを構成する <code>syn::Field</code> の <code>attrs</code> フィールドに以下の情報が格納されていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Field </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">attrs</span><span>: Vec&lt;Attribute&gt;, </span><span style="color:#888888;">// 指定した属性が配列として格納されている
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">vis</span><span>: Visibility,
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">mutability</span><span>: FieldMutability,
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">ident</span><span>: Option&lt;Ident&gt;,
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">colon_token</span><span>: Option&lt;Colon&gt;,
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">ty</span><span>: Type,
+</span><span>}
+</span></code></pre>
+<p><img src="https://shimopino.github.io/blog/proc-macro-workshop-builder/assets/derive-input-attribute.drawio.png" alt="" /></p>
+<ul>
+<li><a href="https://docs.rs/syn/latest/syn/struct.Field.html">syn::Field</a></li>
+</ul>
+<p>実装方針としては以下のように進めます</p>
+<ol>
+<li>対象のフィールドが <code>Vec</code> であるかどうかを検証する</li>
+<li><code>Vec</code> の場合には <code>builder</code> 属性が付与されているかどうかを検証する</li>
+<li><code>builder</code> 属性が付与されている場合には <code>each</code> トークンが含まれているのか確認し、適用するメソッド名を抽出する</li>
+<li>メソッド名の抽出までできれば、各種 <code>setter</code> や <code>build</code> メソッドで生成するコードを変更する</li>
+</ol>
+<h3 id="huirudonoxing-nojian-zheng-woxing-uguan-shu-wokuo-zhang-suru">フィールドの型の検証を行う関数を拡張する</h3>
+<p>以前の課題で Command 構造体の各フィールドの型を検証して <code>Option</code> の場合には内部の型を <code>Option&lt;&amp;Type&gt;</code> として返却する <code>unwrap_option</code> 関数を用意していました。</p>
+<p>この関数を拡張して、フィールドの型が <code>Option</code> である場合には内部の型を返却し、また <code>Vec</code> である場合にも内部の型を返却します。また返却する型を <code>Option&lt;T&gt;</code> のままにしてしまうとその後で再度条件分岐させる必要があるため、 <code>Option</code> や <code>Vec</code> やそれ以外の場合も <code>enum</code> で表現するようにします。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">enum </span><span style="color:#ffb964;">InnerType </span><span>{
+</span><span>    OptionType(Type),
+</span><span>    VecType(Type),
+</span><span>    PrimitiveType,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_ty</span><span>(</span><span style="color:#ffb964;">ty</span><span>: &amp;Type) -&gt; InnerType {
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>}
+</span></code></pre>
+<p>後はこの型に合うように条件分岐をさせていきます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">/// Returns InnerType enum with unwrapped Type
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_ty</span><span>(</span><span style="color:#ffb964;">ty</span><span>: &amp;Type) -&gt; InnerType {
+</span><span>    </span><span style="color:#8fbfdc;">if let </span><span>syn::Type::Path(syn::TypePath {
+</span><span>        path: syn::Path { segments, .. },
+</span><span>        ..
+</span><span>    }) = ty
+</span><span>    {
+</span><span>        </span><span style="color:#8fbfdc;">if</span><span> segments.len() == </span><span style="color:#cf6a4c;">1 </span><span>{
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Some(syn::PathSegment {
+</span><span>                ident,
+</span><span>                arguments:
+</span><span>                    syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
+</span><span>                        args, ..
+</span><span>                    }),
+</span><span>            }) = segments.first()
+</span><span>            {
+</span><span>                </span><span style="color:#8fbfdc;">if</span><span> args.len() == </span><span style="color:#cf6a4c;">1 </span><span>{
+</span><span>                    </span><span style="color:#8fbfdc;">if let </span><span>Some(syn::GenericArgument::Type(inner_ty)) = args.first() {
+</span><span>                        </span><span style="color:#8fbfdc;">if</span><span> ident == </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Option</span><span style="color:#556633;">&quot; </span><span>{
+</span><span>                            </span><span style="color:#8fbfdc;">return </span><span>InnerType::OptionType(inner_ty.clone());
+</span><span>                        } </span><span style="color:#8fbfdc;">else if</span><span> ident == </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Vec</span><span style="color:#556633;">&quot; </span><span>{
+</span><span>                            </span><span style="color:#8fbfdc;">return </span><span>InnerType::VecType(inner_ty.clone());
+</span><span>                        }
+</span><span>                    }
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    InnerType::PrimitiveType
+</span><span>}
+</span></code></pre>
+<p>この関数を使用して Builder の各コードを動的に制御していきます。</p>
+<h3 id="tokenstream-nopasu">TokenStream のパース</h3>
+<p><code>Option</code> や <code>Vec</code> のフィールドであるかどうかの検証はできるようになったため、次は <code>Vec</code> であった場合には <code>derive</code> マクロの属性から使用するメソッドの名称を抽出する関数を作成します。</p>
+<p>ただし、マクロ内で指定した属性は <code>TokenStream</code> として得られるため、まずは <code>TokenStream</code> をどのようにパースすればいいのかを把握します。</p>
+<p><img src="https://shimopino.github.io/blog/proc-macro-workshop-builder/assets/attribute-token-stream.png" alt="" /></p>
+<p>まずは <code>syn</code> クレートにおける <code>TokenStream</code> のパースの仕組みを理解していきます。</p>
+<ul>
+<li><a href="https://docs.rs/syn/2.0.28/syn/parse/index.html">syn::parse</a></li>
+</ul>
+<p><code>syn</code> クレートでは <code>proc_macro2::TokenStream</code> をパースするために様々な parser 関数を提供しており、 <code>fn(input: ParseStream) -&gt; syn::Result&lt;Self&gt;</code> というシグネチャに従って実装することで、トークンを様々な形状にパースすることが可能です。</p>
+<p>コードで理解するために、まずは以下のように今回パースする対象と同じような <code>TokenStream</code> を用意します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> tokens = quote! { each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">arg</span><span style="color:#556633;">&quot; </span><span>}; </span><span style="color:#888888;">// proc_macro2::TokenStream
+</span><span>    println!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{:#?}</span><span style="color:#556633;">&quot;</span><span>, tokens);
+</span><span>}
+</span></code></pre>
+<p>このコードを実行すれば、上記画像で示したものと同じ構造の <code>TokenStream</code> が生成されていることがわかります。</p>
+<p>後はこの構造に従ってパースできるように、それぞれのトークンに合致する型を有した構造体を定義し、 <code>Parse</code> トレイトを実装していきます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">// Token! マクロは指定したトークンに合致する構造体に変換する
+</span><span style="color:#888888;">// 今回の場合は syn::token::Eq に内部では変換している
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">IdentEqualExpr </span><span>{
+</span><span>    </span><span style="color:#ffb964;">ident</span><span>: syn::Ident,
+</span><span>    </span><span style="color:#ffb964;">eq_token</span><span>: syn::Token![=],
+</span><span>    </span><span style="color:#ffb964;">expr</span><span>: syn::Expr,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">impl </span><span>syn::parse::Parse for </span><span style="color:#ffb964;">IdentEqualExpr </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">parse</span><span>(</span><span style="color:#ffb964;">input</span><span>: syn::parse::ParseStream) -&gt; syn::Result&lt;</span><span style="color:#8fbfdc;">Self</span><span>&gt; {
+</span><span>        </span><span style="color:#888888;">// パースしたい順番に従って parse メソッドを呼び出す
+</span><span>        </span><span style="color:#888888;">// 内部でカーソル位置が移動するため、正しい順番で呼び出す必要がある
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ident = input.parse()?;    </span><span style="color:#888888;">// syn::Ident にパース
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> eq_token = input.parse()?; </span><span style="color:#888888;">// syn::token::Eq にパース
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> expr = input.parse()?;     </span><span style="color:#888888;">// syn::Expr にパース
+</span><span>        Ok(</span><span style="color:#8fbfdc;">Self </span><span>{
+</span><span>            ident,
+</span><span>            eq_token,
+</span><span>            expr,
+</span><span>        })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>動作確認のために <code>proc_macro2::TokenStream</code> をパースするための <code>syn::parse2</code> を実行して結果を確認すると、ストリームから指定した型に正しくパースできていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> tokens = quote! { each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">arg</span><span style="color:#556633;">&quot; </span><span>};
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident_equal_expr = syn::parse2::&lt;IdentEqualExpr&gt;(tokens);
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">match</span><span> ident_equal_expr {
+</span><span>        </span><span style="color:#888888;">// 出力結果は以下のようになり、指定した通りにパースできていることがわかる
+</span><span>        </span><span style="color:#888888;">// 後は 文字列リテラル を表している syn::LitStr から値を取り出せばよい
+</span><span>        </span><span style="color:#888888;">/**
+</span><span style="color:#888888;">         * IdentEqualExpr {
+</span><span style="color:#888888;">         *     ident: Ident(
+</span><span style="color:#888888;">         *         each,
+</span><span style="color:#888888;">         *     ),
+</span><span style="color:#888888;">         *     eq_token: Eq,
+</span><span style="color:#888888;">         *     expr: Expr::Lit {
+</span><span style="color:#888888;">         *         attrs: [],
+</span><span style="color:#888888;">         *         lit: Lit::Str {
+</span><span style="color:#888888;">         *             token: &quot;arg&quot;,
+</span><span style="color:#888888;">         *         },
+</span><span style="color:#888888;">         *     },
+</span><span style="color:#888888;">         * }
+</span><span style="color:#888888;">         */
+</span><span>        Ok(value) =&gt; println!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{:#?}</span><span style="color:#556633;">&quot;</span><span>, value),
+</span><span>        Err(_) =&gt; panic!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">unexpected token</span><span style="color:#556633;">&quot;</span><span>),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><code>syn</code> クレートは似たような構造をパースするための型として <code>syn::MetaNameValue</code> を用意している。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">MetaNameValue </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">path</span><span>: Path,
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">eq_token</span><span>: Eq,
+</span><span>    </span><span style="color:#8fbfdc;">pub </span><span style="color:#ffb964;">value</span><span>: Expr,
+</span><span>}
+</span></code></pre>
+<ul>
+<li><a href="https://docs.rs/syn/2.0.28/syn/struct.MetaNameValue.html">syn::MetaNameValue</a></li>
+</ul>
+<p>最初のフィールドに関しては <code>syn::Ident</code> ではなく <code>syn::Path</code> として定義されているため利用することができないように思えますが、実は <code>From</code> トレイトを以下のように実装しているため、入力が <code>Ident</code> であってもこの型を利用して変換することが可能です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">// https://docs.rs/syn/2.0.28/src/syn/path.rs.html#13-25
+</span><span style="color:#8fbfdc;">impl</span><span>&lt;T&gt; From&lt;T&gt; for </span><span style="color:#ffb964;">Path
+</span><span>where
+</span><span>    T: Into&lt;PathSegment&gt;,
+</span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">from</span><span>(</span><span style="color:#ffb964;">segment</span><span>: T) -&gt; </span><span style="color:#8fbfdc;">Self </span><span>{
+</span><span>        </span><span style="color:#8fbfdc;">let mut</span><span> path = Path {
+</span><span>            leading_colon: None,
+</span><span>            segments: Punctuated::new(),
+</span><span>        };
+</span><span>        path.segments.push_value(segment.into());
+</span><span>        path
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#888888;">// https://docs.rs/syn/2.0.28/src/syn/path.rs.html#96-106
+</span><span style="color:#8fbfdc;">impl</span><span>&lt;T&gt; From&lt;T&gt; for </span><span style="color:#ffb964;">PathSegment
+</span><span>where
+</span><span>    T: Into&lt;Ident&gt;,
+</span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">from</span><span>(</span><span style="color:#ffb964;">ident</span><span>: T) -&gt; </span><span style="color:#8fbfdc;">Self </span><span>{
+</span><span>        PathSegment {
+</span><span>            ident: ident.into(),
+</span><span>            arguments: PathArguments::None,
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>そのため今回のように <code>each = "arg"</code> の構造をパースして、中身の値を取り出す場合には、以下のような実装にしておけばよく、 <code>Field</code> には複数の <code>Attribute</code> が指定されるため、最初の値のみを取り出して利用する形にします。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">/// unwrap first value from #[builder(each = value)] attribute
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_builder_attr_value</span><span>(</span><span style="color:#ffb964;">attrs</span><span>: &amp;[syn::Attribute]) -&gt; Option&lt;String&gt; {
+</span><span>    attrs.iter().find_map(|</span><span style="color:#ffb964;">attr</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">if</span><span> attr.path().is_ident(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">builder</span><span style="color:#556633;">&quot;</span><span>) {
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Ok(syn::MetaNameValue {
+</span><span>                value:
+</span><span>                    syn::Expr::Lit(syn::ExprLit {
+</span><span>                        lit: syn::Lit::Str(</span><span style="color:#8fbfdc;">ref</span><span> liststr),
+</span><span>                        ..
+</span><span>                    }),
+</span><span>                ..
+</span><span>            }) = attr.parse_args::&lt;syn::MetaNameValue&gt;()
+</span><span>            {
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>Some(liststr.value());
+</span><span>            } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>None;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        None
+</span><span>    })
+</span><span>}
+</span></code></pre>
+<p>これで属性の値を取り出す関数は完成です。</p>
+<h3 id="sheng-cheng-surushi-zhuang-kodonobian-geng">生成する実装コードの変更</h3>
+<p>ここまでで Builder を適用した構造体に対して、各フィールドの型を <code>Vec</code> や <code>Option</code> としてパースする方法や、 <code>builder(each = "arg")</code> のように付与された属性から <code>"arg"</code> という値を取り出すことができるようになりました。</p>
+<p>後は元々の Builder の実装から以下の箇所を変更していきます。</p>
+<ul>
+<li>build メソッド
+<ul>
+<li><code>Vec</code> の場合には <code>None</code> で初期化していた箇所を、 <code>Vec::new</code> で初期化</li>
+</ul>
+</li>
+<li>Builder の各種 <code>setter</code> は、 <code>Vec</code> の場合には以下条件で実装する
+<ul>
+<li><code>each = expr</code> の指定がない場合は今まで通りに実装する</li>
+<li><code>each = expr</code> の指定がある場合
+<ul>
+<li>フィールド名と重複していない場合は、メソッドを新しく追加する</li>
+<li>フィールド名と重複している場合は、個別に設定するメソッドを優先する</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>まずは build メソッドを以下のように変更します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> build_fields = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">match </span><span>unwrap_ty(ty) {
+</span><span>        InnerType::OptionType(_) =&gt; quote! {
+</span><span>            #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take()
+</span><span>        },
+</span><span>        InnerType::VecType(_) =&gt; quote! {
+</span><span>            </span><span style="color:#888888;">// None でも失敗しないように Vec::new で初期化する
+</span><span>            #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take().unwrap_or_else(Vec::new)
+</span><span>        },
+</span><span>        InnerType::PrimitiveType =&gt; quote! {
+</span><span>            #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take().ok_or(format!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{}</span><span style="color:#99ad6a;"> is not set</span><span style="color:#556633;">&quot;</span><span>, stringify!(#ident)))?
+</span><span>        },
+</span><span>    }
+</span><span>});
+</span></code></pre>
+<p>これで <code>Vec&lt;T&gt;</code> として定義されているフィールドに対して <code>setter</code> が呼び出されていない場合でも初期値が代入されるようになりました。</p>
+<p>次に <code>setter</code> メソッドの定義を以下のように変更します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">// ty の場合も inner_ty の場合も同じ構造なので、依存を引数に移動させて、生成するストリームを制御する
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">generate_default_setter_with</span><span>(
+</span><span>    </span><span style="color:#ffb964;">ident</span><span>: &amp;Option&lt;syn::Ident&gt;,
+</span><span>    </span><span style="color:#ffb964;">ty</span><span>: &amp;syn::Type,
+</span><span>) -&gt; proc_macro2::TokenStream {
+</span><span>    quote! {
+</span><span>        </span><span style="color:#8fbfdc;">fn </span><span>#ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #ident: #ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>            </span><span style="color:#ffb964;">self</span><span>.#ident = Some(#ident);
+</span><span>            </span><span style="color:#ffb964;">self
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">let</span><span> builder_setters = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">match </span><span>unwrap_ty(ty) {
+</span><span>        InnerType::VecType(inner_ty) =&gt; {
+</span><span>            </span><span style="color:#8fbfdc;">let</span><span> default_setter = generate_default_setter_with(ident, ty);
+</span><span>
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Some(each) = unwrap_builder_attr_value(&amp;f.attrs) {
+</span><span>                </span><span style="color:#8fbfdc;">let</span><span> each_ident = format_ident!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}</span><span style="color:#556633;">&quot;</span><span>, each);
+</span><span>                </span><span style="color:#8fbfdc;">let</span><span> vec_setters = quote! {
+</span><span>                    </span><span style="color:#8fbfdc;">fn </span><span>#each_ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #each_ident: #inner_ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>                        </span><span style="color:#8fbfdc;">if let </span><span>Some(</span><span style="color:#8fbfdc;">ref mut</span><span> values) = </span><span style="color:#ffb964;">self</span><span>.#ident {
+</span><span>                            values.push(#each_ident);
+</span><span>                        } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                            </span><span style="color:#ffb964;">self</span><span>.#ident = Some(vec![#each_ident]);
+</span><span>                        }
+</span><span>                        </span><span style="color:#ffb964;">self
+</span><span>                    }
+</span><span>                };
+</span><span>
+</span><span>                </span><span style="color:#8fbfdc;">if</span><span> ident.clone().unwrap() == each_ident {
+</span><span>                    </span><span style="color:#8fbfdc;">return</span><span> vec_setters;
+</span><span>                } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                    </span><span style="color:#8fbfdc;">return </span><span>quote! {
+</span><span>                        #vec_setters
+</span><span>                        #default_setter
+</span><span>                    };
+</span><span>                }
+</span><span>            } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                </span><span style="color:#8fbfdc;">return</span><span> default_setter;
+</span><span>            }
+</span><span>        }
+</span><span>        InnerType::OptionType(inner_ty) =&gt; generate_default_setter_with(ident, &amp;inner_ty),
+</span><span>        InnerType::PrimitiveType =&gt; generate_default_setter_with(ident, ty),
+</span><span>    }
+</span><span>});
+</span></code></pre>
+<p>これでコンパイルエラーが発生することなくテストを PASS させることができました。</p>
+<h2 id="08-unrecognized-attribute">08-unrecognized-attribute</h2>
+<p>次の課題では、フィールドで使用する属性に意図していない値が指定された場合にユーザーに対してわかりやすいコンパイルエラーを表示させることを目指します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    #[</span><span style="color:#ffb964;">builder</span><span>(eac = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">arg</span><span style="color:#556633;">&quot;</span><span>)] </span><span style="color:#888888;">// 本当は each を設定しないといけない
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span></code></pre>
+<p>テストで利用している <code>trybuild</code> ではコンパイルエラー自体のテストも実行することが可能であり、以下のようにテキストとして用意したエラーメッセージを利用してアサーションを行うことが可能です。</p>
+<pre data-lang="bash" style="background-color:#151515;color:#e8e8d3;" class="language-bash "><code class="language-bash" data-lang="bash"><span style="color:#888888;"># 08-unrecognized-attribute.stderr
+</span><span style="color:#ffb964;">error:</span><span> expected `</span><span style="color:#ffb964;">builder</span><span>(each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">...</span><span style="color:#556633;">&quot;</span><span>)`
+</span><span>  </span><span style="color:#ffb964;">--</span><span>&gt; tests/08-unrecognized-attribute.rs:22:7
+</span><span>   |
+</span><span style="color:#ffb964;">22 </span><span>|     </span><span style="color:#888888;">#[builder(eac = &quot;arg&quot;)]
+</span><span>   |       </span><span style="color:#ffb964;">^^^^^^^^^^^^^^^^^^^^
+</span><span>
+</span></code></pre>
+<p>コンパイルエラーを発生させる方法の 1 つに標準ライブラリから <code>compile_error!</code> マクロが用意されており、手続きマクロでも利用することで間違った指定を行なったユーザーに対してコンパイルエラーを伝えることが可能です。</p>
+<p>実装方針としては、今まで <code>each</code> という名称を気にせずに値のみを取り出していた下記の処理を変更し、 <code>each</code> である <code>syn::Ident</code> であるかどうかも検証するように変更します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">/// unwrap first value from #[builder(each = value)] attribute
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_builder_attr_value</span><span>(</span><span style="color:#ffb964;">attrs</span><span>: &amp;[syn::Attribute]) -&gt; Option&lt;String&gt; {
+</span><span>    attrs.iter().find_map(|</span><span style="color:#ffb964;">attr</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">if</span><span> attr.path().is_ident(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">builder</span><span style="color:#556633;">&quot;</span><span>) {
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Ok(syn::MetaNameValue {
+</span><span>                value:
+</span><span>                    syn::Expr::Lit(syn::ExprLit {
+</span><span>                        lit: syn::Lit::Str(</span><span style="color:#8fbfdc;">ref</span><span> liststr),
+</span><span>                        ..
+</span><span>                    }),
+</span><span>                ..
+</span><span>            }) = attr.parse_args::&lt;syn::MetaNameValue&gt;()
+</span><span>            </span><span style="color:#888888;">// 以下では each という属性の値を気にせずに中身を取り出すようにしていた
+</span><span>            {
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>Some(liststr.value());
+</span><span>            } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>None;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        None
+</span><span>    })
+</span><span>}
+</span></code></pre>
+<p>現状の返却値である <code>Option&lt;String&gt;</code> だと細かい制御ができないため、以下のように <code>each</code> が存在した場合とそうではない場合を把握できるように型シグネチャを変更します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">enum </span><span style="color:#ffb964;">ParseBuilderAttributeResult </span><span>{
+</span><span>    Valid(String),
+</span><span>    Invalid(syn::Meta),
+</span><span>}
+</span></code></pre>
+<p>後は該当する処理の箇所で <code>syn::Ident</code> が <code>each</code> であることを検証する処理を追加します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">/// unwrap first value from #[builder(each = value)] attribute
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_builder_attr_value</span><span>(</span><span style="color:#ffb964;">attrs</span><span>: &amp;[syn::Attribute]) -&gt; Option&lt;ParseBuilderAttributeResult&gt; {
+</span><span>    attrs.iter().find_map(|</span><span style="color:#ffb964;">attr</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">if</span><span> attr.path().is_ident(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">builder</span><span style="color:#556633;">&quot;</span><span>) {
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Ok(syn::MetaNameValue {
+</span><span>                value:
+</span><span>                    syn::Expr::Lit(syn::ExprLit {
+</span><span>                        lit: syn::Lit::Str(</span><span style="color:#8fbfdc;">ref</span><span> liststr),
+</span><span>                        ..
+</span><span>                    }),
+</span><span>                path,
+</span><span>                ..
+</span><span>            }) = attr.parse_args::&lt;syn::MetaNameValue&gt;()
+</span><span>            {
+</span><span>                </span><span style="color:#888888;">// ここで検証する内容と返却値を変更する
+</span><span>                </span><span style="color:#8fbfdc;">if </span><span>!path.is_ident(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">each</span><span style="color:#556633;">&quot;</span><span>) {
+</span><span>                    </span><span style="color:#8fbfdc;">return </span><span>Some(ParseBuilderAttributeResult::Invalid(attr.meta.clone()));
+</span><span>                }
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>Some(ParseBuilderAttributeResult::Valid(liststr.value()));
+</span><span>            } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>None;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        None
+</span><span>    })
+</span><span>}
+</span></code></pre>
+<p>後は <code>setter</code> を生成する際に、以下のように <code>Invalid</code> なパターンの場合には <code>to_compile_error</code> を利用して <code>TokenStream</code> を作成するようにすることで、コンパイルエラーを伝えることができるようになります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> builder_setters = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">match </span><span>unwrap_ty(ty) {
+</span><span>        InnerType::VecType(inner_ty) =&gt; {
+</span><span>            </span><span style="color:#8fbfdc;">let</span><span> default_setter = generate_default_setter_with(ident, ty);
+</span><span>
+</span><span>            </span><span style="color:#888888;">// ここを Invalid な場合に処理する
+</span><span>            </span><span style="color:#8fbfdc;">match </span><span>unwrap_builder_attr_value(&amp;f.attrs) {
+</span><span>                Some(ParseBuilderAttributeResult::Valid(each)) =&gt; {
+</span><span>                    </span><span style="color:#8fbfdc;">let</span><span> each_ident = format_ident!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}</span><span style="color:#556633;">&quot;</span><span>, each);
+</span><span>                    </span><span style="color:#8fbfdc;">let</span><span> vec_setters = quote! {
+</span><span>                        </span><span style="color:#8fbfdc;">fn </span><span>#each_ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #each_ident: #inner_ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>                            </span><span style="color:#8fbfdc;">if let </span><span>Some(</span><span style="color:#8fbfdc;">ref mut</span><span> values) = </span><span style="color:#ffb964;">self</span><span>.#ident {
+</span><span>                                values.push(#each_ident);
+</span><span>                            } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                                </span><span style="color:#ffb964;">self</span><span>.#ident = Some(vec![#each_ident]);
+</span><span>                            }
+</span><span>                            </span><span style="color:#ffb964;">self
+</span><span>                        }
+</span><span>                    };
+</span><span>
+</span><span>                    </span><span style="color:#8fbfdc;">if</span><span> ident.clone().unwrap() == each_ident {
+</span><span>                        </span><span style="color:#8fbfdc;">return</span><span> vec_setters;
+</span><span>                    } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                        </span><span style="color:#8fbfdc;">return </span><span>quote! {
+</span><span>                            #vec_setters
+</span><span>                            #default_setter
+</span><span>                        };
+</span><span>                    }
+</span><span>                }
+</span><span>                </span><span style="color:#888888;">// TokenStream なので返却する値の型は合うようになっている
+</span><span>                Some(ParseBuilderAttributeResult::Invalid(meta)) =&gt; {
+</span><span>                    </span><span style="color:#8fbfdc;">return </span><span>syn::Error::new_spanned(meta, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">expected `builder(each = \&quot;...\&quot;)`</span><span style="color:#556633;">&quot;</span><span>)
+</span><span>                        .to_compile_error()
+</span><span>                        .into()
+</span><span>                }
+</span><span>                None =&gt; </span><span style="color:#8fbfdc;">return</span><span> default_setter,
+</span><span>            };
+</span><span>        }
+</span><span>        InnerType::OptionType(inner_ty) =&gt; generate_default_setter_with(ident, &amp;inner_ty),
+</span><span>        InnerType::PrimitiveType =&gt; generate_default_setter_with(ident, ty),
+</span><span>    }
+</span><span>});
+</span></code></pre>
+<ul>
+<li><a href="https://docs.rs/syn/1.0.109/syn/struct.Error.html#method.to_compile_error">to_compile_error</a></li>
+</ul>
+<p>これで以下のように間違った値を指定した場合にはコンパイルエラーが発生するようになりました。</p>
+<p><img src="https://shimopino.github.io/blog/proc-macro-workshop-builder/assets/compile-error.png" alt="" /></p>
+<h2 id="09-redefined-prelude-type">09-redefined-prelude-type</h2>
+<p>最後の課題は、ユーザーが独自に定義した型と生成するコード内で使用している型が被ってしまった場合の対応になります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">type </span><span style="color:#ffb964;">Option </span><span>= ();
+</span><span style="color:#8fbfdc;">type </span><span style="color:#ffb964;">Some </span><span>= ();
+</span><span style="color:#8fbfdc;">type </span><span style="color:#ffb964;">None </span><span>= ();
+</span><span style="color:#8fbfdc;">type </span><span style="color:#ffb964;">Result </span><span>= ();
+</span><span style="color:#8fbfdc;">type </span><span style="color:#ffb964;">Box </span><span>= ();
+</span><span>
+</span><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {}
+</span></code></pre>
+<p>今までの <code>cargo expand</code> を実行した結果から分かるように、マクロはコンパイル時に展開されて Rust コードとして実行されます。</p>
+<p>つまり <code>quote!</code> 内で名前空間を指定せずに <code>Result</code> のように指定している場合には、テストコードのようにユーザー側で <code>type Result = ()</code> と内部で使用している型と同じ名称の型を宣言してしまうと、意図していない型が適用されてしまいます。</p>
+<p>そこで <code>quote!</code> 内で生成するコードに対しては、以下のように名前空間を指定します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>    </span><span style="color:#8fbfdc;">impl </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>        #(#builder_setters)*
+</span><span>
+</span><span>        </span><span style="color:#888888;">// Result や Box の名前空間を指定する
+</span><span>        </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">build</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>) -&gt; std::result::Result&lt;#ident, std::boxed::Box&lt;dyn std::error::Error&gt;&gt; {
+</span><span>            Ok(#ident {
+</span><span>                #(#build_fields,)*
+</span><span>            })
+</span><span>        }
+</span><span>    }
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>};
+</span></code></pre>
+<p>他にも <code>Option</code> / <code>Some</code> / <code>None</code> を利用している箇所で名前空間のパスを指定するようにすれば、テストは PASS できます。</p>
+<p>これで <a href="https://github.com/dtolnay/proc-macro-workshop">proc-macro-workshop</a> の Builder マクロの課題は完了です！</p>
+<h2 id="wan-cheng-sitakodo">完成したコード</h2>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>use proc_macro::TokenStream;
+</span><span>use quote::{format_ident, quote};
+</span><span>use syn::{parse_macro_input, punctuated::Punctuated, DeriveInput, Type};
+</span><span>
+</span><span style="color:#8fbfdc;">enum </span><span style="color:#ffb964;">InnerType </span><span>{
+</span><span>    OptionType(Type),
+</span><span>    VecType(Type),
+</span><span>    PrimitiveType,
+</span><span>}
+</span><span>
+</span><span style="color:#888888;">/// Returns InnerType enum with unwrapped Type
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_ty</span><span>(</span><span style="color:#ffb964;">ty</span><span>: &amp;Type) -&gt; InnerType {
+</span><span>    </span><span style="color:#8fbfdc;">if let </span><span>syn::Type::Path(syn::TypePath {
+</span><span>        path: syn::Path { segments, .. },
+</span><span>        ..
+</span><span>    }) = ty
+</span><span>    {
+</span><span>        </span><span style="color:#8fbfdc;">if</span><span> segments.len() == </span><span style="color:#cf6a4c;">1 </span><span>{
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Some(syn::PathSegment {
+</span><span>                ident,
+</span><span>                arguments:
+</span><span>                    syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments {
+</span><span>                        args, ..
+</span><span>                    }),
+</span><span>            }) = segments.first()
+</span><span>            {
+</span><span>                </span><span style="color:#8fbfdc;">if</span><span> args.len() == </span><span style="color:#cf6a4c;">1 </span><span>{
+</span><span>                    </span><span style="color:#8fbfdc;">if let </span><span>Some(syn::GenericArgument::Type(inner_ty)) = args.first() {
+</span><span>                        </span><span style="color:#8fbfdc;">if</span><span> ident == </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Option</span><span style="color:#556633;">&quot; </span><span>{
+</span><span>                            </span><span style="color:#8fbfdc;">return </span><span>InnerType::OptionType(inner_ty.clone());
+</span><span>                        } </span><span style="color:#8fbfdc;">else if</span><span> ident == </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">Vec</span><span style="color:#556633;">&quot; </span><span>{
+</span><span>                            </span><span style="color:#8fbfdc;">return </span><span>InnerType::VecType(inner_ty.clone());
+</span><span>                        }
+</span><span>                    }
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    }
+</span><span>
+</span><span>    InnerType::PrimitiveType
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">enum </span><span style="color:#ffb964;">ParseBuilderAttributeResult </span><span>{
+</span><span>    Valid(String),
+</span><span>    Invalid(syn::Meta),
+</span><span>}
+</span><span>
+</span><span style="color:#888888;">/// unwrap first value from #[builder(each = value)] attribute
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">unwrap_builder_attr_value</span><span>(</span><span style="color:#ffb964;">attrs</span><span>: &amp;[syn::Attribute]) -&gt; Option&lt;ParseBuilderAttributeResult&gt; {
+</span><span>    attrs.iter().find_map(|</span><span style="color:#ffb964;">attr</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">if</span><span> attr.path().is_ident(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">builder</span><span style="color:#556633;">&quot;</span><span>) {
+</span><span>            </span><span style="color:#8fbfdc;">if let </span><span>Ok(syn::MetaNameValue {
+</span><span>                value:
+</span><span>                    syn::Expr::Lit(syn::ExprLit {
+</span><span>                        lit: syn::Lit::Str(</span><span style="color:#8fbfdc;">ref</span><span> liststr),
+</span><span>                        ..
+</span><span>                    }),
+</span><span>                path,
+</span><span>                ..
+</span><span>            }) = attr.parse_args::&lt;syn::MetaNameValue&gt;()
+</span><span>            {
+</span><span>                </span><span style="color:#8fbfdc;">if </span><span>!path.is_ident(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">each</span><span style="color:#556633;">&quot;</span><span>) {
+</span><span>                    </span><span style="color:#8fbfdc;">return </span><span>Some(ParseBuilderAttributeResult::Invalid(attr.meta.clone()));
+</span><span>                }
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>Some(ParseBuilderAttributeResult::Valid(liststr.value()));
+</span><span>            } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>None;
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        None
+</span><span>    })
+</span><span>}
+</span><span>
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">extract_named_fields</span><span>(</span><span style="color:#ffb964;">data</span><span>: &amp;syn::Data) -&gt; &amp;Punctuated&lt;syn::Field, syn::token::Comma&gt; {
+</span><span>    </span><span style="color:#8fbfdc;">let </span><span>syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed{ named, .. }), .. }) = data </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>        unimplemented!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">This macro can only be applied to struct</span><span style="color:#556633;">&quot;</span><span>);
+</span><span>    };
+</span><span>
+</span><span>    named
+</span><span>}
+</span><span>
+</span><span style="color:#888888;">// ty の場合も inner_ty の場合も同じ構造なので、依存を引数に移動させて、生成するストリームを制御する
+</span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">generate_default_setter_with</span><span>(
+</span><span>    </span><span style="color:#ffb964;">ident</span><span>: &amp;Option&lt;syn::Ident&gt;,
+</span><span>    </span><span style="color:#ffb964;">ty</span><span>: &amp;syn::Type,
+</span><span>) -&gt; proc_macro2::TokenStream {
+</span><span>    quote! {
+</span><span>        </span><span style="color:#8fbfdc;">fn </span><span>#ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #ident: #ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>            </span><span style="color:#ffb964;">self</span><span>.#ident = Some(#ident);
+</span><span>            </span><span style="color:#ffb964;">self
+</span><span>        }
+</span><span>    }
+</span><span>}
+</span><span>
+</span><span>#[</span><span style="color:#ffb964;">proc_macro_derive</span><span>(Builder, </span><span style="color:#ffb964;">attributes</span><span>(builder))]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">derive</span><span>(</span><span style="color:#ffb964;">input</span><span>: TokenStream) -&gt; TokenStream {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> parsed = parse_macro_input!(input as DeriveInput);
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> original_ident = parsed.ident;
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder_ident = format_ident!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}Builder</span><span style="color:#556633;">&quot;</span><span>, original_ident);
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> named = extract_named_fields(&amp;parsed.data);
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder_fields = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>        </span><span style="color:#8fbfdc;">match </span><span>unwrap_ty(ty) {
+</span><span>            InnerType::OptionType(_) =&gt; {
+</span><span>                quote! {
+</span><span>                    #ident: #ty
+</span><span>                }
+</span><span>            }
+</span><span>            _ =&gt; quote! {
+</span><span>                #ident: std::option::Option&lt;#ty&gt;
+</span><span>            },
+</span><span>        }
+</span><span>    });
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder_setters = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>        </span><span style="color:#8fbfdc;">match </span><span>unwrap_ty(ty) {
+</span><span>            InnerType::VecType(inner_ty) =&gt; {
+</span><span>                </span><span style="color:#8fbfdc;">let</span><span> default_setter = generate_default_setter_with(ident, ty);
+</span><span>
+</span><span>                </span><span style="color:#8fbfdc;">match </span><span>unwrap_builder_attr_value(&amp;f.attrs) {
+</span><span>                    Some(ParseBuilderAttributeResult::Valid(each)) =&gt; {
+</span><span>                        </span><span style="color:#8fbfdc;">let</span><span> each_ident = format_ident!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">{}</span><span style="color:#556633;">&quot;</span><span>, each);
+</span><span>                        </span><span style="color:#8fbfdc;">let</span><span> vec_setters = quote! {
+</span><span>                            </span><span style="color:#8fbfdc;">fn </span><span>#each_ident(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>, #each_ident: #inner_ty) -&gt; &amp;</span><span style="color:#8fbfdc;">mut Self </span><span>{
+</span><span>                                </span><span style="color:#8fbfdc;">if let </span><span>Some(</span><span style="color:#8fbfdc;">ref mut</span><span> values) = </span><span style="color:#ffb964;">self</span><span>.#ident {
+</span><span>                                    values.push(#each_ident);
+</span><span>                                } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                                    </span><span style="color:#ffb964;">self</span><span>.#ident = std::option::Option::Some(vec![#each_ident]);
+</span><span>                                }
+</span><span>                                </span><span style="color:#ffb964;">self
+</span><span>                            }
+</span><span>                        };
+</span><span>
+</span><span>                        </span><span style="color:#8fbfdc;">if</span><span> ident.clone().unwrap() == each_ident {
+</span><span>                            </span><span style="color:#8fbfdc;">return</span><span> vec_setters;
+</span><span>                        } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                            </span><span style="color:#8fbfdc;">return </span><span>quote! {
+</span><span>                                #vec_setters
+</span><span>                                #default_setter
+</span><span>                            };
+</span><span>                        }
+</span><span>                    }
+</span><span>                    Some(ParseBuilderAttributeResult::Invalid(meta)) =&gt; {
+</span><span>                        </span><span style="color:#8fbfdc;">return </span><span>syn::Error::new_spanned(meta, </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">expected `builder(each = \&quot;...\&quot;)`</span><span style="color:#556633;">&quot;</span><span>)
+</span><span>                            .to_compile_error()
+</span><span>                            .into()
+</span><span>                    }
+</span><span>                    None =&gt; </span><span style="color:#8fbfdc;">return</span><span> default_setter,
+</span><span>                };
+</span><span>            }
+</span><span>            InnerType::OptionType(inner_ty) =&gt; generate_default_setter_with(ident, &amp;inner_ty),
+</span><span>            InnerType::PrimitiveType =&gt; generate_default_setter_with(ident, ty),
+</span><span>        }
+</span><span>    });
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> builder_init = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>        quote! {
+</span><span>            #ident: std::option::Option::None
+</span><span>        }
+</span><span>    });
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> build_fields = named.iter().map(|</span><span style="color:#ffb964;">f</span><span>| {
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ident = &amp;f.ident;
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> ty = &amp;f.ty;
+</span><span>
+</span><span>        </span><span style="color:#8fbfdc;">match </span><span>unwrap_ty(ty) {
+</span><span>            InnerType::OptionType(_) =&gt; quote! {
+</span><span>                #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take()
+</span><span>            },
+</span><span>            InnerType::VecType(_) =&gt; quote! {
+</span><span>                #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take().unwrap_or_else(Vec::new)
+</span><span>            },
+</span><span>            InnerType::PrimitiveType =&gt; quote! {
+</span><span>                #ident: </span><span style="color:#ffb964;">self</span><span>.#ident.take().ok_or(format!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{}</span><span style="color:#99ad6a;"> is not set</span><span style="color:#556633;">&quot;</span><span>, stringify!(#ident)))?
+</span><span>            },
+</span><span>        }
+</span><span>    });
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> expanded = quote! {
+</span><span>        </span><span style="color:#8fbfdc;">pub struct </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>            #(#builder_fields,)*
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#8fbfdc;">impl </span><span>#</span><span style="color:#ffb964;">builder_ident </span><span>{
+</span><span>            #(#builder_setters)*
+</span><span>
+</span><span>            </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">build</span><span>(&amp;</span><span style="color:#8fbfdc;">mut </span><span style="color:#ffb964;">self</span><span>) -&gt; std::result::Result&lt;#original_ident, std::boxed::Box&lt;dyn std::error::Error&gt;&gt; {
+</span><span>                Ok(#original_ident {
+</span><span>                    #(#build_fields,)*
+</span><span>                })
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        </span><span style="color:#8fbfdc;">impl </span><span>#</span><span style="color:#ffb964;">original_ident </span><span>{
+</span><span>            </span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">builder</span><span>() -&gt; #builder_ident {
+</span><span>                #builder_ident {
+</span><span>                    #(#builder_init,)*
+</span><span>                }
+</span><span>            }
+</span><span>        }
+</span><span>    };
+</span><span>
+</span><span>    expanded.into()
+</span><span>}
+</span></code></pre>
+<h2 id="zhui-jia-ke-ti-tracing-attributes-kuretonoyounafu-za-nashu-xing-nopasu">追加課題: <code>tracing-attributes</code> クレートのような複雑な属性のパース</h2>
+<p>Builder マクロの作成では以下のように付与された属性をパースして、動的にコードを生成していました。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">derive</span><span>(Builder)]
+</span><span style="color:#8fbfdc;">pub struct </span><span style="color:#ffb964;">Command </span><span>{
+</span><span>    </span><span style="color:#ffb964;">executable</span><span>: String,
+</span><span>    #[</span><span style="color:#ffb964;">builder</span><span>(each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">arg</span><span style="color:#556633;">&quot;</span><span>)] </span><span style="color:#888888;">// builder という属性で name = expr 形式で指定する
+</span><span>    </span><span style="color:#ffb964;">args</span><span>: Vec&lt;String&gt;,
+</span><span>    #[</span><span style="color:#ffb964;">builder</span><span>(each = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">env</span><span style="color:#556633;">&quot;</span><span>)]　</span><span style="color:#888888;">// builder という属性で name = expr 形式で指定する
+</span><span>    </span><span style="color:#ffb964;">env</span><span>: Vec&lt;String&gt;,
+</span><span>    </span><span style="color:#ffb964;">current_dir</span><span>: Option&lt;String&gt;,
+</span><span>}
+</span></code></pre>
+<p>サードパーティクレートの中には複雑なパースを行なっているものもあり、その 1 つが <a href="https://docs.rs/tracing-attributes/0.1.11/tracing_attributes/attr.instrument.html">tracing-attributes</a> クレートです。</p>
+<p>このクレートが提供しているものは derive マクロではなく attributes マクロではありますが、分散トレーシングのために以下のような複雑な設定を行うことが可能です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span>#[</span><span style="color:#ffb964;">instrument</span><span>(
+</span><span>    name = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">my_name</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>    level = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">debug</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>    target = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">my_target</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>    </span><span style="color:#ffb964;">skip</span><span>(non_debug),
+</span><span>    </span><span style="color:#ffb964;">fields</span><span>(foo=</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">bar</span><span style="color:#556633;">&quot;</span><span>, id=1, show=true),
+</span><span>)]
+</span><span style="color:#8fbfdc;">pub fn </span><span style="color:#fad07a;">my_function</span><span>(</span><span style="color:#ffb964;">arg</span><span>: </span><span style="color:#8fbfdc;">usize</span><span>, </span><span style="color:#ffb964;">non_debug</span><span>: NonDebug) {
+</span><span>    </span><span style="color:#888888;">// ...
+</span><span>}
+</span></code></pre>
+<p>今回は <code>tracing-attributes</code> クレートが複雑な属性をどのようにパースしているのかを理解するために、以下の属性をパースすることを目標に進めていきます。なお、元々の課題とは関係ありません。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> tokens = quote! {
+</span><span>        name = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">sample</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>        skip(form, state),
+</span><span>        fields(
+</span><span>            username=name,
+</span><span>        )
+</span><span>    };
+</span><span>}
+</span></code></pre>
+<h3 id="she-ji-fang-zhen">設計方針</h3>
+<p><a href="https://shimopino.github.io/blog/proc-macro-workshop-builder/#07-repeated-field">07-repeated-field</a> で行なったように、入力される <code>TokenStream</code> をどのような型としてパースするのかをまずは決める必要があります。</p>
+<p>課題の時には以下のように属性の名称と設定された値を一緒の構造体にパースしていましたが、これだとパースできてもコード側でどの属性に対応するものなのかを判定する必要が出てくるため、複数の属性をパースする必要がある場合にはコードが煩雑になってしまいます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">IdentEqualExpr </span><span>{
+</span><span>    </span><span style="color:#ffb964;">ident</span><span>: syn::Ident,
+</span><span>    </span><span style="color:#ffb964;">eq_token</span><span>: syn::Token![=],
+</span><span>    </span><span style="color:#ffb964;">expr</span><span>: syn::Expr,
+</span><span>}
+</span></code></pre>
+<p>今回は <code>name</code> / <code>skip</code> / <code>fields</code> という 3 つの属性を利用することがあらかじめ決まっており、それぞれの属性に対してどのような値を設定できるのかも決まっているため、Rust の型安全性による恩恵を受けるため、パースできた時点で実装側にできるだけ条件分岐が不要になるようにしていくことを目指します。</p>
+<p>そこでパース対象の属性名を構造体のフィールド名に設定し、対応する値にパースできた値を登録できるように、以下のように、 <code>Parse</code> するための構造体とデータを保持するための構造体を設計します。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Args </span><span>{
+</span><span>    </span><span style="color:#ffb964;">name</span><span>: Option&lt;syn::LitStr&gt;,
+</span><span>    </span><span style="color:#ffb964;">skips</span><span>: HashSet&lt;syn::Ident&gt;,
+</span><span>    </span><span style="color:#ffb964;">fields</span><span>: Option&lt;Fields&gt;,
+</span><span>}
+</span><span>
+</span><span style="color:#888888;">// name = expr の形式に対して Parse を実装するための構造体
+</span><span style="color:#888888;">// name は固定なので Key として保持する必要はない
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">NameValue</span><span>(syn::LitStr);
+</span><span>
+</span><span style="color:#888888;">// skip(xxx, yyy) の形式に対して Parse を実装するための構造体
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Skips</span><span>(HashSet&lt;syn::Ident&gt;);
+</span><span>
+</span><span style="color:#888888;">// fields(key1=value1, key2=value2) の形式に対して Parse を実装するための構造体
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Fields</span><span>(Punctuated&lt;Field, Token![,]&gt;);
+</span><span>
+</span><span style="color:#888888;">// Key と Value は自由に設定できるため、両方を保持できるようにする
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Field </span><span>{
+</span><span>    </span><span style="color:#ffb964;">key</span><span>: syn::Ident,
+</span><span>    </span><span style="color:#ffb964;">value</span><span>: Option&lt;syn::Expr&gt;,
+</span><span>}
+</span></code></pre>
+<p>この構造体に対して、それぞれ <code>Parse</code> トレイトの実装を行なっていきます。</p>
+<h3 id="parse-toreitonoshi-zhuang-shu-xing-zhi-nopasu">Parse トレイトの実装 - 属性値のパース</h3>
+<p>まずはそれぞれのフィールドに対して <code>Parse</code> トレイトの実装を進めていきますが、今回はフィールド値が決まっているため、 <code>syn::custom_keyword!</code> を利用してパース対象の値を定義していきます。</p>
+<ul>
+<li><a href="https://docs.rs/syn/2.0.28/syn/macro.custom_keyword.html">syn::custom_keyword</a></li>
+</ul>
+<p><code>syn::custom_keyword!</code> マクロを利用して以下のように定義すれば、自動的に複数の機能が実装された構造体を生成することが可能です。</p>
+<ul>
+<li>Peeking — <code>input.peek(kw::whatever)</code></li>
+<li>Parsing — <code>input.parse::&lt;kw::whatever&gt;()?</code></li>
+<li>Printing — <code>quote!( ... #whatever_token ... )</code></li>
+<li>Span からのトークン生成 — <code>let whatever_token = kw::whatever(sp)</code></li>
+<li>該当 Span へのアクセス — <code>let sp = whatever_token.span</code></li>
+</ul>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">mod </span><span style="color:#ffb964;">kw </span><span>{
+</span><span>    syn::custom_keyword!(name);
+</span><span>    syn::custom_keyword!(skip);
+</span><span>    syn::custom_keyword!(fields);
+</span><span>}
+</span></code></pre>
+<p>これで <code>TokenStream</code> 内に指定したキーが存在する場合にはパースすることが可能になりました。</p>
+<h3 id="parse-toreitonoshi-zhuang-name-nopasu">Parse トレイトの実装 - name のパース</h3>
+<p><code>name</code> 属性をパースするには、 <code>name = expr</code> 形式のパース用に用意した以下の構造体に対して <code>Parse</code> トレイトの実装が必要になります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">NameValue</span><span>(syn::LitStr);
+</span></code></pre>
+<p>実装自体は非常にシンプルであり、想定通りの <code>TokenStream</code> が入力されることを前提にして、構造体を構築するのに必要な部分のみを抽出していけば OK です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">impl </span><span>syn::parse::Parse for </span><span style="color:#ffb964;">NameValue </span><span>{
+</span><span>    </span><span style="color:#888888;">// input の TokenSteam は「 name = expr 」 を前提としたストリームが入力される前提
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">parse</span><span>(</span><span style="color:#ffb964;">input</span><span>: syn::parse::ParseStream) -&gt; syn::Result&lt;</span><span style="color:#8fbfdc;">Self</span><span>&gt; {
+</span><span>        </span><span style="color:#888888;">// 以下2つは保持する必要がないので、Cursorを進めるだけにする
+</span><span>        </span><span style="color:#8fbfdc;">let </span><span>_ = input.parse::&lt;kw::name&gt;()?;
+</span><span>        </span><span style="color:#8fbfdc;">let </span><span>_ = input.parse::&lt;Token![=]&gt;()?;
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> value = input.parse()?;
+</span><span>         Ok(</span><span style="color:#8fbfdc;">Self</span><span>(value))
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="parse-toreitonoshi-zhuang-skip-nopasu">Parse トレイトの実装 - skip のパース</h3>
+<p><code>skip</code> 属性をパースするには、 <code>skip(xxx, yyy)</code> 形式のパース用に用意した以下の構造体に対して <code>Parse</code> トレイトの実装が必要になります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Skips</span><span>(HashSet&lt;syn::Ident&gt;);
+</span></code></pre>
+<p>この属性は Key-Value 形式ではなく、コンマ区切りで指定された値を保持できるようにするために、以下のように <code>Parse</code> トレイトを実装していきます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">impl </span><span>syn::parse::Parse for </span><span style="color:#ffb964;">Skips </span><span>{
+</span><span>    </span><span style="color:#888888;">// input の TokenSteam は「 skip(xxx, yyy, ...) 」 を前提としたストリームが入力される前提
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">parse</span><span>(</span><span style="color:#ffb964;">input</span><span>: syn::parse::ParseStream) -&gt; syn::Result&lt;</span><span style="color:#8fbfdc;">Self</span><span>&gt; {
+</span><span>        </span><span style="color:#8fbfdc;">let </span><span>_ = input.parse::&lt;kw::skip&gt;()?;
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> content;
+</span><span>        </span><span style="color:#8fbfdc;">let </span><span>_ = syn::parenthesized!(content in input);
+</span><span>        </span><span style="color:#888888;">// Punctuated&lt;Ident, Comma&gt; としてパースされる
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> names = content.parse_terminated(syn::Ident::parse_any, Token![,])?;
+</span><span>        </span><span style="color:#8fbfdc;">let mut</span><span> skips = HashSet::new();
+</span><span>        </span><span style="color:#8fbfdc;">for</span><span> name in names {
+</span><span>            </span><span style="color:#8fbfdc;">if</span><span> skips.contains(&amp;name) {
+</span><span>                </span><span style="color:#8fbfdc;">continue</span><span>;
+</span><span>            }
+</span><span>            skips.insert(name);
+</span><span>        }
+</span><span>        Ok(</span><span style="color:#8fbfdc;">Self</span><span>(skips))
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p><code>(xxx, yyy)</code> のような形式をパースするためには、まずは始まりのかっこ（ <code>(</code> ）と閉じかっこ（ <code>)</code> ）が存在していることを前提に、コンマ区切りで 1 つ 1 つの値をパースする必要があります。</p>
+<p>そのために実装で利用しているように <code>syn::parenthesized!</code> マクロを利用してどのような記号で囲っているのかを指定し、 <code>content.parse_terminated</code> マクロを利用してどの記号区切りでどの値としてパースするのかを指定することができます。</p>
+<ul>
+<li><a href="https://docs.rs/syn/2.0.28/syn/macro.parenthesized.html">syn::parenthesized</a></li>
+<li><a href="https://docs.rs/syn/2.0.28/syn/parse/struct.ParseBuffer.html#method.parse_terminated">parse_terminated</a></li>
+</ul>
+<h3 id="parse-toreitonoshi-zhuang-fields-nopasu">Parse トレイトの実装 - fields のパース</h3>
+<p><code>fields</code> 属性をパースするには、 <code>fields(key1=value1, key2=value2)</code> 形式のパース用に用意した以下の構造体に対して <code>Parse</code> トレイトの実装が必要になります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#888888;">// fields(...) 形式をパースするための構造体
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Fields</span><span>(Punctuated&lt;Field, Token![,]&gt;);
+</span><span>
+</span><span style="color:#888888;">// key = value 形式を1つ1つパースするための構造体
+</span><span style="color:#8fbfdc;">struct </span><span style="color:#ffb964;">Field </span><span>{
+</span><span>    </span><span style="color:#ffb964;">key</span><span>: syn::Ident,
+</span><span>    </span><span style="color:#ffb964;">value</span><span>: Option&lt;syn::Expr&gt;,
+</span><span>}
+</span></code></pre>
+<p>まずは <code>fields(...)</code> 形式をパースしますが、これは 1 つ前の <code>skip</code> 属性とほとんど同じようにパースすることが可能です。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">impl </span><span>syn::parse::Parse for </span><span style="color:#ffb964;">Fields </span><span>{
+</span><span>    </span><span style="color:#888888;">// input の TokenSteam は「 fields(...) 」 を前提としたストリームが入力される前提
+</span><span>    </span><span style="color:#888888;">// 1つ1つの 「 key=value 」 は Field 型としてパースする
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">parse</span><span>(</span><span style="color:#ffb964;">input</span><span>: syn::parse::ParseStream) -&gt; syn::Result&lt;</span><span style="color:#8fbfdc;">Self</span><span>&gt; {
+</span><span>        </span><span style="color:#8fbfdc;">let </span><span>_ = input.parse::&lt;kw::fields&gt;()?;
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> content;
+</span><span>        </span><span style="color:#8fbfdc;">let </span><span>_ = syn::parenthesized!(content in input);
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> fields = content.parse_terminated(Field::parse, Token![,])?;
+</span><span>        Ok(</span><span style="color:#8fbfdc;">Self</span><span>(fields))
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>次に <code>key = value</code> 形式をパースしますが、現時点では <code>=</code> のみをサポートするようにします。</p>
+<p>なお <code>tracing-attributes</code> クレートはログ出力用の <code>%</code> やデバッグ出力用の <code>?</code> もサポートしています。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">impl </span><span>syn::parse::Parse for </span><span style="color:#ffb964;">Field </span><span>{
+</span><span>    </span><span style="color:#888888;">// input の TokenSteam は「 key=value 」 を前提としたストリームが入力される前提
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">parse</span><span>(</span><span style="color:#ffb964;">input</span><span>: syn::parse::ParseStream) -&gt; syn::Result&lt;</span><span style="color:#8fbfdc;">Self</span><span>&gt; {
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> key = input.parse()?;
+</span><span>        </span><span style="color:#888888;">// 「 = 」 がある場合には Cursor を進めて Expr の部分を取り出す
+</span><span>        </span><span style="color:#8fbfdc;">let</span><span> value = </span><span style="color:#8fbfdc;">if</span><span> input.peek(Token![=]) {
+</span><span>            input.parse::&lt;Token![=]&gt;()?;
+</span><span>            Some(input.parse()?)
+</span><span>        } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>            None
+</span><span>        };
+</span><span>        Ok(</span><span style="color:#8fbfdc;">Self </span><span>{ key, value })
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<h3 id="parse-toreitonoshi-zhuang-args-nopasu">Parse トレイトの実装 - Args のパース</h3>
+<p>最後にこれまでに実装を型を利用して、 <code>TokenStream</code> 全体をパースするための <code>Args</code> 型に対して <code>Parse</code> トレイトの実装を進めていきます。</p>
+<p>Builder の場合と異なり、属性の値が複数設定することが可能であるため、属性の値に応じてどの型でパースするのかを決定する必要があります。</p>
+<p>そうした場合に利用できるものが <code>ParseStream</code> が提供している以下のメソッドです。</p>
+<ul>
+<li><code>lookahead1</code>:  <code>TokenStream</code> からの次のトークンを 1 つだけ参照する</li>
+<li><code>peek</code>:  次のトークンを調べて、指定したトークンと一致するかどうか判定する。 <code>Cursor</code> は進めない</li>
+</ul>
+<p><code>TokenStream</code> が空であることを確認できる <code>is_empty</code> メソッドを利用すれば以下のように実装できます。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">impl </span><span>syn::parse::Parse for </span><span style="color:#ffb964;">Args </span><span>{
+</span><span>    </span><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">parse</span><span>(</span><span style="color:#ffb964;">input</span><span>: syn::parse::ParseStream) -&gt; syn::Result&lt;</span><span style="color:#8fbfdc;">Self</span><span>&gt; {
+</span><span>        </span><span style="color:#8fbfdc;">let mut</span><span> args = </span><span style="color:#8fbfdc;">Self</span><span>::default();
+</span><span>        </span><span style="color:#888888;">// Cursor が全ての TokenStream を指し終わるまでループ処理を行う
+</span><span>        </span><span style="color:#8fbfdc;">while </span><span>!input.is_empty() {
+</span><span>            </span><span style="color:#8fbfdc;">let</span><span> lookahead = input.lookahead1();
+</span><span>            </span><span style="color:#888888;">// name = expr
+</span><span>            </span><span style="color:#8fbfdc;">if</span><span> lookahead.peek(kw::name) {
+</span><span>                </span><span style="color:#8fbfdc;">let</span><span> NameValue(name) = input.parse()?;
+</span><span>                args.name = Some(name);
+</span><span>
+</span><span>            </span><span style="color:#888888;">// skip(xxx, yyy)
+</span><span>            } </span><span style="color:#8fbfdc;">else if</span><span> lookahead.peek(kw::skip) {
+</span><span>                </span><span style="color:#8fbfdc;">let</span><span> Skips(skips) = input.parse()?;
+</span><span>                args.skips = skips
+</span><span>
+</span><span>            </span><span style="color:#888888;">// fields(key1=value1, key2=value2)
+</span><span>            } </span><span style="color:#8fbfdc;">else if</span><span> lookahead.peek(kw::fields) {
+</span><span>                args.fields = Some(input.parse()?);
+</span><span>
+</span><span>            </span><span style="color:#888888;">// 属性間の区切り記号 skip(xxx), &lt;- こういう時に使うコンマ記号
+</span><span>            } </span><span style="color:#8fbfdc;">else if</span><span> lookahead.peek(Token![,]) {
+</span><span>                </span><span style="color:#8fbfdc;">let </span><span>_ = input.parse::&lt;Token![,]&gt;()?;
+</span><span>
+</span><span>            } </span><span style="color:#8fbfdc;">else </span><span>{
+</span><span>                </span><span style="color:#8fbfdc;">return </span><span>Err(syn::Error::new(input.span(), </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">unexpected token</span><span style="color:#556633;">&quot;</span><span>));
+</span><span>            }
+</span><span>        }
+</span><span>
+</span><span>        Ok(args)
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>これで以下のようにパースすれば処理は成功し、意図通りにパースした内容が出力されていることがわかります。</p>
+<pre data-lang="rust" style="background-color:#151515;color:#e8e8d3;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#8fbfdc;">fn </span><span style="color:#fad07a;">main</span><span>() {
+</span><span>    </span><span style="color:#8fbfdc;">let</span><span> tokens = quote! {
+</span><span>        name = </span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">sample</span><span style="color:#556633;">&quot;</span><span>,
+</span><span>        skip(form, state),
+</span><span>        fields(
+</span><span>            username=name,
+</span><span>        )
+</span><span>    };
+</span><span>
+</span><span>    </span><span style="color:#8fbfdc;">match </span><span>syn::parse2::&lt;Args&gt;(tokens) {
+</span><span>        Ok(args) =&gt; {
+</span><span>            println!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">args - </span><span style="color:#7697d6;">{:#?}</span><span style="color:#556633;">&quot;</span><span>, args.name);
+</span><span>            println!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">skips - </span><span style="color:#7697d6;">{:#?}</span><span style="color:#556633;">&quot;</span><span>, args.skips);
+</span><span>            println!(</span><span style="color:#556633;">&quot;</span><span style="color:#99ad6a;">fields - </span><span style="color:#7697d6;">{:#?}</span><span style="color:#556633;">&quot;</span><span>, args.fields);
+</span><span>        }
+</span><span>        Err(e) =&gt; eprintln!(</span><span style="color:#556633;">&quot;</span><span style="color:#7697d6;">{:?}</span><span style="color:#556633;">&quot;</span><span>, e),
+</span><span>    }
+</span><span>}
+</span></code></pre>
+<p>これで複雑な属性が定義されている場合でもどのようにパースしているのか把握することができました。</p>
+<p>事前に適用できる属性や構造体の設計を行なっていれば、そこまで複雑な処理にならずに実装できそうです。</p>
+<h2 id="gan-xiang">感想</h2>
+<p>これで proc-macro-workshop の Builder derive マクロ構築課題は完了です。課題を解いていく中で <code>tracing-attributes</code> や <code>thiserror</code> などの実装も見ていきましたが、終盤に近づくにつれてコードに対する理解度が向上して、サードパーティのクレートの実装もかなり読めるようになっていきました。</p>
+<p>また、課題を進めていく中で <code>if-let</code> や <code>let-else</code> などの構文を利用すると、パターンマッチングの要領で型をどんどんアンラップしていく処理が非常に記述しやすく、型構造が一目瞭然なので可読性も良くなるなと感じました。</p>
+<p>ただ自由度の高い <code>attribute</code> に関しては <code>parse</code> していくと複雑になっていってしまうなとも感じました。 <code>tracing-attribute</code> クレートの実装を参考にサンプルコードを書いていく中で、使用できる属性をしっかりと設計できている場合には、構造体にマッピングでいるためある程度複雑性を下げることもできると感じたので、こうしたマクロを実装する場合には事前の設計がかなり重要になると思います。</p>
+<p>Builder 以外の課題や <code>trybuild</code> の使い方などに興味が出てきたので、また別の記事としてまとめようかなと思います。</p>
+
+<!--  -->
+
+      </main>
+
+      <footer>
+        <span>© 2023 shimopino. All rights reserved.</span>
+        ::
+        <span>Made by <a href="https://www.getzola.org/">Zola</a></span>
+      </footer>
+    </div>
+  </body>
+</html>
